@@ -1,0 +1,13 @@
+[gd_resource type="Resource" format=3 uid="uid://bdik2n5ww7qpl"]
+
+[ext_resource type="Texture2D" uid="uid://bqhtaudi8v6os" path="res://addons/Test/marchingTriangles/editor/icons/smooth_tool.svg" id="1_6p6rd"]
+[ext_resource type="Script" uid="uid://cderkdrsakj0h" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_q5pir"]
+
+[resource]
+script = ExtResource("2_q5pir")
+Icon = ExtResource("1_6p6rd")
+Label = "Smooth"
+Tooltip = "Smooth Tool
+
+Used to smooth neighbouring terrain to their average height."
+metadata/_custom_type_script = "uid://brkjbcthwswel"

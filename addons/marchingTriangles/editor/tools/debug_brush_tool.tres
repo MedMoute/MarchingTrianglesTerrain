@@ -1,0 +1,21 @@
+[gd_resource type="Resource" format=3 uid="uid://c5h6xn2q5h4cx"]
+
+[ext_resource type="Texture2D" uid="uid://havokmb71jy" path="res://addons/Test/marchingTriangles/editor/icons/toolicon.svg" id="1_p8wrr"]
+[ext_resource type="Script" uid="uid://cderkdrsakj0h" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_sdrru"]
+
+[sub_resource type="Resource" id="Resource_ovb5c"]
+
+[resource]
+script = ExtResource("2_sdrru")
+Icon = ExtResource("1_p8wrr")
+Label = "Debug Brush"
+Tooltip = "Debug Brush Tool
+
+Used to print data about selected cells.
+
+[DEBUG INFO]
+• Global position
+• Color ID values (two Vector4's)
+• Normal"
+AttributeSettings = SubResource("Resource_ovb5c")
+metadata/_custom_type_script = "uid://brkjbcthwswel"

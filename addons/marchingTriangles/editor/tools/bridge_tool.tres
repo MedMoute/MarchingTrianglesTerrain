@@ -1,0 +1,20 @@
+[gd_resource type="Resource" format=3 uid="uid://byg87hx7nv4ic"]
+
+[ext_resource type="Texture2D" uid="uid://b4t364t0s3alo" path="res://addons/Test/marchingTriangles/editor/icons/bridge_tool.svg" id="1_7pvg5"]
+[ext_resource type="Script" uid="uid://cderkdrsakj0h" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_017t4"]
+
+[sub_resource type="Resource" id="Resource_7pvg5"]
+
+[resource]
+script = ExtResource("2_017t4")
+Icon = ExtResource("1_7pvg5")
+Label = "Bridge"
+Tooltip = "Bridge Tool
+
+Used to create a bridge between two points.
+
+[INFO]
+The bridge curve falloff can be set via the \"ease value\" attribute. 
+For reference see the ease value cheatsheet in the documentation+ folder."
+AttributeSettings = SubResource("Resource_7pvg5")
+metadata/_custom_type_script = "uid://brkjbcthwswel"

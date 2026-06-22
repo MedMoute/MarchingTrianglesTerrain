@@ -1,0 +1,16 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dtevocyixqsgv"]
+
+[ext_resource type="Shader" uid="uid://j0q04ynsxcwy" path="res://addons/marchingTriangles/editor/resources/shaders/round_brush_radius_visual.gdshader" id="1_130ci"]
+
+[sub_resource type="Curve" id="Curve_us6kh"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_fttfv"]
+curve = SubResource("Curve_us6kh")
+
+[resource]
+render_priority = 11
+shader = ExtResource("1_130ci")
+shader_parameter/curve_texture = SubResource("CurveTexture_fttfv")
+shader_parameter/falloff_visible = true

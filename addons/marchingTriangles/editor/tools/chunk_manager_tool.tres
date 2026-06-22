@@ -1,0 +1,27 @@
+[gd_resource type="Resource" format=3 uid="uid://crv7ey6qqdohh"]
+
+[ext_resource type="Texture2D" uid="uid://dqjst730tmfy4" path="res://addons/Test/marchingTriangles/editor/icons/chunk_manager_tool.svg" id="1_mq6yh"]
+[ext_resource type="Script" uid="uid://cderkdrsakj0h" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_i6qdo"]
+
+[sub_resource type="Resource" id="Resource_mq6yh"]
+
+[resource]
+script = ExtResource("2_i6qdo")
+Icon = ExtResource("1_mq6yh")
+Label = "Chunk Management"
+Tooltip = "Chunk Management Tool
+
+Used to create, delete and change chunk settings.
+
+[INFO]
+Chunk cell merge modes:
+• CUBIC: The most blocky of all the modes. Has minimal smoothing between cells.
+• POLYHEDRON: Blocky terrain with slight cell smoothing (DEFAULT CHUNK STATE).
+• ROUNDED_POLYHEDRON: A good 50/50 mix between having smooth and blocky terrain.
+• SEMI_ROUND: Mostly smooth terrain with the occasional blocky cells.
+• SPHERICAL: All the terrain will become smooth. This mode looks the most unnatural for the algorithm.
+
+[SHORTCUTS]
+• CTRL+LMB: Change the currently selected chunk to the hovered chunk."
+AttributeSettings = SubResource("Resource_mq6yh")
+metadata/_custom_type_script = "uid://brkjbcthwswel"

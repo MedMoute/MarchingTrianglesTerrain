@@ -1,0 +1,19 @@
+[gd_resource type="Resource" format=3 uid="uid://coetamb4wcwlw"]
+
+[ext_resource type="Texture2D" uid="uid://b4m2n17e0x2tw" path="res://addons/Test/marchingTriangles/editor/icons/level_tool.svg" id="1_e1q1b"]
+[ext_resource type="Script" uid="uid://cderkdrsakj0h" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_2wfq5"]
+
+[sub_resource type="Resource" id="Resource_wxhjo"]
+
+[resource]
+script = ExtResource("2_2wfq5")
+Icon = ExtResource("1_e1q1b")
+Label = "Level"
+Tooltip = "Level Tool
+
+Used to level terrain to a certain height.
+
+[SHORTCUTS]
+• Ctrl+LMB: Set the terrain level height to the hovered cell's Y value."
+AttributeSettings = SubResource("Resource_wxhjo")
+metadata/_custom_type_script = "uid://brkjbcthwswel"

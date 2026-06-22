@@ -1,0 +1,22 @@
+[gd_resource type="Resource" format=3 uid="uid://udtjtx0jbil"]
+
+[ext_resource type="Texture2D" uid="uid://cj2dlsg0uw1k0" path="res://addons/Test/marchingTriangles/editor/icons/brush_tool.svg" id="1_x3law"]
+[ext_resource type="Script" uid="uid://cderkdrsakj0h" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_g0qol"]
+
+[sub_resource type="Resource" id="Resource_ov25b"]
+
+[resource]
+script = ExtResource("2_g0qol")
+Icon = ExtResource("1_x3law")
+Label = "Brush"
+Tooltip = "Brush Tool
+
+Used to elevate or lower terrain.
+
+[SHORTCUTS]
+• Shift+LMB+Drag: Add cells to the current draw selection.
+• Shift+MWU/MWD: Increase or decrease the brush size..
+• Alt/RMB/Esc: Reset the current draw selection.
+These shortcuts apply to all brush related tools."
+AttributeSettings = SubResource("Resource_ov25b")
+metadata/_custom_type_script = "uid://brkjbcthwswel"

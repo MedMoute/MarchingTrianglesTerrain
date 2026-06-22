@@ -1,0 +1,24 @@
+[gd_resource type="Resource" format=3 uid="uid://dvoeari8ekfdx"]
+
+[ext_resource type="Texture2D" uid="uid://d2ms3ndp2fq7n" path="res://addons/Test/marchingTriangles/editor/icons/terrain_settings_tool.png" id="1_kdwsx"]
+[ext_resource type="Script" uid="uid://cderkdrsakj0h" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_epqr4"]
+
+[sub_resource type="Resource" id="Resource_63hnj"]
+
+[resource]
+script = ExtResource("2_epqr4")
+Icon = ExtResource("1_kdwsx")
+Label = "Terrain Settings"
+Tooltip = "Terrain Settings Tool
+
+Used to tweak global terrain settings.
+
+[INFO]
+• The \"Blend Mode\" dropdown menu allows you to set the terrain's texture blending mode to suit your liking.
+• Setting a \"Noise Hmap\" makes the base chunk height generation procedural instead of flat. 
+• Setting the \"Animation Fps\" value to more than 0 makes the grass sprites move with limited fps.
+    • Keeping it at 0 gives the grass a smooth wind based effect.
+• \"Ridge Threshold\" controls how close grass sprites get spawned to lowering terrain (cliffs).
+• \"Ledge Threshold\" controls how close grass sprites get spawned to elevating terrain (walls)."
+AttributeSettings = SubResource("Resource_63hnj")
+metadata/_custom_type_script = "uid://brkjbcthwswel"
