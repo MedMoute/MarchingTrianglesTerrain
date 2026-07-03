@@ -1,13 +1,17 @@
 #pragma warning disable NUnit2021
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
-using Localproto.addons.marchingTriangles;
-using Localproto.addons.marchingTriangles.tiling;
-using Localproto.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles;
+using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
+using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Spatial.Euclidean;
 using MathNet.Spatial.Units;
+using NUnit.Framework;
 
-namespace Localproto.UnitTests;
+namespace UnitTests;
 
 public class HexTileTests
 {

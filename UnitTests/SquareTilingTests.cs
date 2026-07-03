@@ -1,9 +1,12 @@
 #pragma warning disable NUnit2021
+using System;
+using System.Linq;
 using Godot;
-using Localproto.addons.marchingTriangles.tiling;
+using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MathNet.Spatial.Euclidean;
+using NUnit.Framework;
 
-namespace Localproto.UnitTests;
+namespace UnitTests;
 
 public class SquareTilingTests
 {

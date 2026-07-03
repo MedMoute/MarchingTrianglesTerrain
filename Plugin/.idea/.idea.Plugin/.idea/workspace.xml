@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="974caa69-956e-44cb-a696-fbdb07e7ddbe" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/../.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../.idea/.idea.MarchingTrianglesTerrain/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../.idea/.idea.MarchingTrianglesTerrain/.idea/encodings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../.idea/.idea.MarchingTrianglesTerrain/.idea/indexLayout.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../.idea/encodings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/global.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../global.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/DeltaTilingTests.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/DeltaTilingTests.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/HexTileTests.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/HexTileTests.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/SquareTilingTests.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/SquareTilingTests.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/TestGrids.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/TestGrids.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/TestHexCells.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/TestHexCells.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/TestHexTerrainChunk.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/TestHexTerrainChunk.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/TestHexesFromDual.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/TestHexesFromDual.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/UnitTests.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/UnitTests.csproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/.msCoverageSourceRootsMapping_UnitTests" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/.msCoverageSourceRootsMapping_UnitTests" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/CoverletSourceRootsMapping_UnitTests" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/CoverletSourceRootsMapping_UnitTests" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Local proto.dll" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Local proto.pdb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Configuration.Abstractions.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Configuration.Abstractions.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Diagnostics.Abstractions.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Diagnostics.Abstractions.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.FileProviders.Abstractions.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.FileProviders.Abstractions.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Hosting.Abstractions.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Hosting.Abstractions.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Logging.Abstractions.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Logging.Abstractions.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Options.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Options.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Primitives.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.Extensions.Primitives.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.TestPlatform.CoreUtilities.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.TestPlatform.CoreUtilities.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.TestPlatform.PlatformAbstractions.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.TestPlatform.PlatformAbstractions.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.VisualStudio.TestPlatform.ObjectModel.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/Microsoft.VisualStudio.TestPlatform.ObjectModel.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/NUnit3.TestAdapter.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/NUnit3.TestAdapter.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/NUnit3.TestAdapter.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/NUnit3.TestAdapter.pdb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/System.Diagnostics.DiagnosticSource.dll" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/UnitTests.deps.json" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/UnitTests.deps.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/UnitTests.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/UnitTests.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/UnitTests.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/UnitTests.pdb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/cs/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/cs/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/cs/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/cs/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/de/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/de/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/de/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/de/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/es/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/es/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/es/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/es/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/fr/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/fr/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/fr/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/fr/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/it/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/it/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/it/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/it/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ja/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ja/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ja/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ja/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ko/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ko/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ko/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ko/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/nunit.engine.api.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/nunit.engine.api.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/nunit.engine.core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/nunit.engine.core.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/nunit.engine.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/nunit.engine.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/pl/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/pl/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/pl/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/pl/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/pt-BR/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/pt-BR/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/pt-BR/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/pt-BR/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ru/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ru/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ru/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/ru/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/tr/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/tr/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/tr/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/tr/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/zh-Hans/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/zh-Hans/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/zh-Hans/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/zh-Hans/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/zh-Hant/Microsoft.TestPlatform.CoreUtilities.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/zh-Hant/Microsoft.TestPlatform.CoreUtilities.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/zh-Hant/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/bin/Debug/net9.0/zh-Hant/Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.AssemblyInfo.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.AssemblyInfo.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.AssemblyInfo.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.AssemblyInfoInputs.cache" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.AssemblyInfoInputs.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.GeneratedMSBuildEditorConfig.editorconfig" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.GeneratedMSBuildEditorConfig.editorconfig" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.GlobalUsings.g.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.assets.cache" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.assets.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.csproj.AssemblyReference.cache" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.csproj.AssemblyReference.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.csproj.CoreCompileInputs.cache" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.csproj.CoreCompileInputs.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.csproj.FileListAbsolute.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.csproj.FileListAbsolute.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.genruntimeconfig.cache" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.genruntimeconfig.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.pdb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.sourcelink.json" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/UnitTests.sourcelink.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/ref/UnitTests.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/ref/UnitTests.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/refint/UnitTests.dll" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/Debug/net9.0/refint/UnitTests.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/UnitTests.csproj.nuget.dgspec.json" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/UnitTests.csproj.nuget.dgspec.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/UnitTests.csproj.nuget.g.props" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/UnitTests.csproj.nuget.g.props" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/UnitTests.csproj.nuget.g.targets" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/UnitTests.csproj.nuget.g.targets" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/project.assets.json" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/project.assets.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/project.nuget.cache" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/project.nuget.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/project.packagespec.json" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/project.packagespec.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/rider.project.model.nuget.info" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/rider.project.model.nuget.info" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../UnitTests/obj/rider.project.restore.info" beforeDir="false" afterPath="$PROJECT_DIR$/../UnitTests/obj/rider.project.restore.info" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/TestScene.tscn" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/GdPluginHexTerrainChunk.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/GdPluginHexTerrainChunk.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/HexTerrainCell.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/HexTerrainCell.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/HexagonGrid.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/HexagonGrid.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/HexagonalTerrainChunk.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/HexagonalTerrainChunk.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/MarchingTrianglesTerrain.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/MarchingTrianglesTerrain.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/MarchingTrianglesTerrainPlugin.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/MarchingTrianglesTerrainPlugin.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/TerrainColorMaps.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/TerrainColorMaps.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/TerrainToolAttributes.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/TerrainToolAttributes.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/TerrainToolPluginHelper.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/TerrainToolPluginHelper.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/TriangleGrid.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/TriangleGrid.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/gizmo/MarchingTriangleTerrainChunkGizmo.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/gizmo/MarchingTriangleTerrainChunkGizmo.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/gizmo/MarchingTrianglesGizmoPlugin.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/gizmo/MarchingTrianglesGizmoPlugin.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/gizmo/MarchingTrianglesTerrainGizmo.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/gizmo/MarchingTrianglesTerrainGizmo.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Chunk_Icon.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Chunk_Icon.svg.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Icon.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Icon.svg.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/bridge_tool.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/bridge_tool.svg.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/brush_tool.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/brush_tool.svg.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/chunk_manager_tool.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/chunk_manager_tool.svg.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/grass_mask_tool.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/grass_mask_tool.svg.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/level_tool.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/level_tool.svg.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/smooth_tool.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/smooth_tool.svg.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/terrain_settings_tool.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/terrain_settings_tool.png.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/toolicon.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/toolicon.svg.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/vertex_paint_tool.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/icons/vertex_paint_tool.svg.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/brush_visual.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/curve_falloff.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/grass_leaf_sprite.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/grass_leaf_sprite.png.import" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/grass_terrain_noise.res" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/mst_grass_mesh.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/mst_terrain_baked.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/mst_terrain_shader.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/rl_noise_texture.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/round_brush_radius_material.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/round_brush_radius_visual.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/square_brush_radius_material.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/square_brush_radius_visual.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/terrain_hmap_noise.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/transparent.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/void_texture.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/wall_noise_texture.res" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/plugin_materials/wind_noise_texture.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/quick_paints/example_snow_paint.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/quick_paints/global/example_global_full_void.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/quick_paints/global/example_global_no_grass_paint.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/mst_grass.gdshader" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/mst_grass.gdshader.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/mst_terrain.gdshader" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/mst_terrain.gdshader.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/mst_terrain.gdshaderinc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/mst_terrain.gdshaderinc.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/mst_terrain_bake.gdshader" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/mst_terrain_bake.gdshader.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/mst_terrain_baked.gdshader" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/mst_terrain_baked.gdshader.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/round_brush_radius_visual.gdshader" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/round_brush_radius_visual.gdshader.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/square_brush_radius_visual.gdshader" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/shaders/square_brush_radius_visual.gdshader.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/texture_presets/example_biomes_icey.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/resources/texture_presets/example_flat_toon.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/tools/bridge_tool.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/tools/brush_tool.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/tools/chunk_manager_tool.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/tools/debug_brush_tool.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/tools/level_tool.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/tools/smooth_tool.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/tools/terrain_settings_tool.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/editor/tools/vertex_paint_tool.tres" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/plugin.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/tiling/DoubleDeltaTileOrientationSystem.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/tiling/DoubleDeltaTileOrientationSystem.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/tiling/HexTileOrientationSystem.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/tiling/HexTileOrientationSystem.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/tiling/RegularUniformFrame.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/tiling/RegularUniformFrame.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/tiling/RegularUniformTiling.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/tiling/RegularUniformTiling.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/tiling/SquareTileFrame.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/tiling/SquareTileFrame.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/ui/MarchingTriangleTerrainToolAttributesList.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/ui/MarchingTriangleTerrainToolAttributesList.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/ui/MarchingTrianglesTerrainUI.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/ui/MarchingTrianglesTerrainUI.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/ui/MarchingTrianglesTool.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/ui/MarchingTrianglesTool.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/ui/MarchingTrianglesToolUiAttributes.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/ui/MarchingTrianglesToolUiAttributes.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/ui/MarchingTrianglesToolbar.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/ui/MarchingTrianglesToolbar.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/utils/BrushPatternCalculator.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/utils/BrushPatternCalculator.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/utils/EngineUtils.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/utils/EngineUtils.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/utils/MttDataHandler.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/utils/MttDataHandler.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/utils/TerrainSettings.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/utils/TerrainSettings.cs.uid" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/utils/VertexColorHelper.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../addons/marchingTriangles/utils/VertexColorHelper.cs.uid" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3Fzco2mvAKexpE3vXdqL5C7V8Lx" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "cidr.known.project.marker": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "master",
+    "settings.editor.selected.configurable": "SolutionBuilderGeneralOptionsPage",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager" selected=".NET Executable.Player">
+    <configuration name="Debug GDScript (Running session)" type="GDSCRIPT_DEBUG_RUN_CONFIGURATION" factoryName="GdScriptRunFactory">
+      <option name="json" value="{&#10;  // Launch: &quot;Launch a new instance of the game&quot;,&#10;  // Attach: &quot;Attach to an already running game, which was started from the Godot Editor&quot;&#10;  &quot;request&quot; : &quot;Attach&quot;,&#10;  &quot;debugServer&quot; : 6006, // port should match the Debug Adapter port in the Godot Editor project settings.&#10;  &quot;scene&quot; : &quot;main&quot;, // main, current, res://path/to/file.tscn&#10;  &#10;  // &quot;playArgs&quot; : [ &quot;--editor&quot; ], // debugging a tool script&#10;  // &quot;playArgs&quot;: [&quot;--debug-collisions&quot;,&quot;--debug-navigation&quot;], // different options&#10;  &#10;  // one click deploy and debug via Godot Editor:&#10;  // &quot;platform&quot;: &quot;Android&quot;, // including Android, iOS, Web and W4 consoles&#10;  // &quot;device&quot;: &quot;0&quot;, // index of the device of a &quot;platform&quot; type&#10;}" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Player GDScript" type="GDSCRIPT_DEBUG_RUN_CONFIGURATION" factoryName="GdScriptRunFactory">
+      <option name="json" value="{&#10;  // Launch: &quot;Launch a new instance of the game&quot;,&#10;  // Attach: &quot;Attach to an already running game, which was started from the Godot Editor&quot;&#10;  &quot;request&quot; : &quot;Launch&quot;,&#10;  &quot;debugServer&quot; : 6006, // port should match the Debug Adapter port in the Godot Editor project settings.&#10;  &quot;scene&quot; : &quot;main&quot;, // main, current, res://path/to/file.tscn&#10;  &#10;  // &quot;playArgs&quot; : [ &quot;--editor&quot; ], // debugging a tool script&#10;  // &quot;playArgs&quot;: [&quot;--debug-collisions&quot;,&quot;--debug-navigation&quot;], // different options&#10;  &#10;  // one click deploy and debug via Godot Editor:&#10;  // &quot;platform&quot;: &quot;Android&quot;, // including Android, iOS, Web and W4 consoles&#10;  // &quot;device&quot;: &quot;0&quot;, // index of the device of a &quot;platform&quot; type&#10;}" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Editor" type="RunExe" factoryName=".NET Executable">
+      <option name="EXE_PATH" value="$USER_HOME$/Godot/Godot_v4.6.2-stable_mono_linux_x86_64/Godot_v4.6.2-stable_mono_linux.x86_64" />
+      <option name="PROGRAM_PARAMETERS" value="--path &quot;./&quot; --editor" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="PASS_PARENT_ENVS" value="1" />
+      <option name="ENV_FILE_PATHS" value="" />
+      <option name="REDIRECT_INPUT_PATH" value="" />
+      <option name="MIXED_MODE_DEBUG" value="0" />
+      <option name="USE_MONO" value="0" />
+      <option name="RUNTIME_ARGUMENTS" value="" />
+      <option name="AUTO_ATTACH_CHILDREN" value="0" />
+      <option name="RUNTIME_TYPE" value="coreclr" />
+      <method v="2">
+        <option name="Build Solution" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Player" type="RunExe" factoryName=".NET Executable">
+      <option name="EXE_PATH" value="$USER_HOME$/Godot/Godot_v4.6.2-stable_mono_linux_x86_64/Godot_v4.6.2-stable_mono_linux.x86_64" />
+      <option name="PROGRAM_PARAMETERS" value="--path &quot;./&quot;" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="PASS_PARENT_ENVS" value="1" />
+      <option name="ENV_FILE_PATHS" value="" />
+      <option name="REDIRECT_INPUT_PATH" value="" />
+      <option name="MIXED_MODE_DEBUG" value="0" />
+      <option name="USE_MONO" value="0" />
+      <option name="RUNTIME_ARGUMENTS" value="" />
+      <option name="AUTO_ATTACH_CHILDREN" value="0" />
+      <option name="RUNTIME_TYPE" value="coreclr" />
+      <method v="2">
+        <option name="Build Solution" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="974caa69-956e-44cb-a696-fbdb07e7ddbe" name="Changes" comment="" />
+      <created>1783081510866</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1783081510866</updated>
+      <workItem from="1783081517675" duration="41000" />
+      <workItem from="1783086096168" duration="967000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
+  <component name="VcsManagerConfiguration">
+    <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.OperationCanceledException" breakIfHandledByOtherCode="false" displayValue="System.OperationCanceledException" />
+          <option name="timeStamp" value="1" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.Tasks.TaskCanceledException" breakIfHandledByOtherCode="false" displayValue="System.Threading.Tasks.TaskCanceledException" />
+          <option name="timeStamp" value="2" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.ThreadAbortException" breakIfHandledByOtherCode="false" displayValue="System.Threading.ThreadAbortException" />
+          <option name="timeStamp" value="3" />
+        </breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

@@ -1,10 +1,12 @@
 #pragma warning disable NUnit2021
 
+using System.Linq;
 using Godot;
-using Localproto.addons.marchingTriangles;
-using Localproto.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles;
+using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using NUnit.Framework;
 
-namespace Localproto.UnitTests;
+namespace UnitTests;
 
 public class TestGrids
 {

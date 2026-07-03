@@ -1,0 +1,11 @@
+{
+  "sdk": {
+    "version": "9.0.0",
+    "rollForward": "latestMajor",
+    "allowPrerelease": true
+  },
+    "dependencies": {
+    "MathNet.Numerics": "6.0.0-beta2",
+    "MathNet.Spatial": "0.6.0"
+  }
+}

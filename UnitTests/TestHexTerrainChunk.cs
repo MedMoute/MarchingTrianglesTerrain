@@ -1,7 +1,10 @@
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
-using Localproto.addons.marchingTriangles;
+using MarchingTrianglesTerrain.addons.marchingTriangles;
+using NUnit.Framework;
 
-namespace Localproto.UnitTests;
+namespace UnitTests;
 
 public class TestHexTerrainChunk
 {
@@ -30,7 +33,7 @@ public class TestHexTerrainChunk
                 var dims = new Vector2I(6, 6);
                 var dico = new Dictionary<Vector2I, HexagonalTerrainChunk>();
                 
-                var neighborChunkProvider = MarchingTrianglesTerrain.BuildNeighborChunkProvider(dico.GetValueOrDefault);
+                var neighborChunkProvider = MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain.BuildNeighborChunkProvider(dico.GetValueOrDefault);
 
                 foreach (var i in itemOrder)
                 {
