@@ -76,7 +76,7 @@ public class HexagonGrid
             if (!PendingCells.ContainsKey(cellCoords))
             {
                 cell = new HexTerrainCell(cellCoords, Frame, _dualFrame);
-                cell.SetDataFetchingFunction(dimensions2D, neighborDataGridProvider, chunkTester);
+                cell.SetDataAccessors(dimensions2D, neighborDataGridProvider, chunkTester);
                 PendingCells.Add(cellCoords, cell);
             }
             else
@@ -90,7 +90,7 @@ public class HexagonGrid
 
             cell.VisitedBy(trianglesTile,dimensions2D);
 
-            if (cell.IsReady())
+            if (cell.IsReady)
             {
                 CompleteCells.Add(cell);
                 PendingCells[cellCoords] = null;

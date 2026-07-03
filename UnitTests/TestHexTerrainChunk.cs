@@ -61,7 +61,7 @@ public class TestHexTerrainChunk
                 }
 
                 Assert.That(() => centerHexCell.Count, Is.EqualTo(4));
-                var readyCells = centerHexCell.Where(cell => cell.IsReady()).ToList();
+                var readyCells = centerHexCell.Where(cell => cell.IsReady).ToList();
                 Assert.That(() => readyCells.Count, Is.EqualTo(1));
             }
         }

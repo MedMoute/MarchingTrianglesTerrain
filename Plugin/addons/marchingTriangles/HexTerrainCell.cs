@@ -8,6 +8,13 @@ using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
+/// <summary>
+/// A hex terrain cell represents a specific hexagon in a hexagonal tiling frame.
+/// </summary>
+/// This type of object is used when generating a 3D Geometry based of a scalar field in the 2D Euclidean plane where
+/// the vertices of the scalar field are defined by coordinates in a dual Double-Triangular frame.
+/// The values of the said field will be used to create ledges/ridges in the generated terrain when running
+/// the marching triangles algorithm. 
 public class HexTerrainCell
 {
     /// <summary>
@@ -69,6 +76,7 @@ public class HexTerrainCell
     /// hex cell has a corresponding dual coordinate.
     /// When a cell is visited by a chunk, we register the offset of the chunk that actually holds the data of the cell
     /// </p>
+    /// Implicitly, a cell will be able to be processed by the Marching Terrain Algorithm if there are 6 entries in this dictionary
     /// </summary>
     public Dictionary<Vector3I, Vector2I> Visits => _visits;
 
@@ -82,11 +90,19 @@ public class HexTerrainCell
 
     internal CellDataArrays TempDataArrays { get; }
 
-    // TODO support object[]
+    /// Accessor function to the scalar field data 
     public Func<int, float> GetVertexData;
 
     public bool FloorMode { get; private set; }
 
+    /// <summary>
+    /// Property flagging whether the cell can be used for terrain generation on not
+    /// </summary>
+    public bool IsReady => _visits.Count == VertexCount;
+
+    /// <summary>
+    /// Property providing the average value of the data field on the cell (the considered data points are the vertices)
+    /// </summary>
     public float AverageHeight
     {
         //TODO save value in cache
@@ -103,14 +119,20 @@ public class HexTerrainCell
     }
 
 
+    /// <summary>
+    /// Public constructor
+    /// </summary>
+    /// <param name="cellCoords">the coordinates of the cell in its parent frame</param>
+    /// <param name="orientationSystem">the cell's parent (hexagonal) frame</param>
+    /// <param name="dualFrame">the dual frame</param>
     public HexTerrainCell(
-        Vector2I cellCoordsImpl,
+        Vector2I cellCoords,
         RegularUniformFrame orientationSystem,
         RegularUniformFrame dualFrame)
     {
-        CellCoordsImplicit = cellCoordsImpl;
+        CellCoordsImplicit = cellCoords;
         _orientationSystem = orientationSystem;
-        TempDataArrays = new CellDataArrays(cellCoordsImpl);
+        TempDataArrays = new CellDataArrays(cellCoords);
         DualCellsMapping = new();
         VertexPositionsInPlane = new();
         CenterPosition = _orientationSystem.GetCellCentroid(CellCoords);
@@ -139,7 +161,10 @@ public class HexTerrainCell
     }
 
 
-    public void SetDataFetchingFunction(
+    /// <summary>
+    /// Sets the data accessor functions.
+    /// </summary>
+    public void SetDataAccessors(
         Vector2I dimensions2D,
         Func<Vector2I, TriangleGrid> dataProviderProvider,
         Func<Vector2I, bool> doesNeighboringChunkExist)
@@ -170,17 +195,6 @@ public class HexTerrainCell
             Mathf.FloorToInt(dualIndex.X / (float)chunkDimension.X),
             Mathf.FloorToInt(dualIndex.Y / (float)chunkDimension.Y));
         return offset;
-    }
-
-    //TODO : use flag ?
-    public bool IsReady()
-    {
-        if (_visits.Count != VertexCount)
-        {
-            return false;
-        }
-
-        return true;
     }
 
 
@@ -227,7 +241,7 @@ public class HexTerrainCell
     {
         var center = CenterPosition;
         var posB = VertexPositionsInPlane[i];
-        int index = (i + 1) % 6;
+        var index = (i + 1) % 6;
         var posC = VertexPositionsInPlane[index];
 
         var A = new Vector3((float)center.X, AverageHeight, (float)center.Y);
@@ -236,12 +250,12 @@ public class HexTerrainCell
 
         Vector3[] tri = [A, B, C];
 
-        int Mask = (Math.Abs(A.Y - C.Y) > chunk.Underlying.MergeThreshold ? 1 : 0) * 4 +
+        var mask = (Math.Abs(A.Y - C.Y) > chunk.Underlying.MergeThreshold ? 1 : 0) * 4 +
                    (Math.Abs(B.Y - C.Y) > chunk.Underlying.MergeThreshold ? 1 : 0) * 2 +
                    (Math.Abs(A.Y - B.Y) > chunk.Underlying.MergeThreshold ? 1 : 0) * 1;
 
-        List<Vector3[]> newTriangles = SplitTriangle(tri);
-        List<Tuple<Vector3[], bool>> trianglesWithWallEdges = ProcessWallEdges(newTriangles, Mask, chunk);
+        var newTriangles = SplitTriangle(tri);
+        List<Tuple<Vector3[], bool>> trianglesWithWallEdges = ProcessEdges(newTriangles, mask);
         ProcessTrianglesIntoPoints(trianglesWithWallEdges, chunk);
         chunk.ProcessPointsIntoMeshTriangles(trianglesWithWallEdges, this);
         TempDataArrays.Clear();
@@ -268,10 +282,9 @@ public class HexTerrainCell
         }
     }
 
-    private List<Tuple<Vector3[], bool>> ProcessWallEdges(
+    private List<Tuple<Vector3[], bool>> ProcessEdges(
         List<Vector3[]> newTriangles,
-        int mask,
-        GdPluginHexTerrainChunk chunk)
+        int mask)
     {
         if (newTriangles.Count != 4 || newTriangles.Any(triData => triData.Length != 3))
         {
@@ -279,7 +292,7 @@ public class HexTerrainCell
         }
 
         var result = new List<Tuple<Vector3[], bool>>();
-
+        
         switch (mask)
         {
             case 0:
