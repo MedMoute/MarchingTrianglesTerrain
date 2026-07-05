@@ -334,6 +334,10 @@ public partial class MarchingTrianglesTerrain : Node3D
         {
             _plugin.PluginHelper.CurrentSelectedChunk = _chunks.First().Value;
         }
+
+        existingChunk.SkipSaveOnExit = true;  // Prevent mesh save during undo/redo
+        RemoveChild(existingChunk);
+        existingChunk.Owner = null;
     }
 
     /// <summary>

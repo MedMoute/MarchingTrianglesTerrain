@@ -21,6 +21,8 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
     private SurfaceTool _st = new();
 
+    public bool SkipSaveOnExit { get; set; } = false; // Set to true when chunk is removed temporarily (undo/redo)
+
     public enum Mode
     {
         MODE_1 = 1,
