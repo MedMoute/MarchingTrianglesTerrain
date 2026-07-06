@@ -16,11 +16,9 @@ public partial class MarchingTrianglesGizmoPlugin : EditorNode3DGizmoPlugin
     public MarchingTrianglesGizmoPlugin()
     {
         CreateMaterial(nameof(BrushMesh), Colors.White, false, true);
-        //CreateMaterial("BrushPattern", new Color(0.7f, 0.7f, 0.7f), false, true);
         CreateMaterial(nameof(MarchingTrianglesTerrain.RemoveChunk), Colors.Red, false, true);
         CreateMaterial(nameof(MarchingTrianglesTerrain.AddChunk), Colors.Green, false, true);
         CreateMaterial(nameof(HighlightColor), HighlightColor, false, true);
-        CreateHandleMaterial("Handles");
     }
 
     public override EditorNode3DGizmo _CreateGizmo(Node3D node3D)
