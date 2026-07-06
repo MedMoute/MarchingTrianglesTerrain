@@ -17,17 +17,36 @@ public class BrushPatternCalculator
     /// <returns></returns>
     public static BrushBounds CalculateBounds(Vector3 position, float brushDiameter, MarchingTrianglesTerrain terrain)
     {
-        float minZPosition = position.Z - brushDiameter / 2;
-        float maxZPosition = position.Z + brushDiameter / 2;
+        // The angle maximizing the rhombus' cell X coordinates is -Pi/6 (and 5*Pi/6 for minimizing)
+        float minZPosition = position.Z + Mathf.Sin(5 * Mathf.Pi / 6) * (brushDiameter / 2);
+        float maxZPosition = position.Z + Mathf.Sin(-Mathf.Pi / 6) * (brushDiameter / 2);
 
-        float minXPosition = position.X - brushDiameter / 2;
-        float maxXPosition = position.X + brushDiameter / 2;
-        // We compute the global cell indexes 
-        Vector2I cellIdxAtMinPosition = TerrainSettings.OrientationSystem.GetCell(
-            new Vector2D(minXPosition, minZPosition));
+        float minXPosition = position.X + Mathf.Cos(5 * Mathf.Pi / 6) * (brushDiameter / 2);
+        float maxXPosition = position.X + Mathf.Cos(-Mathf.Pi / 6) * (brushDiameter / 2);
+        
+        // We compute the global cell indexes that minimize/maximize the Rhombus's X coordinate
+        int minXPositionCellValue = TerrainSettings.OrientationSystem.GetCell(
+            new Vector2D(minXPosition, minZPosition)).X;
 
-        Vector2I cellIdxAtMaxPosition = TerrainSettings.OrientationSystem.GetCell(
-            new Vector2D(maxXPosition, maxZPosition));
+        int maxXPositionCellValue = TerrainSettings.OrientationSystem.GetCell(
+            new Vector2D(maxXPosition, maxZPosition)).X;
+        
+        // The angle maximizing the rhombus' cell Z coordinates is Pi/2, the X position is irrelevant
+        minZPosition = position.Z -  brushDiameter / 2;
+        maxZPosition = position.Z +  brushDiameter / 2;
+
+        minXPosition = 0;
+        maxXPosition = 0;
+        
+        // We compute the global cell indexes that minimize/maximize the Rhombus's Y coordinate
+        int minZPositionCellValue = TerrainSettings.OrientationSystem.GetCell(
+            new Vector2D(minXPosition, minZPosition)).Y;
+
+        int maxZPositionCellValue = TerrainSettings.OrientationSystem.GetCell(
+            new Vector2D(maxXPosition, maxZPosition)).Y;
+
+        var cellIdxAtMinPosition = new Vector2I(minXPositionCellValue, minZPositionCellValue);
+        var cellIdxAtMaxPosition = new Vector2I(maxXPositionCellValue, maxZPositionCellValue);
 
 
         int minXChunkIdx = Mathf.FloorToInt((float)cellIdxAtMinPosition.X / terrain.TerrainSettings.ChunkDimensions.X);
@@ -56,9 +75,9 @@ public class BrushPatternCalculator
         switch (brushIndex)
         {
             case 0: //Round brush
-                return brushSize*brushSize;
+                return brushSize/2 * brushSize/2;
             case 1: //Square Brush
-                return 2*brushSize*brushSize;
+                return 2 * brushSize/2 * brushSize/2;
             default:
                 throw new NotImplementedException("Brush Index Not supported");
         }
@@ -72,11 +91,11 @@ public class BrushPatternCalculator
         var xMin = chunkCoords.X == brushBounds.ChunkAABB.Item1.X ? brushBounds.CellAABB.Item1.X : 0;
         var xMax = chunkCoords.X == brushBounds.ChunkAABB.Item2.X
             ? brushBounds.CellAABB.Item2.X
-            : terrain.TerrainSettings.ChunkDimensions.X-1;
+            : terrain.TerrainSettings.ChunkDimensions.X - 1;
         var zMin = chunkCoords.Y == brushBounds.ChunkAABB.Item1.Y ? brushBounds.CellAABB.Item1.Y : 0;
         var zMax = chunkCoords.Y == brushBounds.ChunkAABB.Item2.Y
             ? brushBounds.CellAABB.Item2.Y
-            : terrain.TerrainSettings.ChunkDimensions.Y-1;
+            : terrain.TerrainSettings.ChunkDimensions.Y - 1;
         return new Tuple<Vector2I, Vector2I>(new Vector2I(xMin, zMin), new Vector2I(xMax, zMax));
     }
 
@@ -85,12 +104,12 @@ public class BrushPatternCalculator
         Vector2 brushPos,
         double brushSize,
         int brushIndex,
-        float maxDistance,
+        float maxSqDistance,
         bool useFalloff,
         Curve falloffCurve)
     {
         var distanceSquared = brushPos.DistanceSquaredTo(worldPosition);
-        if (distanceSquared > maxDistance)
+        if (distanceSquared > maxSqDistance)
         {
             return -1; // Outside of brush effect
         }
@@ -104,7 +123,7 @@ public class BrushPatternCalculator
         switch (brushIndex)
         {
             case 0: //Round
-                var d = (maxDistance - distanceSquared) / maxDistance;
+                var d = (maxSqDistance - distanceSquared) / maxSqDistance;
                 t = Mathf.Clamp(d, 0.0f, 1.0f);
                 break;
             case 1: //Square brush

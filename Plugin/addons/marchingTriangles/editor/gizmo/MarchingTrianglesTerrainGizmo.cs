@@ -19,7 +19,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
 
     private Material BrushMaterial => GetPlugin().GetMaterial(nameof(MarchingTrianglesGizmoPlugin.BrushMesh));
 
-    private System.Collections.Generic.Dictionary<StringName, Material> _chunkActionMaterials = new();
+    private Dictionary<StringName, Material> _chunkActionMaterials = new();
 
     private readonly MarchingTrianglesTerrainPlugin _terrainPlugin = MarchingTrianglesTerrainPlugin.Instance;
 
@@ -35,23 +35,23 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             return false;
         }
 
-        _chunkActionMaterials = new()
+        _chunkActionMaterials = new Dictionary<StringName, Material>
         {
             {
                 nameof(MarchingTrianglesTerrain.RemoveChunk),
-                GetPlugin().GetMaterial(nameof(MarchingTrianglesTerrain.RemoveChunk))
+                GetPlugin().GetMaterial(nameof(MarchingTrianglesTerrain.RemoveChunk), this)
             },
             {
                 nameof(MarchingTrianglesTerrain.AddChunk),
-                GetPlugin().GetMaterial(nameof(MarchingTrianglesTerrain.AddChunk))
+                GetPlugin().GetMaterial(nameof(MarchingTrianglesTerrain.AddChunk), this)
             },
             {
                 nameof(MarchingTrianglesGizmoPlugin.BrushMesh),
-                GetPlugin().GetMaterial(nameof(MarchingTrianglesGizmoPlugin.BrushMesh))
+                GetPlugin().GetMaterial(nameof(MarchingTrianglesGizmoPlugin.BrushMesh), this)
             },
             {
                 nameof(MarchingTrianglesGizmoPlugin.HighlightColor),
-                GetPlugin().GetMaterial(nameof(MarchingTrianglesGizmoPlugin.HighlightColor))
+                GetPlugin().GetMaterial(nameof(MarchingTrianglesGizmoPlugin.HighlightColor), this)
             }
         };
         return _chunkActionMaterials.Count != 0;
@@ -86,74 +86,17 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         Clear();
         var sb = new StringBuilder();
         sb.Append("[Gizmo Redraw Debug]");
-        Material addChunkMat = FetchMaterial(nameof(MarchingTrianglesTerrain.AddChunk));
-        Material removeChunkMat = FetchMaterial(nameof(MarchingTrianglesTerrain.RemoveChunk));
-        Material highlightChunkMat = FetchMaterial(nameof(MarchingTrianglesGizmoPlugin.HighlightColor));
 
-        MarchingTrianglesTerrain terrain = _terrainPlugin.CurTerrainNode;
+        var terrain = _terrainPlugin.CurTerrainNode;
 
-        if (terrain == null ||
-            EditorInterface.Singleton.GetSelection().GetSelectedNodes().Count != 1 ||
-            EditorInterface.Singleton.GetSelection().GetSelectedNodes()[0] != terrain)
+        if (_terrainPlugin.SelectedMode == TerrainToolMode.ChunkManagement)
         {
-            // DEBUG Statement
-            //TODO
-            GD.PushError(
-                "Either no terrain to draw on OR more than one selected node OR selected node not being the terrain. Aborting the gizmo draw.");
-            return;
+            ProcessGizmoChunkLines(sb, terrain);
         }
 
-        // Draw the selected chunk's boundaries as Gizmo lines
-        if (_terrainPlugin.SelectedMode == TerrainToolMode.ChunkManagement &&
-            _terrainPlugin.PluginHelper.CurrentSelectedChunk != null)
-        {
-            var pluginSelectedChunkCoords = _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.Coordinates;
-            var selectedChunkFoundByName =
-                _terrainPlugin.CurTerrainNode.FindChild("Chunk " + pluginSelectedChunkCoords);
-            if (selectedChunkFoundByName != null &&
-                selectedChunkFoundByName == _terrainPlugin.PluginHelper.CurrentSelectedChunk)
-            {
-                AddChunkLines(terrain, pluginSelectedChunkCoords, highlightChunkMat);
-            }
-            else
-            {
-                _lines.Clear();
-            }
-        }
+        var pos = ProcessBrushAndPattern(terrain, sb);
 
-        // Draw the hovered chunk's boundaries as Gizmo lines
-        if (terrain.Chunks.Count == 0)
-        {
-            if (_verbose) sb.Append("- Hover active ? " + _terrainPlugin.PluginHelper.ChunkPlaneHovered);
-            if (_verbose && _terrainPlugin.PluginHelper.ChunkPlaneHovered)
-                sb.Append("- Hovered Chunk #" + _terrainPlugin.PluginHelper.CurrentHoveredChunk);
-
-            if (_terrainPlugin.PluginHelper.ChunkPlaneHovered)
-            {
-                AddChunkLines(terrain, _terrainPlugin.PluginHelper.CurrentHoveredChunk, addChunkMat);
-            }
-        }
-        else
-        {
-            foreach (var hexTerrainChunk in terrain.Chunks.Keys)
-            {
-                var success = ProcessNeighborChunksForGizmoLines(hexTerrainChunk);
-                if (!success)
-                {
-                    // DEBUG Statement
-                    GD.PushError("Failed to process the neighbor chunks of the hovered chunk." +
-                                 " Aborting the gizmo redraw.");
-                    return;
-                }
-            }
-        }
-
-        var pos = ProcessBrushAndPattern(
-            terrain,
-            sb);
-
-
-        //The size of the mesh brush is adjusted dynamically :
+        //The size of the brush cell mesh    is adjusted dynamically before drawing :
         MarchingTrianglesGizmoPlugin.BrushMesh.Size =
             Vector2.One * _terrainPlugin.CurTerrainNode.TerrainSettings.CellScale / 2;
 
@@ -163,22 +106,107 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         }
 
         var patternDrawCalls = DrawPattern(terrain);
+        // Debug statements
         if (_verbose)
         {
-            if (patternDrawCalls.Sum(d => d.Value) > 0)
+            AddDebugStatementAboutDrawnPattern(patternDrawCalls, sb);
+            GD.Print(sb.ToString());
+        }
+
+    }
+
+    private static void AddDebugStatementAboutDrawnPattern(Dictionary<Vector2I, int> patternDrawCalls, StringBuilder sb)
+    {
+        if (patternDrawCalls.Sum(d => d.Value) > 0)
+        {
+            sb.Append(" | Pattern drawn over ")
+                .Append(patternDrawCalls.Count)
+                .Append(" chunks | Drawn ")
+                .Append(patternDrawCalls.Sum(d => d.Value)).Append(" cells for the pattern");
+        }
+        else
+        {
+            sb.Append(" | Drawn Empty pattern ");
+        }
+    }
+
+    /// <summary>
+    /// Method responsible for drawing the Gizmo lines representing the chunks 
+    /// </summary>
+    /// <param name="sb">debug string</param>
+    /// <param name="terrain">the terrain edited via the gizmo</param>
+    private void ProcessGizmoChunkLines(StringBuilder sb, MarchingTrianglesTerrain terrain)
+    {
+        Material addChunkMat = FetchMaterial(nameof(MarchingTrianglesTerrain.AddChunk));
+        Material removeChunkMat = FetchMaterial(nameof(MarchingTrianglesTerrain.RemoveChunk));
+        Material highlightChunkMat = FetchMaterial(nameof(MarchingTrianglesGizmoPlugin.HighlightColor));
+
+
+        if (terrain == null ||
+            EditorInterface.Singleton.GetSelection().GetSelectedNodes().Count != 1 ||
+            EditorInterface.Singleton.GetSelection().GetSelectedNodes()[0] != terrain)
+        {
+            // DEBUG Statement
+            //TODO
+            GD.PushError(
+                "Either no terrain to draw on OR more than one selected node OR selected node not being the terrain. Aborting the gizmo draw.");
+        }
+
+        // Draw the selected chunk's boundaries as Gizmo lines
+        if (_terrainPlugin.PluginHelper.CurrentSelectedChunk != null)
+        {
+            var pluginSelectedChunkCoords = _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.Coordinates;
+            var selectedChunkFoundByName =
+                _terrainPlugin.CurTerrainNode.FindChild("Chunk " + pluginSelectedChunkCoords);
+            if (selectedChunkFoundByName != null &&
+                selectedChunkFoundByName == _terrainPlugin.PluginHelper.CurrentSelectedChunk)
             {
-                sb.Append(" | Pattern drawn over ")
-                    .Append(patternDrawCalls.Count)
-                    .Append(" chunks | Drawn ")
-                    .Append(patternDrawCalls.Sum(d => d.Value)).Append(" cells for the pattern");
-            }
-            else
-            {
-                sb.Append(" | Drawn Empty pattern ");
+                AddChunkLines(
+                    terrain,
+                    pluginSelectedChunkCoords,
+                    highlightChunkMat);
             }
         }
 
-        if (_verbose) GD.Print(sb.ToString());
+        // Draw the hovered chunk's boundaries as Gizmo lines when there is no other chunk
+        if (terrain.Chunks.Count == 0)
+        {
+            if (_verbose) sb.Append("- Hover active ? " + _terrainPlugin.PluginHelper.ChunkPlaneHovered);
+            if (_verbose && _terrainPlugin.PluginHelper.ChunkPlaneHovered)
+                sb.Append("- Hovered Chunk #" + _terrainPlugin.PluginHelper.CurrentHoveredChunk);
+
+            if (_terrainPlugin.PluginHelper.ChunkPlaneHovered)
+            {
+                AddChunkLines(
+                    terrain,
+                    _terrainPlugin.PluginHelper.CurrentHoveredChunk,
+                    addChunkMat);
+            }
+        }
+        else
+        {
+            // If the hovered chunk exist, we can delete it
+            if (_terrainPlugin.PluginHelper.ChunkPlaneHovered
+                && terrain.Chunks.ContainsKey(_terrainPlugin.PluginHelper.CurrentHoveredChunk))
+            {
+                AddChunkLines(
+                    _terrainPlugin.CurTerrainNode,
+                    _terrainPlugin.PluginHelper.CurrentHoveredChunk,
+                    removeChunkMat);
+            }
+            // Otherwise we process the neighbor coordinates of the hovered chunk, it there is a chunk, we can add it
+            else
+            {
+                var success = ProcessNeighborChunksForGizmoLines(_terrainPlugin.PluginHelper.CurrentHoveredChunk);
+                if (success)
+                {
+                    AddChunkLines(
+                        _terrainPlugin.CurTerrainNode,
+                        _terrainPlugin.PluginHelper.CurrentHoveredChunk,
+                        addChunkMat);
+                }
+            }
+        }
     }
 
     private Vector3 ProcessBrushAndPattern(MarchingTrianglesTerrain terrain, StringBuilder sb)
@@ -210,7 +238,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             cursorCellCoords.X = tmpCursorCellCoords.X;
             cursorCellCoords.Y = tmpCursorCellCoords.Y;
             cursorCellCoords.Z = polygonIdx;
-            
+
             //When dragging the height, if there is no pattern and alt not held, go to draw mode at the cursor position
             bool hasPattern = _terrainPlugin.PluginHelper.CurrentDrawPattern.Count > 0;
             if (!hasPattern && !Input.IsKeyPressed(Key.Alt))
@@ -278,6 +306,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                     {
                         break;
                     }
+
                     var sample = drawChunkData[cellsData.Key];
 
                     // if height dragging, also show a square at the height currently set (hence the + heighdiff)
@@ -286,7 +315,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                         yVal + heightDiff,
                         (float)cellTriPos.Y);
                     var drawTransform = new Transform3D(
-                        Vector3.Right * sample, 
+                        Vector3.Right * sample,
                         Vector3.Up * sample,
                         Vector3.Back * sample, drawPos1);
                     if (!isWallPainting)
@@ -311,7 +340,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
 
         Material brushMat = FetchMaterial(nameof(MarchingTrianglesGizmoPlugin.BrushMesh));
 
-        // Visu of brush radius
+        // Step 1 : Visualization of the brush radius
         var brushTransform = new Transform3D(
             Vector3.Right * (float)_terrainPlugin.ToolAttributes.BrushSize,
             Vector3.Up,
@@ -363,7 +392,9 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                  _terrainPlugin.SelectedMode != TerrainToolMode.DebugBrush)
         {
             sb.Append(" | Brush rad. drawn at: " + TerrainToolPluginHelper.FormatVector3(brushTransform.Origin));
-            sb.Append(" [G. tri Cell] : " + TerrainSettings.OrientationSystem.GetCell(new Vector2D(brushTransform.Origin.X,brushTransform.Origin.Z)));
+            sb.Append(" [G. tri Cell] : " +
+                      TerrainSettings.OrientationSystem.GetCell(new Vector2D(brushTransform.Origin.X,
+                          brushTransform.Origin.Z)));
 
             AddMesh(MarchingTrianglesGizmoPlugin.BrushRadiusVisual, null, brushTransform);
         }
@@ -383,7 +414,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                   + brushBounds.CellAABB.Item1 + " Max="
                   + brushBounds.CellAABB.Item2);
 
-        var maxDistance = BrushPatternCalculator.CalculateMaxSqDistance(
+        var maxSqDistance = BrushPatternCalculator.CalculateMaxSqDistance(
             (float)_terrainPlugin.ToolAttributes.BrushSize,
             _terrainPlugin.ToolAttributes.BrushIndex);
 
@@ -391,7 +422,9 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             terrain.TerrainSettings.ChunkDimensions.X,
             terrain.TerrainSettings.ChunkDimensions.Y,
             TerrainSettings.OrientationSystem.PolygonCount);
-        
+
+        // Step 2 : Visualization of the cells affected by the brush
+
         Vector2 brushPos = new Vector2(pos.X, pos.Z);
         int cellCount = 0;
         for (int chunkZ = brushBounds.ChunkAABB.Item1.Y; chunkZ <= brushBounds.ChunkAABB.Item2.Y; chunkZ++)
@@ -401,7 +434,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                 Vector2I chunkCoords = new Vector2I(chunkX, chunkZ);
                 if (!terrain.Chunks.TryGetValue(chunkCoords, out var chunk))
                 {
-                    break;
+                    continue;
                 }
 
                 Tuple<Vector2I, Vector2I> cellRange =
@@ -416,7 +449,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                         for (int i = 0; i < chunk.Underlying.DataGrid.OrientationSystem.PolygonCount; i++)
                         {
                             Vector3I fullCoords = new(x, z, i);
-                            TerrainColorMaps.EnsureRange(fullCoords,allowedDimensions);
+                            TerrainColorMaps.EnsureRange(fullCoords, allowedDimensions);
 
                             Vector2D cellPositionInWorld =
                                 chunk.Underlying.DataGrid.OrientationSystem.GetCellCentroid(cellCoords, i);
@@ -427,7 +460,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                                 brushPos,
                                 _terrainPlugin.ToolAttributes.BrushSize,
                                 _terrainPlugin.ToolAttributes.BrushIndex,
-                                maxDistance,
+                                maxSqDistance,
                                 _terrainPlugin.ToolAttributes.Falloff,
                                 _terrainPlugin.ToolAttributes.FalloffCurve);
 
@@ -492,7 +525,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         sb.Append(" | Brush mesh drawn  : " + cellCount + " Cells");
     }
 
-    private Basis _CreateBrushBasis(Vector3 normal, float brushSize)
+    private static Basis _CreateBrushBasis(Vector3 normal, float brushSize)
     {
         Vector3 n = normal.Normalized();
 
@@ -508,15 +541,14 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
 
     private bool ProcessNeighborChunksForGizmoLines(Vector2I hexTerrainChunk)
     {
-        var v1 = ProcessNeighborChunkForGizmoLines(new Vector2I(hexTerrainChunk.X - 1, hexTerrainChunk.Y));
-        var v2 = ProcessNeighborChunkForGizmoLines(new Vector2I(hexTerrainChunk.X + 1, hexTerrainChunk.Y));
-        var v3 = ProcessNeighborChunkForGizmoLines(new Vector2I(hexTerrainChunk.X, hexTerrainChunk.Y - 1));
-        var v4 = ProcessNeighborChunkForGizmoLines(new Vector2I(hexTerrainChunk.X, hexTerrainChunk.Y + 1));
-        var s = ProcessNeighborChunkForGizmoLines(new Vector2I(hexTerrainChunk.X, hexTerrainChunk.Y));
-        return v1 && v2 && v3 && v4 && s;
+        var v1 = DoesProvidedCoordinateChunkExist(new Vector2I(hexTerrainChunk.X - 1, hexTerrainChunk.Y));
+        var v2 = DoesProvidedCoordinateChunkExist(new Vector2I(hexTerrainChunk.X + 1, hexTerrainChunk.Y));
+        var v3 = DoesProvidedCoordinateChunkExist(new Vector2I(hexTerrainChunk.X, hexTerrainChunk.Y - 1));
+        var v4 = DoesProvidedCoordinateChunkExist(new Vector2I(hexTerrainChunk.X, hexTerrainChunk.Y + 1));
+        return v1 || v2 || v3 || v4;
     }
 
-    private bool ProcessNeighborChunkForGizmoLines(Vector2I coords)
+    private bool DoesProvidedCoordinateChunkExist(Vector2I coords)
     {
         if (Input.IsKeyPressed(Key.Ctrl))
         {
@@ -524,30 +556,12 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         }
 
         // Draw chunk lines for addition
-        if (_terrainPlugin.SelectedMode == TerrainToolMode.ChunkManagement
-            || Input.IsKeyPressed(Key.Shift)
-            && !_terrainPlugin.CurTerrainNode.Chunks.ContainsKey(coords)
-            && _terrainPlugin.PluginHelper.ChunkPlaneHovered
-            && _terrainPlugin.PluginHelper.CurrentHoveredChunk == coords
-           )
+        if (_terrainPlugin.CurTerrainNode.Chunks.ContainsKey(coords))
         {
-            return AddChunkLines(
-                _terrainPlugin.CurTerrainNode,
-                coords,
-                FetchMaterial(nameof(MarchingTrianglesTerrain.AddChunk)));
-        }
-        // Draw chunk lines for deletion
-        else if (_terrainPlugin.SelectedMode == TerrainToolMode.ChunkManagement
-                 && _terrainPlugin.PluginHelper.ChunkPlaneHovered
-                 && _terrainPlugin.PluginHelper.CurrentHoveredChunk == coords)
-        {
-            return AddChunkLines(
-                _terrainPlugin.CurTerrainNode,
-                coords,
-                FetchMaterial(nameof(MarchingTrianglesTerrain.RemoveChunk)));
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     private bool AddChunkLines(
@@ -563,8 +577,22 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         List<Vector3> points = terrain.GetChunkLimits(chunkCoords);
         for (int i = 0; i < points.Count; i++)
         {
+            //Draw edges
             _lines.Add(points[i]);
             _lines.Add(points[(i + 1) % points.Count]);
+
+            //Draw half diagonals
+            var p1X = Mathf.Lerp(points[i].X, points[(i + 2) % points.Count].X, 0.25f);
+            var p1Y = Mathf.Lerp(points[i].Y, points[(i + 2) % points.Count].Y, 0.25f);
+            var p1Z = Mathf.Lerp(points[i].Z, points[(i + 2) % points.Count].Z, 0.25f);
+            var p1 = new Vector3(p1X, p1Y, p1Z);
+            var p2X = Mathf.Lerp(points[i].X, points[(i + 2) % points.Count].X, 0.75f);
+            var p2Y = Mathf.Lerp(points[i].Y, points[(i + 2) % points.Count].Y, 0.75f);
+            var p2Z = Mathf.Lerp(points[i].Z, points[(i + 2) % points.Count].Z, 0.75f);
+            var p2 = new Vector3(p2X, p2Y, p2Z);
+            _lines.Add(p1);
+            _lines.Add(p2);
+
             // // [DEBUG] Prints Gizmo drawings
             // GD.Print("Drawing segment between " + points[i] + " and " + points[(i + 1) % points.Count]);
         }

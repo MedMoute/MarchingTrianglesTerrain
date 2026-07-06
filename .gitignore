@@ -37,6 +37,7 @@ mono_crash.*.json
 **/.idea/
 */.idea/
 # User-specific stuff
+/**/*sln.DotSettings.user
 .idea/**/workspace.xml
 .idea/**/tasks.xml
 .idea/**/usage.statistics.xml

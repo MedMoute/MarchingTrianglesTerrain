@@ -284,7 +284,7 @@ public partial class MarchingTrianglesTerrain : Node3D
             plugin.Ui.UiToolAttributes.ShowToolAttributes((int)TerrainToolMode.ChunkManagement);
             plugin.GizmoPlugin.TriggerRedraw(this);
         }
-
+        // // Debug Statement
         //GD.Print("[DEBUG][Terrain node : AddChunk] Chunk coords : {0} - Origin {1}",
         //    coords,
         //    newChunk.Underlying.GetChunkGlobalPosition(coords, TerrainSettings.OrientationSystem));
