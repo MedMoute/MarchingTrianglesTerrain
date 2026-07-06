@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using Godot;
 using Godot.Collections;
+using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using Array = Godot.Collections.Array;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
@@ -57,17 +58,19 @@ public partial class MarchingTrianglesToolUiAttributes
     private readonly System.Collections.Generic.Dictionary<string, string> _terrainSettingsData = new()
     {
         { "ChunkDimensions", "Vector2i" },
-        { "CellScale", "EditorSpinSlider" },
-        //TODO: FIX DEACTIVATED OPTIONS
-        //  { "blend_mode", "OptionButton" },
-        // // { "noise_hmap", "EditorResourcePicker" },
-        //  { "default_wall_texture", "OptionButton" },
-        //  { "extra_collision_layer", "OptionButton" },
-        //  //Special texture settings
-        //  { "use_ridge_texture", "CheckBox" },
-        //  { "use_ledge_texture", "CheckBox" },
-        //  { "ridge_threshold", "EditorSpinSlider" },
-        //  { "ledge_threshold", "EditorSpinSlider" },
+        { "CellScale", "EditorSpinSlider" }, 
+        { "BlendMode", "OptionButton" },
+        
+        //{ "noise_hmap", "EditorResourcePicker" },
+        //{ "default_wall_texture", "OptionButton" },
+        
+        { "CollisionLayer", "OptionButton" },
+        // //Special texture settings
+        //{ "use_ridge_texture", "CheckBox" },
+        //{ "use_ledge_texture", "CheckBox" },
+        
+        { "RidgeThreshold", "EditorSpinSlider" },
+        { "LedgeThreshold", "EditorSpinSlider" }
     };
 
     public static MarchingTriangleTerrainToolAttributesList Attributes { get; } = new();
@@ -280,7 +283,7 @@ public partial class MarchingTrianglesToolUiAttributes
             }
 
             throw new ConstraintException("Cannot process the UI for the Terrain settings as the "
-                                          + nameof(MarchingTrianglesTerrain)
+                                          + nameof(MarchingTrianglesTerrain)+"."+nameof(TerrainSettings)
                                           + " class does not expose the following properties : [ " + sb + "]");
         }
 
@@ -395,13 +398,13 @@ public partial class MarchingTrianglesToolUiAttributes
                             optionButton.AddItem(textureName);
                         }
                     }
-                    else if (editorSetting.Key == "blendMode")
+                    else if (editorSetting.Key == "BlendMode")
                     {
                         optionButton.AddItem(("Smoothed Triangles"));
                         optionButton.AddItem("Hard Squares");
                         optionButton.AddItem("Hard Triangles");
                     }
-                    else if (editorSetting.Key == "extraCollisionLayer")
+                    else if (editorSetting.Key == "CollisionLayer")
                     {
                         for (int i = 0; i < 24; i++)
                         {
@@ -492,7 +495,7 @@ public partial class MarchingTrianglesToolUiAttributes
         var currPath = pathEditor.Text;
         fileDialog.CurrentDir = currPath.Length == 0 ? "res://" : currPath.GetBaseDir();
 
-        fileDialog.DirSelected += (dir) =>
+        fileDialog.DirSelected += dir =>
         {
             pathEditor.Text = dir;
             OnTerrainPropertyChanged(editorSettingKey, dir, propertyInSettings);
@@ -554,7 +557,7 @@ public partial class MarchingTrianglesToolUiAttributes
             subSpinBoxes[i] = spinBox;
             var handler = (double v) =>
             {
-                // Variant needs to be unboxed , updated, then re-boxed  for this to be applied
+                // Variant needs to be unboxed , updated, then re-boxed for this to be applied
                 var unboxed = typeof(Variant)
                     .GetMethod("As")!
                     .MakeGenericMethod(previousValue.Obj.GetType())
@@ -1054,5 +1057,21 @@ public partial class MarchingTrianglesToolUiAttributes
         AddChild(_hboxContainer);
         _lastSettingType = SettingType.Error; //Reset the setting type for correct VSeparators
         _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
+    }
+
+    /// <summary>
+    /// Disables the underlying control nodes of the tool.
+    /// Warning : They are NEVER RE-ENABLED 
+    /// </summary>
+    public void DisableEditToolAttributes()
+    {
+        var recursiveChildern = _hboxContainer.GetChildren(true);
+        foreach (var node in recursiveChildern)
+        {
+            if (node is Control ctrl)
+            {
+                ctrl.SetProcessMode(ProcessModeEnum.Disabled);
+            }
+        }
     }
 }

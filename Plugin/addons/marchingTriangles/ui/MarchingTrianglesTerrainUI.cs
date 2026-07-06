@@ -129,7 +129,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
     {
         _activeTool = toolIndex;
 
-        if (toolIndex == 5) // VertexPainting
+        if ((TerrainToolMode)toolIndex == TerrainToolMode.VertexPainting) // VertexPainting
         {
             // FIXME => Should probably be to in the Settings itself 
             TextureSettings.Show();
@@ -141,7 +141,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
             TextureSettings.Hide();
         }
 
-        if (toolIndex == 3) // BridgeTool
+        if ((TerrainToolMode)toolIndex == TerrainToolMode.Bridge) // BridgeTool
         {
             // FIXME => Should probably be to in the Settings itself 
             Plugin.ToolAttributes.Falloff = false;
@@ -151,6 +151,15 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         Plugin.SelectedMode = (TerrainToolMode)toolIndex;
         Plugin.ToolAttributes.VertexColorIndex = 0; //  Set to the first material on start (Temp workaround ?)
         UiToolAttributes.ShowToolAttributes(toolIndex);
+
+        //Grey out all tool attributes inn the terrain settings if there is at least onne chunk
+        if ((TerrainToolMode)toolIndex == TerrainToolMode.TerrainSettings
+            && plugin.CurTerrainNode!=null
+            && plugin.CurTerrainNode.Chunks.Count>0)
+        {
+            // Since we cannot delete a chunk from this tool,the condition will remain true 
+            UiToolAttributes.DisableEditToolAttributes();
+        }
     }
 }
 
