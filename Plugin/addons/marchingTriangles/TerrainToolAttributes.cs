@@ -161,7 +161,7 @@ public partial class TerrainToolAttributes : Node
     // Only relevant for Bridge building
     public Vector3 BridgeStartPos { get; set; }
     
-    public Variant TerrainSettings { get; }
+    public Variant TerrainSettings { get; set; }
 
     // Flag to prevent _set_new_textures() when syncing preset from terrain node
     public bool SyncFromTerrain = false;

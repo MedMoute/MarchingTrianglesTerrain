@@ -9,7 +9,6 @@ public partial class MarchingTrianglesGizmoPlugin : EditorNode3DGizmoPlugin
     private readonly Dictionary<Node, MarchingTrianglesTerrainGizmo> _terrainGizmos = new();
 
     public static readonly PlaneMesh BrushMesh = GD.Load<PlaneMesh>("res://addons/marchingTriangles/editor/resources/plugin_materials/brush_visual.tres");
-    public static readonly CylinderMesh BrushRadiusVisual = GD.Load<CylinderMesh>("res://addons/marchingTriangles/editor/resources/plugin_materials/round_brush_radius_visual.tres");
 
     public static Color HighlightColor = Colors.Blue;
     
