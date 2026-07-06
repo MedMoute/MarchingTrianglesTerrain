@@ -21,7 +21,7 @@ public class MarchingTriangleTerrainToolAttributesList
         { "type", "slider" },
         { "label", "Size" },
         { "range", new Vector3(1.0f, 50.0f, 0.5f) },
-        { "default", 10.0 },
+        { "default", 10.0 }
     };
 
     public Godot.Collections.Dictionary<string, Variant> EaseValue => new()

@@ -283,7 +283,6 @@ public partial class MarchingTrianglesToolAttributeSettings : Resource
 
     public List<Tuple<string, bool>> GetPropertiesFlagList()
     {
-        // Todo : maybe use reflection to programatically build the list ?
         var res = new List<Tuple<string, bool>>();
         res.Add(new Tuple<string, bool>("BrushType", BrushType));
         res.Add(new Tuple<string, bool>("Size", Size));

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.ui;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Spatial.Euclidean;
 
@@ -96,9 +97,12 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
 
         var pos = ProcessBrushAndPattern(terrain, sb);
 
-        //The size of the brush cell mesh    is adjusted dynamically before drawing :
-        MarchingTrianglesGizmoPlugin.BrushMesh.Size =
-            Vector2.One * _terrainPlugin.CurTerrainNode.TerrainSettings.CellScale / 2;
+        //The size of the brush cell mesh is adjusted dynamically before drawing :
+        if (MarchingTrianglesGizmoPlugin.BrushMesh != null && _terrainPlugin.CurTerrainNode!=null)
+        {
+            MarchingTrianglesGizmoPlugin.BrushMesh.Size =
+                Vector2.One * _terrainPlugin.CurTerrainNode.TerrainSettings.CellScale / 2;
+        }
 
         if (_terrainPlugin.PluginHelper.TerrainHovered)
         {
@@ -384,7 +388,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             if (_terrainPlugin.PluginHelper.WallPainting)
             {
                 sb.Append(" | Brush radius drawn at pos : " + brushTransform.Origin);
-                AddMesh(MarchingTrianglesGizmoPlugin.BrushRadiusVisual, null, brushTransform);
+                AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null, brushTransform);
             }
         }
         else if (_terrainPlugin.SelectedMode != TerrainToolMode.Smooth &&
@@ -396,7 +400,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                       TerrainSettings.OrientationSystem.GetCell(new Vector2D(brushTransform.Origin.X,
                           brushTransform.Origin.Z)));
 
-            AddMesh(MarchingTrianglesGizmoPlugin.BrushRadiusVisual, null, brushTransform);
+            AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null, brushTransform);
         }
 
 

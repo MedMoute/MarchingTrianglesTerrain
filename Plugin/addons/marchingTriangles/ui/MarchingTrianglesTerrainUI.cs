@@ -6,11 +6,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
 
 public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin plugin) : Node
 {
-    private ShaderMaterial _brushMaterial =
-        GD.Load<ShaderMaterial>(
-            "res://addons/marchingTriangles/editor/resources/plugin_materials/round_brush_radius_material.tres");
-
-    public ShaderMaterial BrushMaterial => _brushMaterial;
+    public ShaderMaterial BrushMaterial => BrushData[plugin.ToolAttributes.BrushIndex].Item2;
 
     public MarchingTrianglesToolUiAttributes UiToolAttributes { get; private set; } = new(plugin);
 
@@ -24,7 +20,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
 
     private int _activeTool = 0;
 
-    private Dictionary<int, Tuple<Mesh, ShaderMaterial>> BrushData = new()
+    public static Dictionary<int, Tuple<Mesh, ShaderMaterial>> BrushData = new()
     {
         {
             0,
@@ -66,11 +62,10 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         Toolbar = new MarchingTrianglesToolbar();
         Toolbar.ToolChanged += OnToolChanged;
         Toolbar.Hide();
-
-        MarchingTrianglesToolUiAttributes toolUiAttributes = new(Plugin);
-        toolUiAttributes.PluginSettingChanged += OnSettingChanged;
-        toolUiAttributes.TerrainSettingChanged += OnTerrainSettingChanged;
-        toolUiAttributes.Hide();
+        
+        UiToolAttributes.PluginSettingChanged += OnPluginSettingChanged;
+        UiToolAttributes.TerrainSettingChanged += OnTerrainSettingChanged;
+        UiToolAttributes.Hide();
 
         TextureSettings = new MarchingTrianglesTextureSettings(Plugin);
         TextureSettings.TextureSettingChanged += OnTextureSettingChanged;
@@ -105,27 +100,28 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
             //		await get_tree().create_timer(.01).timeout
             if (Toolbar != null && Toolbar.ToolboxButtons.ContainsKey(_activeTool))
             {
+                //Automatically trigger the tool button press to construct the 
+                // tool settings via the Observers on the button press.
                 Toolbar.ToolboxButtons[_activeTool].SetPressed(true);
             }
 
             UiToolAttributes.Show();
-            OnToolChanged(_activeTool);
         }
     }
 
     private void OnTextureSettingChanged(string setting, Variant value)
     {
-        throw new NotImplementedException();
+       GD.Print("Texture Settings Changed !");
     }
 
     private void OnTerrainSettingChanged(string setting, Variant variant)
     {
-        throw new NotImplementedException();
+        GD.Print("Terrain Settings Changed !");
     }
 
-    private void OnSettingChanged(string setting, Variant value)
+    private void OnPluginSettingChanged(string setting, Variant value)
     {
-        throw new NotImplementedException();
+        UiToolAttributes.SetPluginAttributeValue(setting,value);
     }
 
     //TODO : do not restart tool if same

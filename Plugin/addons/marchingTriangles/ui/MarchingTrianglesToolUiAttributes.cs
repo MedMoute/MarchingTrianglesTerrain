@@ -162,12 +162,12 @@ public partial class MarchingTrianglesToolUiAttributes
     /// <summary>
     /// Processes the provided tool parameters to fill the UI with the relevant information.
     /// </summary>
-    private void AddToolSetting(Godot.Collections.Dictionary<string, Variant> toolParameters)
+    private void AddToolSetting(Godot.Collections.Dictionary<string, Variant> toolSettingParameters)
     {
-        string settingName = (String)toolParameters.GetValueOrDefault("name", "");
-        SettingType.TryParse((string)toolParameters.GetValueOrDefault("type", (int)SettingType.Error),
+        string settingName = (String)toolSettingParameters.GetValueOrDefault("name", "");
+        SettingType.TryParse((string)toolSettingParameters.GetValueOrDefault("type", (int)SettingType.Error),
             out SettingType settingType);
-        string labelText = (String)toolParameters.GetValueOrDefault("label", "");
+        string labelText = (String)toolSettingParameters.GetValueOrDefault("label", "");
 
         if (_lastSettingType != SettingType.Error)
         {
@@ -202,25 +202,25 @@ public partial class MarchingTrianglesToolUiAttributes
         switch (settingType)
         {
             case SettingType.Checkbox:
-                ProcessCheckboxSetting(savedSettingValue, toolParameters);
+                ProcessCheckboxSetting(savedSettingValue, toolSettingParameters);
                 break;
             case SettingType.Slider:
-                ProcessSliderSetting(savedSettingValue, toolParameters);
+                ProcessSliderSetting(savedSettingValue, toolSettingParameters);
                 break;
             case SettingType.Option:
-                ProcessOptionSetting(savedSettingValue, toolParameters);
+                ProcessOptionSetting(savedSettingValue, toolSettingParameters);
                 break;
             case SettingType.Text:
-                ProcessTextSetting(savedSettingValue, toolParameters);
+                ProcessTextSetting(savedSettingValue, toolSettingParameters);
                 break;
             case SettingType.Preset:
-                ProcessTexturePresetSetting(savedSettingValue, toolParameters);
+                ProcessTexturePresetSetting(savedSettingValue, toolSettingParameters);
                 break;
             case SettingType.QuickPaint:
-                ProcessQuickPaintSetting(savedSettingValue, toolParameters);
+                ProcessQuickPaintSetting(savedSettingValue, toolSettingParameters);
                 break;
             case SettingType.Chunk:
-                ProcessChunkSetting(savedSettingValue, toolParameters);
+                ProcessChunkSetting(savedSettingValue, toolSettingParameters);
                 break;
             case SettingType.Terrain:
                 ProcessTerrainSettings();
@@ -553,7 +553,7 @@ public partial class MarchingTrianglesToolUiAttributes
             spinBox.SetCustomMinimumSize(new Vector2(50, 25));
             subSpinBoxes[i] = spinBox;
             var handler = (double v) =>
-            { 
+            {
                 // Variant needs to be unboxed , updated, then re-boxed  for this to be applied
                 var unboxed = typeof(Variant)
                     .GetMethod("As")!
@@ -815,6 +815,7 @@ public partial class MarchingTrianglesToolUiAttributes
             hSlider.SetValue(defVal);
             hSlider.SetCustomMinimumSize(new Vector2(80, 35));
             hSlider.ValueChanged += (val) => OnSettingChanged(settingName, val);
+            container.AddChild(hSlider, true);
         }
 
         _hboxContainer.AddChild(container);
@@ -847,7 +848,7 @@ public partial class MarchingTrianglesToolUiAttributes
 
     public void OnSettingChanged(string settingName, Variant value)
     {
-        EmitSignal(nameof(PluginSettingChangedEventHandler), settingName, value);
+        EmitSignal(nameof(PluginSettingChanged), settingName, value);
     }
 
     public void OnChunkSelected(OptionButton button, string chunkDesc)
@@ -859,6 +860,61 @@ public partial class MarchingTrianglesToolUiAttributes
         _terrainPlugin.PluginHelper.CurrentSelectedChunk = SelectedChunk;
 
         _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
+    }
+
+    public void SetPluginAttributeValue(String settingName, Variant value)
+    {
+        TerrainToolAttributes curToolAttributes = _terrainPlugin.ToolAttributes;
+        switch (settingName)
+        {
+            case "brushType":
+                curToolAttributes.BrushIndex = value.AsInt32();
+                return;
+            case "size":
+                curToolAttributes.BrushSize = value.AsDouble();
+                return;
+            case "easeValue":
+                curToolAttributes.EaseValue = value.AsDouble();
+                return;
+            case "height":
+                curToolAttributes.Height = value.AsDouble();
+                return;
+            case "strength":
+                curToolAttributes.Strength = value.AsDouble();
+                return;
+            case "flatten":
+                curToolAttributes.Flatten = value.AsBool();
+                return;
+            case "falloff":
+                curToolAttributes.Falloff = value.AsBool();
+                return;
+            case "maskMode":
+                curToolAttributes.MaskGrass = value.AsBool();
+                return;
+            case "material":
+                curToolAttributes.VertexColorIndex = value.AsInt32();
+                return;
+            case "texturePreset":
+                curToolAttributes.CurrentTexturePreset = value.Obj as MarchingTrianglesTexturesPreset;
+                return;
+            case "quickPaintSelection":
+                curToolAttributes.CurrentQuickPaint = value.Obj as MarchingTrianglesTexturesPreset;
+                return;
+            case "chunkManagement":
+                curToolAttributes.SelectedChunk = value.AsVector2I();
+                return;
+            case "paintWalls":
+                curToolAttributes.PaintWalls = value.AsBool();
+                return;
+            case "terrainSettings":
+                curToolAttributes.TerrainSettings = value;
+                return;
+            default:
+                GD.PushError(
+                    "Couldn't find the plugin's tool attributes value from the provided attribute setting name : " +
+                    settingName);
+                return;
+        }
     }
 
     public Variant GetCurrentPluginAttributeValue(String settingName)
@@ -915,77 +971,77 @@ public partial class MarchingTrianglesToolUiAttributes
         var tool = MarchingTrianglesToolbox.Tools[toolIndex];
         MarchingTrianglesToolAttributeSettings toolAttributes = tool.AttributeSettings;
 
-        List<Godot.Collections.Dictionary<string, Variant>> newAttributes = new();
+        List<Godot.Collections.Dictionary<string, Variant>> toolSettings = new();
 
         // TODO iterate over properties and select the ones in AttributesList 
         if (toolAttributes.BrushType)
         {
-            newAttributes.Add(Attributes.BrushType);
+            toolSettings.Add(Attributes.BrushType);
         }
 
         if (toolAttributes.Size)
         {
-            newAttributes.Add(Attributes.Size);
+            toolSettings.Add(Attributes.Size);
         }
 
         if (toolAttributes.EaseValue)
         {
-            newAttributes.Add(Attributes.EaseValue);
+            toolSettings.Add(Attributes.EaseValue);
         }
 
         if (toolAttributes.Height)
         {
-            newAttributes.Add(Attributes.Height);
+            toolSettings.Add(Attributes.Height);
         }
 
         if (toolAttributes.Flatten)
         {
-            newAttributes.Add(Attributes.Flatten);
+            toolSettings.Add(Attributes.Flatten);
         }
 
         if (toolAttributes.Falloff)
         {
-            newAttributes.Add(Attributes.Falloff);
+            toolSettings.Add(Attributes.Falloff);
         }
 
         if (toolAttributes.Material)
         {
-            newAttributes.Add(Attributes.Material);
+            toolSettings.Add(Attributes.Material);
         }
 
         if (toolAttributes.TextureName)
         {
-            newAttributes.Add(Attributes.TextureName);
+            toolSettings.Add(Attributes.TextureName);
         }
 
         if (toolAttributes.TexturePreset)
         {
-            newAttributes.Add(Attributes.TexturePreset);
+            toolSettings.Add(Attributes.TexturePreset);
         }
 
         if (toolAttributes.QuickPaintSelection)
         {
-            newAttributes.Add(Attributes.QuickPaintSelection);
+            toolSettings.Add(Attributes.QuickPaintSelection);
         }
 
         if (toolAttributes.PaintWalls)
         {
-            newAttributes.Add(Attributes.PaintWalls);
+            toolSettings.Add(Attributes.PaintWalls);
         }
 
         if (toolAttributes.ChunkManagement)
         {
-            newAttributes.Add(Attributes.ChunkManagement);
+            toolSettings.Add(Attributes.ChunkManagement);
         }
 
         if (toolAttributes.TerrainSettings)
         {
-            newAttributes.Add(Attributes.TerrainSettings);
+            toolSettings.Add(Attributes.TerrainSettings);
         }
 
-        foreach (var attribute in newAttributes)
+        foreach (var toolSettingAttributes in toolSettings)
         {
-            Godot.Collections.Dictionary<string, Variant> settingDictionary = attribute;
+            Godot.Collections.Dictionary<string, Variant> settingDictionary = toolSettingAttributes;
             var result = settingDictionary.GetValueOrDefault("type");
             if (result.VariantType != Variant.Type.Nil && result.VariantType == Variant.Type.String)
             {
