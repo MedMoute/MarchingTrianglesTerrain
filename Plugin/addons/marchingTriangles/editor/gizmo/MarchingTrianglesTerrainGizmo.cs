@@ -96,7 +96,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
 
         var pos = ProcessBrushAndPattern(terrain, sb);
 
-        //The size of the brush cell mesh is adjusted dynamically before drawing :
+        //The size of the brush cell mesh    is adjusted dynamically before drawing :
         MarchingTrianglesGizmoPlugin.BrushMesh.Size =
             Vector2.One * _terrainPlugin.CurTerrainNode.TerrainSettings.CellScale / 2;
 
@@ -434,7 +434,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                 Vector2I chunkCoords = new Vector2I(chunkX, chunkZ);
                 if (!terrain.Chunks.TryGetValue(chunkCoords, out var chunk))
                 {
-                    break;
+                    continue;
                 }
 
                 Tuple<Vector2I, Vector2I> cellRange =
