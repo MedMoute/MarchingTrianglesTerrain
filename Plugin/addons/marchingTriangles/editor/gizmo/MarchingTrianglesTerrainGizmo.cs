@@ -96,7 +96,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
 
         var pos = ProcessBrushAndPattern(terrain, sb);
 
-        //The size of the mesh brush is adjusted dynamically :
+        //The size of the brush cell mesh is adjusted dynamically before drawing :
         MarchingTrianglesGizmoPlugin.BrushMesh.Size =
             Vector2.One * _terrainPlugin.CurTerrainNode.TerrainSettings.CellScale / 2;
 
@@ -106,24 +106,28 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         }
 
         var patternDrawCalls = DrawPattern(terrain);
-
         // Debug statements
         if (_verbose)
         {
-            if (patternDrawCalls.Sum(d => d.Value) > 0)
-            {
-                sb.Append(" | Pattern drawn over ")
-                    .Append(patternDrawCalls.Count)
-                    .Append(" chunks | Drawn ")
-                    .Append(patternDrawCalls.Sum(d => d.Value)).Append(" cells for the pattern");
-            }
-            else
-            {
-                sb.Append(" | Drawn Empty pattern ");
-            }
+            AddDebugStatementAboutDrawnPattern(patternDrawCalls, sb);
+            GD.Print(sb.ToString());
         }
 
-        if (_verbose) GD.Print(sb.ToString());
+    }
+
+    private static void AddDebugStatementAboutDrawnPattern(Dictionary<Vector2I, int> patternDrawCalls, StringBuilder sb)
+    {
+        if (patternDrawCalls.Sum(d => d.Value) > 0)
+        {
+            sb.Append(" | Pattern drawn over ")
+                .Append(patternDrawCalls.Count)
+                .Append(" chunks | Drawn ")
+                .Append(patternDrawCalls.Sum(d => d.Value)).Append(" cells for the pattern");
+        }
+        else
+        {
+            sb.Append(" | Drawn Empty pattern ");
+        }
     }
 
     /// <summary>
@@ -336,7 +340,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
 
         Material brushMat = FetchMaterial(nameof(MarchingTrianglesGizmoPlugin.BrushMesh));
 
-        // Visu of brush radius
+        // Step 1 : Visualization of the brush radius
         var brushTransform = new Transform3D(
             Vector3.Right * (float)_terrainPlugin.ToolAttributes.BrushSize,
             Vector3.Up,
@@ -410,7 +414,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                   + brushBounds.CellAABB.Item1 + " Max="
                   + brushBounds.CellAABB.Item2);
 
-        var maxDistance = BrushPatternCalculator.CalculateMaxSqDistance(
+        var maxSqDistance = BrushPatternCalculator.CalculateMaxSqDistance(
             (float)_terrainPlugin.ToolAttributes.BrushSize,
             _terrainPlugin.ToolAttributes.BrushIndex);
 
@@ -418,6 +422,8 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             terrain.TerrainSettings.ChunkDimensions.X,
             terrain.TerrainSettings.ChunkDimensions.Y,
             TerrainSettings.OrientationSystem.PolygonCount);
+
+        // Step 2 : Visualization of the cells affected by the brush
 
         Vector2 brushPos = new Vector2(pos.X, pos.Z);
         int cellCount = 0;
@@ -454,7 +460,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                                 brushPos,
                                 _terrainPlugin.ToolAttributes.BrushSize,
                                 _terrainPlugin.ToolAttributes.BrushIndex,
-                                maxDistance,
+                                maxSqDistance,
                                 _terrainPlugin.ToolAttributes.Falloff,
                                 _terrainPlugin.ToolAttributes.FalloffCurve);
 
@@ -519,7 +525,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         sb.Append(" | Brush mesh drawn  : " + cellCount + " Cells");
     }
 
-    private Basis _CreateBrushBasis(Vector3 normal, float brushSize)
+    private static Basis _CreateBrushBasis(Vector3 normal, float brushSize)
     {
         Vector3 n = normal.Normalized();
 
