@@ -33,7 +33,7 @@ public partial class MarchingTrianglesTerrain : Node3D
     /// Provides a neighbor-only aware chunk provider for a given chunk.
     /// The coordinates to give to the generated providers are the offset coordinates.  
     /// </summary>
-    private readonly Func<Vector2I,Vector2I, HexagonalTerrainChunk> _neighborChunkProviderProvider;
+    private readonly Func<Vector2I, Vector2I, HexagonalTerrainChunk> _neighborChunkProviderProvider;
 
     public Dictionary<Vector2I, GdPluginHexTerrainChunk> Chunks => _chunks;
 
@@ -147,18 +147,23 @@ public partial class MarchingTrianglesTerrain : Node3D
 
     [Export] public MarchingTrianglesTexturesPreset CurrentTexturePreset { get; set; }
 
+    [Signal]
+    public delegate void LoadFinishedEventHandler();
+    
     public TerrainSettings TerrainSettings { get; }
 
     public MarchingTrianglesTerrain()
     {
         TerrainSettings = new TerrainSettings(
-            this, 
-            GD.Load<ShaderMaterial>("res://addons/marchingTriangles/editor/resources/plugin_materials/mst_terrain_shader.tres"));
-        
-        CurrentTexturePreset = new MarchingTrianglesTexturesPreset();
-        
-        _neighborChunkProviderProvider = BuildNeighborChunkProvider(i => _chunks.TryGetValue(i, out var chk) ? chk.Underlying : null);
+            this,
+            GD.Load<ShaderMaterial>(
+                    "res://addons/marchingTriangles/editor/resources/plugin_materials/mst_terrain_shader.tres")
+                .Duplicate(true) as ShaderMaterial);
 
+        CurrentTexturePreset = new MarchingTrianglesTexturesPreset();
+
+        _neighborChunkProviderProvider =
+            BuildNeighborChunkProvider(i => _chunks.TryGetValue(i, out var chk) ? chk.Underlying : null);
     }
 
     /// <summary>
@@ -167,29 +172,31 @@ public partial class MarchingTrianglesTerrain : Node3D
     ///  and if || offset ||² is less than 2.
     /// </summary>
     /// <param name="chunkProvider"></param>
-    public static Func<Vector2I, Vector2I, HexagonalTerrainChunk> BuildNeighborChunkProvider(Func<Vector2I,HexagonalTerrainChunk> chunkProvider)
+    public static Func<Vector2I, Vector2I, HexagonalTerrainChunk> BuildNeighborChunkProvider(
+        Func<Vector2I, HexagonalTerrainChunk> chunkProvider)
     {
-        return (chunkCoord,offset) =>
+        return (chunkCoord, offset) =>
         {
             if (offset.LengthSquared() > 2)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), "Maximum supported offset" +
                                                                       " length is sqrt(2) for diagonal neighbors.");
             }
-            return chunkProvider(offset+chunkCoord);
+
+            return chunkProvider(offset + chunkCoord);
         };
     }
 
     public void ForceRebuildTerrain()
     {
-        //throw new NotImplementedException();
+        throw new NotImplementedException();
     }
 
     /// <summary>
     /// Returns the Cell coordinates on which the provided position belongs
     /// </summary>
     /// <returns></returns>
-    public Vector3I GetGlobalCellCoordsFromCartesian(Vector2D pos)
+    public static Vector3I GetGlobalCellCoordsFromCartesian(Vector2D pos)
     {
         RegularUniformFrame tiling = TerrainSettings.OrientationSystem;
         var xy = tiling.GetCell(pos);
@@ -247,7 +254,7 @@ public partial class MarchingTrianglesTerrain : Node3D
         var newChunk = new GdPluginHexTerrainChunk(
             coords,
             TerrainSettings.ChunkDimensions,
-            v => _neighborChunkProviderProvider(coords,v));
+            v => _neighborChunkProviderProvider(coords, v));
         _chunks.Add(coords, newChunk);
         newChunk.Name = "Chunk" + coords;
         AddChunk(coords, newChunk, plugin);
@@ -257,6 +264,7 @@ public partial class MarchingTrianglesTerrain : Node3D
         {
             Chunks[rebuiltChunks].GenerateTerrain(false);
         }
+
         //Rebuild the chunk if some parts were affected by the border
         newChunk.GenerateTerrain(false);
     }
@@ -298,7 +306,7 @@ public partial class MarchingTrianglesTerrain : Node3D
         if (_chunks.Count == 0)
         {
             var tmpChunk = new GdPluginHexTerrainChunk(new Vector2I(int.MaxValue, int.MinValue),
-                TerrainSettings.ChunkDimensions, v => _neighborChunkProviderProvider(coords,v));
+                TerrainSettings.ChunkDimensions, v => _neighborChunkProviderProvider(coords, v));
 
             _plugin.PluginHelper.CurrentSelectedChunk = tmpChunk;
         }
@@ -326,7 +334,7 @@ public partial class MarchingTrianglesTerrain : Node3D
         {
             var tmpChunk = new GdPluginHexTerrainChunk(GetTempChunkCoords(),
                 TerrainSettings.ChunkDimensions,
-                v => _neighborChunkProviderProvider(coords,v));
+                v => _neighborChunkProviderProvider(coords, v));
 
             _plugin.PluginHelper.CurrentSelectedChunk = tmpChunk;
         }
@@ -335,7 +343,7 @@ public partial class MarchingTrianglesTerrain : Node3D
             _plugin.PluginHelper.CurrentSelectedChunk = _chunks.First().Value;
         }
 
-        existingChunk.SkipSaveOnExit = true;  // Prevent mesh save during undo/redo
+        existingChunk.SkipSaveOnExit = true; // Prevent mesh save during undo/redo
         RemoveChild(existingChunk);
         existingChunk.Owner = null;
     }
@@ -345,6 +353,7 @@ public partial class MarchingTrianglesTerrain : Node3D
     /// </summary>
     /// <param name="currentHoveredChunk"></param>
     /// <returns></returns>
+    /// TODO : Use this method in the Gizmo condition block too
     public bool CanAddEmptyChunk(Vector2I currentHoveredChunk)
     {
         return Chunks.Count == 0 || Chunks.Keys.Any(key =>
@@ -352,5 +361,101 @@ public partial class MarchingTrianglesTerrain : Node3D
             || key == currentHoveredChunk + Vector2I.Down
             || key == currentHoveredChunk + Vector2I.Left
             || key == currentHoveredChunk + Vector2I.Right);
+    }
+
+    // LIFECYCLE OVERRIDES
+
+    public override void _Notification(int what)
+    {
+        // Save all dirty chunks to external storage before scene save
+        if (what == NotificationEditorPreSave)
+        {
+            if (Engine.IsEditorHint())
+            {
+                MttDataHandler.SaveChunks(this);
+            }
+        }
+    }
+
+    public override void _EnterTree()
+    {
+        CallDeferred(nameof(_DeferredEnterTree));
+    }
+
+    public void _DeferredEnterTree()
+    {
+        _InitDataDirectory();
+        // Populate chunks dictionary from scene children
+        foreach (var child in GetChildren())
+        {
+            if (child is GdPluginHexTerrainChunk chunk)
+            {
+                Chunks[chunk.Underlying.Coordinates] = chunk;
+            }
+        }
+
+        if (StorageInitialized)
+        {
+            MttDataHandler.LoadTerrainData(this);
+        }
+        else if (Engine.IsEditorHint() && MttDataHandler.NeedsMigration(this))
+        {
+            //Auto migrate embedded data to external
+            MttDataHandler.MigrateToExternalStorage(this);
+        }
+        
+        //Initialize all chunks (regenerate mesh from loaded data)
+        foreach (var chunk in Chunks.Values)
+        {
+            chunk.InitializeTerrain();
+        }
+        //Apply all persisted textures/colors to this terrain's unique shader materials
+        //This is needed because the constructor creates fresh duplicated materials that don't have
+        // the terrain's saved texture values - only the base resource defaults
+        ForceBatchShaderUpdate();
+        EmitSignal(nameof(LoadFinished));
+    }
+
+    /// <summary>
+    /// Applies all shader parameters.
+    /// </summary>
+    private void ForceBatchShaderUpdate()
+    {
+    // TERRAIN MATERIAL - Core parameters
+    TerrainSettings.ShaderMaterial.SetShaderParameter("chunk_size",TerrainSettings.ChunkDimensions);
+    TerrainSettings.ShaderMaterial.SetShaderParameter("cell_size",TerrainSettings.CellScale);
+    
+    // TODO : TERRAIN MATERIAL - Ground Textures
+    GD.Print(" TODO : Set vc_tex_rr properties");
+     // TODO TERRAIN MATERIAL - Ground Colors (used for both floor and wall in unified system)
+     GD.Print(" TODO : Set tex_albedo_1=>6 properties");
+     // TODO TERRAIN MATERIAL - Per-Texture UV Scales
+     GD.Print(" TODO : Set tex_scale_1=>15 properties");
+    }
+
+    private void _InitDataDirectory()
+    {
+        var copyFromDir = "";
+        if (Engine.IsEditorHint()
+            && DataDirectory.Length > 0
+            && !MttDataHandler.IsDataDirectoryUnique(this))
+        {
+            copyFromDir = DataDirectory;
+            DataDirectory = "";
+        }
+
+        if (Engine.IsEditorHint() && DataDirectory.Length == 0)
+        {
+            var autoPath = MttDataHandler.GenerateDataDirectory(this);
+            if (autoPath.Length > 0)
+            {
+                DataDirectory = autoPath;
+            }
+        }
+
+        if (copyFromDir.Length > 0)
+        {
+            MttDataHandler.CopyRecursive(copyFromDir, DataDirectory);
+        }
     }
 }

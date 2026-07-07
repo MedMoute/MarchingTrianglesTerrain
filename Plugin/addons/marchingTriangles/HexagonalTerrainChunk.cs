@@ -21,7 +21,7 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// Coordinates of the current chunk in the global plane frame
     /// </summary>
-    public Vector2I Coordinates { get; }
+    public Vector2I Coordinates { get; set; }
 
     /// <summary>
     /// The size of the chunk (measured in cells)
@@ -53,7 +53,7 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// The triangle-based grid holding the data.
     /// </summary>
-    public TriangleGrid DataGrid { get; }
+    public TriangleGrid DataGrid { get; set; }
 
     /// <summary>
     /// The dual grid used for data representation.
@@ -92,7 +92,7 @@ public class HexagonalTerrainChunk
     /// </summary>
     public TerrainColorMaps ColorMaps { get; private set; }
 
-    public int MergeMode => 1;
+    public int MergeMode { get; set; } = 1;
 
     public Dictionary<Vector3I, bool> NeedUpdate { get; } = new();
 

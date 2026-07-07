@@ -17,7 +17,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     /// </summary>
     public static readonly uint DefaultCollisionLayer = 17;
 
-    private ConcavePolygonShape3D _tempCollisionShape;
+    internal ConcavePolygonShape3D _tempCollisionShape;
 
     private SurfaceTool _st = new();
 
