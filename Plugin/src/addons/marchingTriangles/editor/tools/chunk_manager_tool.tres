@@ -1,7 +1,7 @@
 [gd_resource type="Resource" format=3 uid="uid://crv7ey6qqdohh"]
 
-[ext_resource type="Texture2D" uid="uid://dqjst730tmfy4" path="res://addons/Test/marchingTriangles/editor/icons/chunk_manager_tool.svg" id="1_mq6yh"]
-[ext_resource type="Script" uid="uid://cderkdrsakj0h" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_i6qdo"]
+[ext_resource type="Texture2D" path="res://addons/Test/marchingTriangles/editor/icons/chunk_manager_tool.svg" id="1_mq6yh"]
+[ext_resource type="Script" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_i6qdo"]
 
 [sub_resource type="Resource" id="Resource_mq6yh"]
 

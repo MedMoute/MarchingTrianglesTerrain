@@ -1,10 +1,8 @@
 using GdUnit4;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using static GdUnit4.Assertions;
 using NUnit.Framework;
-
+using MarchingTrianglesTerrain.addons.marchingTriangles;
 namespace UnitTests4Godot.test;
 
 [TestSuite]

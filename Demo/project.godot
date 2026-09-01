@@ -10,17 +10,17 @@ config_version=5
 
 [application]
 
-config/name="Plugin"
+config/name="Demo"
 config/features=PackedStringArray("4.6", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
 [dotnet]
 
-project/assembly_name="Plugin"
+project/assembly_name="Demo"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://src/addons/marchingTriangles/plugin.cfg")
+enabled=PackedStringArray("res://addons/marchingTriangles/plugin.cfg")
 
 [physics]
 

@@ -1,7 +1,7 @@
 [gd_resource type="Resource" format=3 uid="uid://dvoeari8ekfdx"]
 
-[ext_resource type="Texture2D" uid="uid://d2ms3ndp2fq7n" path="res://addons/Test/marchingTriangles/editor/icons/terrain_settings_tool.png" id="1_kdwsx"]
-[ext_resource type="Script" uid="uid://cderkdrsakj0h" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_epqr4"]
+[ext_resource type="Texture2D" path="res://addons/Test/marchingTriangles/editor/icons/terrain_settings_tool.png" id="1_kdwsx"]
+[ext_resource type="Script" path="res://addons/Test/marchingTriangles/ui/MarchingTrianglesTool.cs" id="2_epqr4"]
 
 [sub_resource type="Resource" id="Resource_63hnj"]
 

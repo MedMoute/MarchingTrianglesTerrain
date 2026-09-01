@@ -1,6 +1,6 @@
 [gd_resource type="ShaderMaterial" format=3 uid="uid://cbbvkbnwmr2em"]
 
-[ext_resource type="Shader" uid="uid://dp05avcxgfyc0" path="res://addons/MarchingSquaresTerrain/resources/shaders/mst_terrain_baked.gdshader" id="1_qxjxk"]
+[ext_resource type="Shader" path="res://addons/MarchingSquaresTerrain/resources/shaders/mst_terrain_baked.gdshader" id="1_qxjxk"]
 
 [resource]
 render_priority = 0

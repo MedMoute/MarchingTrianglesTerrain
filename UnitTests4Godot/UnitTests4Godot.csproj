@@ -7,11 +7,12 @@ https://github.com/godot-gdunit-labs/gdUnit4NetExamples/blob/master/Examples/Adv
         <!-- Disable Central Package Management for Godot projects -->
         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
         <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net9.0</TargetFramework>
         <LangVersion>12.0</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
-        <RootNamespace>UnitTests4Godot</RootNamespace>
+        <RootNamespace>MarchingTrianglesTerrain.addons.marchingTriangles</RootNamespace>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -25,42 +26,39 @@ https://github.com/godot-gdunit-labs/gdUnit4NetExamples/blob/master/Examples/Adv
         <!-- NO ProjectReference - we compile from symlinked source instead -->
 
         <!-- Core .NET testing infrastructure -->
-        <PackageReference Include="MathNet.Numerics" Version="6.0.0-beta2" />
-        <PackageReference Include="MathNet.Spatial" Version="0.6.0" />
+        <PackageReference Include="MathNet.Numerics" Version="6.0.0-beta2"/>
+        <PackageReference Include="MathNet.Spatial" Version="0.6.0"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1"/>
         <!-- Test frameworks -->
         <PackageReference Include="gdUnit4.api" Version="5.1.0-rc3"/>
         <!-- Test adapter to integrate GdUnit4 with .NET test runners -->
         <PackageReference Include="gdUnit4.test.adapter" Version="3.0.0"/>
-        <PackageReference Include="NUnitTestAdapter.WithFramework" Version="2.0.0" />
+        <PackageReference Include="NUnitTestAdapter.WithFramework" Version="2.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include=".runsettings" />
-      <Content Include="project.godot" />
+        <Content Include=".runsettings"/>
+        <Content Include="project.godot"/>
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="obj\Debug\net9.0\" />
-    </ItemGroup>
-   <!--
-  ============================================================
-  SYMBOLIC LINK CREATION (Runs before MSBuild evaluation)
-
-  IMPORTANT: Uses InitialTargets to ensure symlink exists
-  before MSBuild scans for files to compile.
-
-  Creates symlink to the main project's src folder containing:
-  - All C# source files (compiled into this test assembly)
-  - All Godot resources (.tscn, .tres, etc.)
-
-  Benefits:
-  - No ProjectReference needed (avoids CS0436 warnings)
-  - Same resource paths as main project
-  - Single assembly compilation
-  - Works in CI/CD environments
-  ============================================================
--->
+    
+    <!--
+   ============================================================
+   SYMBOLIC LINK CREATION (Runs before MSBuild evaluation)
+ 
+   IMPORTANT: Uses InitialTargets to ensure symlink exists
+   before MSBuild scans for files to compile.
+ 
+   Creates symlink to the main project's src folder containing:
+   - All C# source files (compiled into this test assembly)
+   - All Godot resources (.tscn, .tres, etc.)
+ 
+   Benefits:
+   - No ProjectReference needed (avoids CS0436 warnings)
+   - Same resource paths as main project
+   - Single assembly compilation
+   - Works in CI/CD environments
+   ============================================================
+ -->
     <Target Name="CreateSymlinks">
         <PropertyGroup>
             <!-- Define source and target paths for both symlinks -->
