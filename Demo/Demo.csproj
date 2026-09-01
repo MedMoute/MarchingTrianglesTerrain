@@ -11,8 +11,10 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
-        <RootNamespace>MarchingTrianglesTerrain.addons.marchingTriangles</RootNamespace>
+        <RootNamespace>MarchingTrianglesTerrain.demo</RootNamespace>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <!-- Ensures all dependencies are copied to output for test execution -->
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
