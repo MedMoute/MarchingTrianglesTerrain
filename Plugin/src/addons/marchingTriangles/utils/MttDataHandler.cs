@@ -84,9 +84,14 @@ public abstract class MttDataHandler
             }
         }
 
-        if (savedCount > 0)
+        if (savedCount > 0 )
         {
             ReportStorageSizeChanges(terrain, dirPath, initialFolderSize, savedCount);
+            terrain.LastWorkingStorageMode = terrain.StorageType;
+        }
+        else
+        {
+            GD.Print("MTTDataHandler: Saved ", savedCount, " chunk(s) to ", dirPath);
             terrain.LastWorkingStorageMode = terrain.StorageType;
         }
 
@@ -100,7 +105,7 @@ public abstract class MttDataHandler
     }
 
     /// Cleans up orphaned chunk directories that no longer exist in the scene.
-    private static void CleanupOrphanedChunkDirectories(MarchingTrianglesTerrain terrain)
+    internal static void CleanupOrphanedChunkDirectories(MarchingTrianglesTerrain terrain)
     {
         var dirPath = terrain.DataDirectory;
         if (dirPath.Length == 0)
@@ -118,7 +123,6 @@ public abstract class MttDataHandler
         }
 
         var orphanedDirs = new List<string>();
-
         dir.ListDirBegin();
         var folderName = dir.GetNext();
         while (folderName != "")
@@ -129,8 +133,10 @@ public abstract class MttDataHandler
                 var parts = folderName.TrimPrefix(ChunkPrefix).Split("_");
                 if (parts.Length == 2)
                 {
+
                     var coords = new Vector2I(parts[0].ToInt(), parts[1].ToInt());
                     // If the chunk doesn't exist in the terrain provided for cleanup , mark for deletion
+
                     if (!terrain.Chunks.ContainsKey(coords))
                     {
                         orphanedDirs.Add(dirPath.PathJoin(folderName));
@@ -204,10 +210,9 @@ public abstract class MttDataHandler
 
     /// Clean up terrain data directories for terrains that no longer exist in the saved scene.
     /// Called during save to prevent disk bloat from deleted terrains.
-    private static void CleanupOrphanedTerrainDirectories(MarchingTrianglesTerrain terrain)
+    internal static void CleanupOrphanedTerrainDirectories(MarchingTrianglesTerrain terrain)
     {
-        var sceneTree = terrain.GetTree();
-        if (sceneTree == null)
+        if (!terrain.IsInsideTree())
         {
             return;
         }
@@ -597,7 +602,7 @@ public abstract class MttDataHandler
         var metadataPath = chunkDir.PathJoin(MetadataFilename);
         if (ResourceLoader.Exists(metadataPath))
         {
-            if (GD.Load(metadataPath) is MttChunkData data)
+            if (FileUtils.Load(metadataPath) is MttChunkData data)
             {
                 ImportChunkData(chunk, data);
             }

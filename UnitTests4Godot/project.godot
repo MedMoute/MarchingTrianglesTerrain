@@ -17,3 +17,5 @@ config/icon="res://icon.svg"
 [dotnet]
 
 project/assembly_name="UnitTests4Godot"
+project/use_custom_folder_path=true
+project/custom_folder_path="res://src/"

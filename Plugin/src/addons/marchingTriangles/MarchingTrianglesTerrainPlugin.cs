@@ -171,15 +171,15 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
             return false;
         }
 
-        var terrainScript = GD.Load("res://addons/marchingTriangles/MarchingTrianglesTerrain.cs") as Script;
-        var chunkScript = GD.Load("res://addons/marchingTriangles/HexTerrainCell.cs") as Script;
+        var terrainScript = FileUtils.Load("res://addons/marchingTriangles/MarchingTrianglesTerrain.cs") as Script;
+        var chunkScript = FileUtils.Load("res://addons/marchingTriangles/HexTerrainCell.cs") as Script;
 
         if (terrainScript != null && chunkScript != null)
         {
             var terrainIcon =
-                GD.Load("res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Icon.svg") as Texture2D;
+                FileUtils.Load("res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Icon.svg") as Texture2D;
             var chunkIcon =
-                GD.Load("res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Chunk_Icon.svg") as
+                FileUtils.Load("res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Chunk_Icon.svg") as
                     Texture2D;
             AddCustomType(nameof(MarchingTrianglesTerrain), nameof(Node3D), terrainScript, terrainIcon);
             AddCustomType(nameof(GdPluginHexTerrainChunk), nameof(Node3D), chunkScript, chunkIcon);

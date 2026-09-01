@@ -92,7 +92,7 @@
     <!-- gdUnit4Net specific configuration section -->
     <GdUnit4>
         <!-- Additional Godot runtime parameters. These are passed to the Godot executable when running tests.-->
-        <Parameters></Parameters>
+        <Parameters>-e</Parameters>
 
         <!-- Controls the display name format of test cases in the test results.
                  Allowed values:

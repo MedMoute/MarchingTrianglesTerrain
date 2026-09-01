@@ -4,6 +4,7 @@ using System.Text;
 using Godot;
 using Godot.Collections;
 using MarchingTrianglesTerrain.addons.marchingTriangles.ui;
+using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
@@ -34,7 +35,7 @@ public partial class TerrainToolAttributes : Node
 
     public bool MaskGrass { get; set; } = false;
     
-    public Curve FalloffCurve { get; set; } = GD.Load<Curve>("res://addons/marchingTriangles/editor/resources/plugin_materials/curve_falloff.tres");
+    public Curve FalloffCurve { get; set; } = FileUtils.Load<Curve>("res://addons/marchingTriangles/editor/resources/plugin_materials/curve_falloff.tres");
 
     // 3D point whe the tool dragging started
     public Vector3 DragBasePosition { get; set; }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
 
@@ -25,17 +26,17 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         {
             0,
             new Tuple<Mesh, ShaderMaterial>(
-                GD.Load<Mesh>(
+                FileUtils.Load<Mesh>(
                     "res://addons/marchingTriangles/editor/resources/plugin_materials/round_brush_radius_visual.tres"),
-                GD.Load<ShaderMaterial>(
+                FileUtils.Load<ShaderMaterial>(
                     "res://addons/marchingTriangles/editor/resources/plugin_materials/round_brush_radius_material.tres"))
         },
         {
             1,
             new Tuple<Mesh, ShaderMaterial>(
-                GD.Load<Mesh>(
+                FileUtils.Load<Mesh>(
                     "res://addons/marchingTriangles/editor/resources/plugin_materials/square_brush_radius_visual.tres"),
-                GD.Load<ShaderMaterial>(
+                FileUtils.Load<ShaderMaterial>(
                     "res://addons/marchingTriangles/editor/resources/plugin_materials/square_brush_radius_material.tres"))
         }
     };

@@ -156,7 +156,7 @@ public partial class MarchingTrianglesTerrain : Node3D
     {
         TerrainSettings = new TerrainSettings(
             this,
-            GD.Load<ShaderMaterial>(
+            FileUtils.Load<ShaderMaterial>(
                     "res://addons/marchingTriangles/editor/resources/plugin_materials/mst_terrain_shader.tres")
                 .Duplicate(true) as ShaderMaterial);
 
@@ -395,8 +395,9 @@ public partial class MarchingTrianglesTerrain : Node3D
         }
 
         if (StorageInitialized)
-        {
-            MttDataHandler.LoadTerrainData(this);
+        { 
+            //TODO :Fixme
+            // MttDataHandler.LoadTerrainData(this);
         }
         else if (Engine.IsEditorHint() && MttDataHandler.NeedsMigration(this))
         {
