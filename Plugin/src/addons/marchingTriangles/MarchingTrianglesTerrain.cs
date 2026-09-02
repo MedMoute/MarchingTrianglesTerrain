@@ -396,8 +396,7 @@ public partial class MarchingTrianglesTerrain : Node3D
 
         if (StorageInitialized)
         { 
-            //TODO :Fixme
-            // MttDataHandler.LoadTerrainData(this);
+             MttDataHandler.LoadTerrainData(this);
         }
         else if (Engine.IsEditorHint() && MttDataHandler.NeedsMigration(this))
         {

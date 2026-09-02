@@ -111,6 +111,36 @@ public class TriangleGrid
         grid.FillWithDataFromTwoArray(dataT1, dataT2);
         return grid;
     }
+    
+    public static TriangleGrid BuildFrom(float[]data,Vector3I dimensions,RegularUniformFrame tilingSystem)
+    {
+        var grid =new TriangleGrid(tilingSystem);
+        grid.FillWithDataFromFlatArray(data,dimensions);
+        return grid;
+    }
+
+    private void FillWithDataFromFlatArray(float[] data,Vector3I dimensions)
+    {
+        if (data.Length != dimensions.X * dimensions.Y * 2)
+        {
+            throw new ArgumentException("The provided array do not have the expected size.");
+        }
+        
+        long zOffSet = dimensions.X * dimensions.Y;
+        long yOffset = dimensions.X;
+        long xOffset = 1;
+        for (int i = 0; i < dimensions.X; i++)
+        {
+            for (int j = 0; j < dimensions.Y; j++)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    Data.Add(new Vector3I(i,j,k),data[i*xOffset + j*yOffset + k *zOffSet]);
+                }
+            }
+        }
+
+    }
 
     public Vector2D GetCartesianOriginForCellIndex(Vector2I cellIdx)
     {

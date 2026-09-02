@@ -15,6 +15,8 @@ public class HexTileOrientationSystem : RegularUniformFrame
 
     public Vector2D[] UnscaledOriginCellCentroidPositions { get; }
 
+    public Vector2D InitialSeedVector { get; }
+
     public Matrix<double> Transform
     {
         get => _transform;
@@ -79,9 +81,10 @@ public class HexTileOrientationSystem : RegularUniformFrame
         {
             throw new ArgumentException("Cannot create such a small grid. Something is wrong");
         }
-
+        
         TilingScale = j.Length;
         UnscaledOriginCellCentroidPositions = [origin];
+        InitialSeedVector = seedVector;
         Transform = BuildBasis(origin, seedVector);
         TilingAngle =
             Angle.FromRadians(Math.Atan2(-(seedVector - origin).Y, -(seedVector - origin).X) - 2 * Math.PI / 3);
@@ -97,13 +100,15 @@ public class HexTileOrientationSystem : RegularUniformFrame
         Angle tilingAngle,
         Vector2D[] unscaledOriginCellCentroidPositions,
         Matrix<double> transform,
-        Matrix<double> transformInverse)
+        Matrix<double> transformInverse,
+        Vector2D seedVector)
     {
         TilingAngle = tilingAngle;
         TilingScale = tilingScale;
         UnscaledOriginCellCentroidPositions = unscaledOriginCellCentroidPositions; 
         Transform = transform;
         TransformInverse = transformInverse;
+        InitialSeedVector = seedVector;
     }
 
     private Matrix<double> BuildBasis(Vector2D origin, Vector2D seedVector)
@@ -160,12 +165,14 @@ public class HexTileOrientationSystem : RegularUniformFrame
         var newTransform = Matrix.Build.DenseOfMatrix(Transform);
         var newTransformInverse = Matrix.Build.DenseOfMatrix(TransformInverse);
         var newCentroidList = new Vector2D[1];
+        var seedVector = InitialSeedVector;
         UnscaledOriginCellCentroidPositions.CopyTo(newCentroidList,0);
         var clone = new HexTileOrientationSystem(TilingScale,
             Angle.FromRadians(TilingAngle.Radians),
             newCentroidList,
             newTransform,
-            newTransformInverse);
+            newTransformInverse,
+            seedVector);
         return clone;
     }
 

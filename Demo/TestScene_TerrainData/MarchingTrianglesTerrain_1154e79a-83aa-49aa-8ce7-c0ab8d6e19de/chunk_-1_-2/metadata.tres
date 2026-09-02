@@ -1,0 +1,6 @@
+[gd_resource type="Resource" format=3 uid="uid://587jnks026hf"]
+
+[ext_resource type="Script" uid="uid://bo7u10t6c3owm" path="res://addons/marchingTriangles/utils/MttChunkData.cs" id="1_cp4ko"]
+
+[resource]
+script = ExtResource("1_cp4ko")

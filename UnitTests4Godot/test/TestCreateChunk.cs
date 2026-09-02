@@ -20,7 +20,6 @@ public class TestCreateChunk
         {
             AddNode(new MarchingTrianglesTerrainPlugin());
             terrain = AddNode(new MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain());
-            terrain.DataDirectory = "res://out";
         });
         AssertThat(terrain.GetChildCount()).IsEqual(0);
 

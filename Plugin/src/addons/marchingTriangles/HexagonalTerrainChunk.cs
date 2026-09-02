@@ -60,10 +60,11 @@ public class HexagonalTerrainChunk
     /// </summary>
     protected internal HexagonGrid _terrainDualGrid;
 
+
     /// <summary>
     /// Stores the coordinates of the neighboring chunks that exist that 
     /// </summary>
-    private readonly HashSet<Vector2I> _createdNeighbors = new();
+    public HashSet<Vector2I> existingNeighbors { get; set; } = new();
 
     /// <summary>
     /// Neighbor-only aware chunk provider.
@@ -86,12 +87,14 @@ public class HexagonalTerrainChunk
     /// </summary>
     public float MergeThreshold { get; set; }
 
-
     /// <summary>
-    /// Data holder for the chunk's 
+    /// Data holder for the chunk's color data
     /// </summary>
     public TerrainColorMaps ColorMaps { get; internal set; }
 
+    /// <summary>
+    /// Chunk's type of merge operation
+    /// </summary>
     public int MergeMode { get; set; } = 1;
 
     public Dictionary<Vector3I, bool> NeedUpdate { get; } = new();
@@ -112,7 +115,7 @@ public class HexagonalTerrainChunk
     {
         Coordinates = chunkCoordinates;
         Dimensions2D = dimension;
-        _createdNeighbors.Add(Vector2I.Zero); // Register the chunk as its own neighbor
+        existingNeighbors.Add(Vector2I.Zero); // Register the chunk as its own neighbor
 
         var src1 = dataSource ?? new float[dimension.X][];
         var src2 = dataSource2 ?? new float[dimension.X][];
@@ -125,7 +128,7 @@ public class HexagonalTerrainChunk
             DataGrid,
             Dimensions2D,
             v => neighboringChunkDataHandle(v).DataGrid,
-            v => _createdNeighbors.Contains(v));
+            v => existingNeighbors.Contains(v));
         _colorHelper = new VertexColorHelper(_neighborChunksProvider);
         NeedUpdate = new();
     }
@@ -279,7 +282,7 @@ public class HexagonalTerrainChunk
         var foundCells = 0;
         //
 
-        _createdNeighbors.Add(offset);
+        existingNeighbors.Add(offset);
 
         var triCells = GetTriCellsTouchingNeighbour(offset);
         foreach (var triCell in triCells)
@@ -293,7 +296,7 @@ public class HexagonalTerrainChunk
                     triCell,
                     Dimensions2D,
                     v => _neighborChunksProvider(v).DataGrid,
-                    v => _createdNeighbors.Contains(v));
+                    v => existingNeighbors.Contains(v));
                 NeedUpdate[triCell-offset3D] = true;
             }
         }

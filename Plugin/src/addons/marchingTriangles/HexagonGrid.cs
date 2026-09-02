@@ -35,14 +35,14 @@ public class HexagonGrid
         TriangleGrid dualGrid,
         Vector2I chunkDimensions,
         Func<Vector2I, TriangleGrid> neighborDataGridProvider,
-        Func<Vector2I,bool> chunkTester)
+        Func<Vector2I, bool> chunkTester)
     {
         RegularUniformFrame dualFrame = dualGrid.OrientationSystem;
         RegularUniformFrame frame = dualFrame.GetDual();
         HexagonGrid grid = new(frame, dualFrame);
         foreach (var dataPoint in dualGrid.Data)
         {
-            grid.AddDeltaTileCellValues(dataPoint.Key, chunkDimensions, neighborDataGridProvider,chunkTester);
+            grid.AddDeltaTileCellValues(dataPoint.Key, chunkDimensions, neighborDataGridProvider, chunkTester);
         }
 
         return grid;
@@ -88,12 +88,12 @@ public class HexagonGrid
                 }
             }
 
-            cell.VisitedBy(trianglesTile,dimensions2D);
+            cell.VisitedBy(trianglesTile, dimensions2D);
 
             if (cell.IsReady())
             {
                 CompleteCells.Add(cell);
-                PendingCells[cellCoords] = null;
+                PendingCells.Remove(cellCoords);
             }
         }
     }
@@ -139,5 +139,52 @@ public class HexagonGrid
     public static Vector3I ToFullCubeCoords(Vector2I axialCoords)
     {
         return new Vector3I(axialCoords.X, axialCoords.Y, -axialCoords.X - axialCoords.Y);
+    }
+
+    public static HexagonGrid BuildFromSerialData(
+        double[] dataStructHexFrameSeed1,
+        double[] dataStructHexFrameSeed2,
+        double[] dataStructTriFrameSeed1,
+        double[] dataStructTriFrameSeed2,
+        Vector3I dataStructFrameDimensions,
+        Vector2I[] dataStructFullCellIndices,
+        Vector3I[] dataStructFullCellMappings,
+        Vector2I[] dataStructPendingCellIndices,
+        Vector3I?[] dataStructPendingCellsVisitsMappingKey,
+        Vector2I?[] dataStructPendingCellsVisitsMappingValue)
+    {
+        HexTileOrientationSystem frame = new HexTileOrientationSystem(
+            new Vector2D(dataStructHexFrameSeed1[0], dataStructHexFrameSeed1[1]),
+            new Vector2D(dataStructHexFrameSeed2[0], dataStructHexFrameSeed2[1])
+        );
+        RegularUniformFrame dualFrame = frame.GetDual();
+        HexagonGrid grid = new HexagonGrid(frame, dualFrame);
+        grid.CompleteCells = new HashSet<HexTerrainCell>();
+        for (int i = 0; i < dataStructFullCellIndices.Length; i++)
+        {
+            var cell = new HexTerrainCell(dataStructFullCellIndices[i], frame, dualFrame);
+            grid.CompleteCells.Add(cell);
+            // for (int j = 0; j < 6; j++)
+            // {
+            //     cell.DualCellsMapping.Add(j,dataStructFullCellMappings[6*i + j]);
+            // }
+        }
+
+        for (int i = 0; i < dataStructPendingCellIndices.Length; i++)
+        {
+            var cell = new HexTerrainCell(dataStructPendingCellIndices[i], frame, dualFrame);
+            grid.PendingCells.Add(cell.CellCoordsImplicit,cell);
+            for (int j = 0; j < 6; j++)
+            {
+                if (dataStructPendingCellsVisitsMappingKey[6 * i + j] != null)
+                {
+                    cell.Visits.Add(
+                        (Vector3I)dataStructPendingCellsVisitsMappingKey[6 * i + j],
+                        (Vector2I)dataStructPendingCellsVisitsMappingValue[6 * i + j]);
+
+                }
+            }
+        }
+        return grid;
     }
 }
