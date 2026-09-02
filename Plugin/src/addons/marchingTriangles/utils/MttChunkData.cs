@@ -5,7 +5,6 @@ using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
 [Tool]
-[GlobalClass]
 // Chunk Data Exported by the plugin
 public partial class MttChunkData : Resource
 {
@@ -136,27 +135,27 @@ public partial class MttChunkData : Resource
         // -- Encoded Data grid (TriangleGrid)
         //----------------------------------------
         // ----> Grid Expected Size
-        public Vector3I FrameDimensions
+        [Export] public Vector3I FrameDimensions
         {
             get => underlying.FrameDimensions;
             set => underlying.FrameDimensions = value;
         }
 
         // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
-        public double[] TriFrameSeed1
+        [Export] public double[] TriFrameSeed1
         {
             get => underlying.TriFrameSeed1;
             set => underlying.TriFrameSeed1 = value;
         }
 
-        public double[] TriFrameSeed2
+        [Export] public double[] TriFrameSeed2
         {
             get => underlying.TriFrameSeed2;
             set => underlying.TriFrameSeed2 = value;
         }
 
         // ----> Data
-        public float[] Values
+        [Export] public float[] Values
         {
             get => underlying.Values;
             set => underlying.Values = value;
@@ -165,13 +164,13 @@ public partial class MttChunkData : Resource
         // -- Encoded DualGrid (Hexagonal grid)
         //----------------------------------------
         // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
-        public double[] HexFrameSeed1
+        [Export] public double[] HexFrameSeed1
         {
             get => underlying.HexFrameSeed1;
             set => underlying.HexFrameSeed1 = value;
         }
 
-        public double[] HexFrameSeed2
+        [Export] public double[] HexFrameSeed2
         {
             get => underlying.HexFrameSeed2;
             set => underlying.HexFrameSeed2 = value;
@@ -179,14 +178,14 @@ public partial class MttChunkData : Resource
 
         // ----> FullCells
         // -------> Cell indexes
-        public Vector2I[] FullCellIndices
+        [Export] public Vector2I[] FullCellIndices
         {
             get => underlying.FullCellIndices;
             set => underlying.FullCellIndices = value;
         }
 
         // -------> DataIndexesMapping (FullCellIndices.length)
-        public Vector3I[] FullCellMappings
+        [Export] public Vector3I[] FullCellMappings
         {
             get => underlying.FullCellMappings;
             set => underlying.FullCellMappings = value;
@@ -194,25 +193,25 @@ public partial class MttChunkData : Resource
 
         // ----> PendingCells
         // -------> Pending Cell indexes & Mapping
-        public Vector2I[] PendingCellIndices 
+        [Export] public Vector2I[] PendingCellIndices 
         {
             get => underlying.PendingCellIndices;
             set => underlying.PendingCellIndices = value;
         }
 
         // -------> DataIndexesMapping (FullCellIndices.length)
-        public Vector3I?[] PendingCellsVisitsMappingKey         {
+        [Export] public Vector3I?[] PendingCellsVisitsMappingKey         {
             get => underlying.PendingCellsVisitsMappingKey;
             set => underlying.PendingCellsVisitsMappingKey = value;
         }
-        public Vector2I?[] PendingCellsVisitsMappingValue         {
+        [Export] public Vector2I?[] PendingCellsVisitsMappingValue         {
             get => underlying.PendingCellsVisitsMappingValue;
             set => underlying.PendingCellsVisitsMappingValue = value;
         }
 
         // Encoded neighbors
         //----------------------
-        public Vector2I[] ExistingNeighbors
+        [Export] public Vector2I[] ExistingNeighbors
         {
             get => underlying.ExistingNeighbors;
             set => underlying.ExistingNeighbors = value;
@@ -220,13 +219,13 @@ public partial class MttChunkData : Resource
 
         // Encoded Marching Triangles properties
         //----------------------
-        public int MergeMode
+        [Export] public int MergeMode
         {
             get => underlying.MergeMode;
             set => underlying.MergeMode = value;
         }
 
-        public float MergeThreshold
+        [Export] public float MergeThreshold
         {
             get => underlying.MergeThreshold;
             set => underlying.MergeThreshold = value;
@@ -234,25 +233,25 @@ public partial class MttChunkData : Resource
 
         // Encoded ColorMaps
         //----------------------
-        public Color[] Ground0Colors
+        [Export] public Color[] Ground0Colors
         {
             get => underlying.Ground0Colors;
             set => underlying.Ground0Colors = value;
         }
 
-        public Color[] Ground1Colors
+        [Export] public Color[] Ground1Colors
         {
             get => underlying.Ground1Colors;
             set => underlying.Ground1Colors = value;
         }
 
-        public Color[] Wall0Colors
+        [Export] public Color[] Wall0Colors
         {
             get => underlying.Wall0Colors;
             set => underlying.Wall0Colors = value;
         }
 
-        public Color[] Wall1Colors
+        [Export] public Color[] Wall1Colors
         {
             get => underlying.Wall1Colors;
             set => underlying.Wall1Colors = value;

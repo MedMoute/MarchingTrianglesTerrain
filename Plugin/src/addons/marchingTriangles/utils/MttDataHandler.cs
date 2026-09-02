@@ -417,21 +417,16 @@ public abstract class MttDataHandler
         }
 
         var metadataPath = chunkDir.PathJoin(MetadataFilename);
-        logger.LogInformation("Data being saved : [Coords]{0}", data.ChunkCoords);
 
-        var error = ResourceSaver.Save(data, metadataPath, ResourceSaver.SaverFlags.Compress);
+        var error = ResourceSaver.Save(data, metadataPath, ResourceSaver.SaverFlags.Compress | ResourceSaver.SaverFlags.BundleResources| ResourceSaver.SaverFlags.ReplaceSubresourcePaths);
+        error = ResourceSaver.Save(data.DataStruct,chunkDir.PathJoin("Struct.tres"), ResourceSaver.SaverFlags.Compress | ResourceSaver.SaverFlags.BundleResources| ResourceSaver.SaverFlags.ReplaceSubresourcePaths);
         logger.LogInformation("Saved data: [Coords]{0}", data.ChunkCoords);
-
-        var newData = ResourceLoader.Load(metadataPath, "", ResourceLoader.CacheMode.IgnoreDeep) as MttChunkData;
-        logger.LogInformation("Reloaded data : [Coords]{0}", newData.ChunkCoords);
 
         if (error != Error.Ok)
         {
             GD.PrintErr("MTTDataHandler: Failed to save metadata to ", metadataPath);
         }
-
-        logger.LogInformation(new System.Diagnostics.StackTrace().ToString());
-
+        
         GD.Print("MSTDataHandler: Saved chunk ", chunk.Underlying.Coordinates);
     }
 
@@ -445,7 +440,7 @@ public abstract class MttDataHandler
 
         FillDataStructFromChunk(dataStructImpl, chunk.Underlying);
         data.DataStruct = new MttChunkData.DelegatedChunkDataStruct(dataStructImpl);
-        data.Mesh = chunk.Mesh;
+//        data.Mesh = chunk.Mesh;
 
         if (chunk.GetParent() is MarchingTrianglesTerrain { BakeCollision: true })
         {
@@ -457,7 +452,7 @@ public abstract class MttDataHandler
                     {
                         if (bodyChild is CollisionShape3D { Shape: ConcavePolygonShape3D concaveShape })
                         {
-                            data.SetCollisionFromShape(concaveShape);
+ //                           data.SetCollisionFromShape(concaveShape);
                             break;
                         }
                     }

@@ -19,11 +19,10 @@
 	<s:String x:Key="/Default/Environment/Hierarchy/Build/BuildTool/CustomBuildToolPath/@EntryValue">/usr/lib/dotnet/sdk/9.0.118/MSBuild.dll</s:String>
 	<s:String x:Key="/Default/Environment/Hierarchy/Build/BuildTool/DotNetCliExePath/@EntryValue">/usr/lib/dotnet/dotnet</s:String>
 	<s:Boolean x:Key="/Default/Environment/UnitTesting/CaptureOutputInternal/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=36cbb583_002D5960_002D43eb_002Daa92_002D52bd158fe906/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="TestChunkSerialization" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;TestAncestor&gt;
-    &lt;TestId&gt;NUnit3x::FBA7864A-75D9-441D-8662-CCB2527AC9C6::net9.0::UnitTests.TestChunkSerialization&lt;/TestId&gt;
-  &lt;/TestAncestor&gt;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=5caad79f_002D373d_002D4b3e_002D9086_002D459c7a946a8b/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Solution /&gt;
 &lt;/SessionState&gt;</s:String>
+	
 	
 	
 	
