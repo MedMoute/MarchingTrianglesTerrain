@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c78c2ht8gx0vh"
-path="res://.godot/imported/Marching_Squares_Terrain_Chunk_Icon.svg-a9fba2cb4b60964b553851e9a3c266a2.ctex"
+path="res://.godot/imported/Marching_Squares_Terrain_Chunk_Icon.svg-cf20078bce79bc7134adfef65d9d33d0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Chunk_Icon.svg"
-dest_files=["res://.godot/imported/Marching_Squares_Terrain_Chunk_Icon.svg-a9fba2cb4b60964b553851e9a3c266a2.ctex"]
+source_file="res://src/addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Chunk_Icon.svg"
+dest_files=["res://.godot/imported/Marching_Squares_Terrain_Chunk_Icon.svg-cf20078bce79bc7134adfef65d9d33d0.ctex"]
 
 [params]
 

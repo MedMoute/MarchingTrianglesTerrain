@@ -238,7 +238,14 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(_offSetAngleInRad, DualSeeds, UnscaledOriginCellCentroidPositions, Transform,
-            TransformInverse, TilingScale);
+        return HashCode.Combine(
+            _offSetAngleInRad,
+            DualSeeds.Item1,
+            DualSeeds.Item2,
+            UnscaledOriginCellCentroidPositions[0],
+            UnscaledOriginCellCentroidPositions[1], 
+            Transform,
+            TransformInverse,
+            TilingScale);
     }
 }

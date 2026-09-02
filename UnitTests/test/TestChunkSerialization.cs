@@ -37,5 +37,22 @@ public class TestChunkSerialization
 
         var newChunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null);
         MttDataHandler.FillChunkFromData(dataStructImpl, newChunk);
+        
+        Assert.That(newChunk.Coordinates,Is.EqualTo(chunk.Coordinates));
+        Assert.That(newChunk.Dimensions, Is.EqualTo(chunk.Dimensions));
+        Assert.That(newChunk.MergeMode, Is.EqualTo(chunk.MergeMode));
+        Assert.That(newChunk.MergeThreshold, Is.EqualTo(chunk.MergeThreshold));
+        //
+        Assert.That(newChunk.DataGrid.OrientationSystem.GetHashCode(),
+            Is.EqualTo(chunk.DataGrid.OrientationSystem.GetHashCode()));
+        
+        Assert.That(newChunk.DataGrid.Data,Is.EqualTo(chunk.DataGrid.Data));
+        Assert.That(newChunk.DataGrid.Points,Is.EqualTo(chunk.DataGrid.Points));
+        Assert.That(newChunk.DataGrid.Size, Is.EqualTo(chunk.DataGrid.Size));
+        
+        Assert.That(newChunk.existingNeighbors,Is.EqualTo(chunk.existingNeighbors));
+        
+        //No Equals impl on TerrainColorMaps
+        //Assert.That(newChunk.ColorMaps, Is.EqualTo(chunk.ColorMaps));
     }
 }
