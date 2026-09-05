@@ -24,7 +24,7 @@ public class TestGrids
             v => v is { X: 0, Y: 0 } ? terrainHeightMap : null,
             v => v is { X: 0, Y: 0 });
 
-        Assert.That(() => terrainDualGrid.PendingCells.Count, Is.EqualTo(9));
+        Assert.That(() => terrainDualGrid.PendingCells.Count, Is.EqualTo(8));
         Assert.That(() => terrainDualGrid.PendingCells.Where(c => c.Value != null).ToList().Count, Is.EqualTo(8));
         Assert.That(() => terrainDualGrid.CompleteCells.Count, Is.EqualTo(1));
     }

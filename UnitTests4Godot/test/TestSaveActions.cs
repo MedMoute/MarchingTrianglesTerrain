@@ -1,11 +1,15 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using GdUnit4;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using static GdUnit4.Assertions;
 using NUnit.Framework;
+using FileAccess = Godot.FileAccess;
 
 namespace UnitTests4Godot.test;
 
@@ -29,6 +33,7 @@ public class TestSaveActions
         Vector2I chunkCoord = Vector2I.Zero;
         // Basic assertions on workflow : Empty dir => Non-empty dir after save
         AssertThat(FileUtils.GetDirectorySizeRecursive(terrain.DataDirectory)).IsEqual(0);
+
         Assert.DoesNotThrow(() =>
         {
             terrain.AddNewChunk(chunkCoord, plugin);
@@ -40,10 +45,14 @@ public class TestSaveActions
         var dataFiles = AssertOutputDirectoryContentAndCollectDatafiles(chunkCoord);
 
         AssertThat(dataFiles.Count).IsEqual(1);
-
+        GD.Print(dataFiles[0].Item2);
+        GD.Print(dataFiles[0].Item1);
         // Load the content of the saved files
-        var res = GD.Load(dataFiles[0]);
-        if (res == null)
+        if (ResourceLoader.Load(dataFiles[0].Item1, "", ResourceLoader.CacheMode.IgnoreDeep) is not MttChunkData)
+        {
+            Assert.Fail();
+        }
+        if (ResourceLoader.Load(dataFiles[0].Item2, "DelegatedChunkDataStruct", ResourceLoader.CacheMode.IgnoreDeep) is not DelegatedChunkDataStruct)
         {
             Assert.Fail();
         }
@@ -55,27 +64,42 @@ public class TestSaveActions
         Vector2I chunkCoord = Vector2I.One;
 
         terrain.AddNewChunk(chunkCoord, plugin);
+        var chunk = terrain.Chunks[chunkCoord];
+
         MttDataHandler.SaveChunks(terrain);
 
         // Get the output file for the chunk
         var dataFile = AssertOutputDirectoryContentAndCollectDatafiles(chunkCoord)[0];
-        var res = GD.Load(dataFile) as MttChunkData;
-        Debug.Assert(res != null, nameof(res) + " != null");
-        //Primitives
-        //AssertThat(res.ChunkCoords).IsEqual(chunkCoord);
-        // Arrays
-        //Assert.NotNull(res.CollisionFaces);
-        //AssertThat(res.CollisionFaces.Length).IsGreater(0);
-        //Mesh
-        //Assert.NotNull(res.Mesh);
-        //AssertThat(res.Mesh.GetSurfaceCount()).IsGreater(0);
+
+        GD.Print(dataFile.Item1);
+        var res = GD.Load<MttChunkData>(dataFile.Item1);
+        GD.Print(dataFile.Item2);
+        var structRes = GD.Load<DelegatedChunkDataStruct>(dataFile.Item2);
         
+        // Arrays
+        Assert.NotNull(res.CollisionFaces);
+        AssertThat(res.CollisionFaces.Length).IsGreater(0);
+        //Mesh
+        Assert.NotNull(res.Mesh);
+        AssertThat(res.Mesh.GetSurfaceCount()).IsGreater(0);
+
+        // Compare the Loaded resource (NOT AS A CHUNK - as this test is not about chunk loading)
+        // to the initial chunk values :
+
+        Assert.That(res.ChunkCoords, Is.EqualTo(chunk.Underlying.Coordinates));
+
+        Assert.That(structRes.FrameDimensions, Is.EqualTo(chunk.Underlying.Dimensions));
+        Assert.That(res.MergeMode, Is.EqualTo(chunk.Underlying.MergeMode));
+        // Test Data Struct
+        Assert.That(
+            structRes.Values,
+            Is.EqualTo(chunk.Underlying.DataGrid.Data.Values.ToArray()).AsCollection);
     }
 
 
-    private List<string> AssertOutputDirectoryContentAndCollectDatafiles(Vector2I chunkCoord)
+    private List<Tuple<string, string>> AssertOutputDirectoryContentAndCollectDatafiles(Vector2I chunkCoord)
     {
-        List<string> dataFiles = new();
+        List<Tuple<string, string>> dataFiles = new();
 
         var dirPath = terrain.DataDirectory;
         var dir = DirAccess.Open(dirPath);
@@ -120,8 +144,14 @@ public class TestSaveActions
                         if (subFileName == MttDataHandler.MetadataFilename)
                         {
                             //Collect the metadata filepath
-                            dataFiles.Add(filePath);
+                            dataFiles.Add(new Tuple<string, string>(filePath, nextPath.PathJoin(subDir.GetNext())));
                         }
+                        else if (subFileName == MttDataHandler.DataStructFilename)
+                        {
+                            //Collect the resource filepath
+                            dataFiles.Add(new Tuple<string, string>(nextPath.PathJoin(subDir.GetNext()), filePath));
+                        }
+
                         else
                         {
                             Assert.Fail();
@@ -146,6 +176,32 @@ public class TestSaveActions
         return dataFiles;
     }
 
+    [GdUnit4.TestCase]
+    public void TestCanWriteStructureToFile()
+    {
+        var chunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null);
+        var dataStructImpl = new ChunkDataStructImpl();
+        MttDataHandler.FillDataStructFromChunk(dataStructImpl, chunk);
+        var facade = new DelegatedChunkDataStruct(dataStructImpl);
+        var dir = DirAccess.Open("res://resources");
+        var error = ResourceSaver.Save(facade, "res://resources/file.tres", ResourceSaver.SaverFlags.BundleResources);
+        if (error != Error.Ok)
+        {
+            GD.Print("Failed to remove test temp file : " + error);
+            Assert.Fail();
+        }
+
+        //Read the file
+        String str = FileAccess.GetFileAsString("res://resources/file.tres");
+        Assert.That(str.Length, Is.GreaterThan(0));
+        error = dir.Remove("res://resources/file.tres");
+        if (error != Error.Ok)
+        {
+            GD.Print("Failed to remove test temp file : " + error);
+            Assert.Fail();
+        }
+    }
+
     [BeforeTest]
     public void Setup()
     {
@@ -157,11 +213,11 @@ public class TestSaveActions
     [AfterTest]
     public void TestCleanup()
     {
-        //terrain.Chunks.Keys.ToImmutableList().ForEach((chk) => terrain.RemoveChunkFromTree(chk, plugin));
-        //// Clean up the chunk directories referring to chunks that no longer exist in the saved scene
-        //MttDataHandler.CleanupOrphanedChunkDirectories(terrain);
-        //// Clean up the terrain directories referring to terrain nodes no longer existing in the scene
-        //MttDataHandler.CleanupOrphanedTerrainDirectories(terrain);
-        //DirAccess.RemoveAbsolute(terrain.DataDirectory.TrimSuffix("/"));
+        // terrain.Chunks.Keys.ToImmutableList().ForEach((chk) => terrain.RemoveChunkFromTree(chk, plugin));
+        // // Clean up the chunk directories referring to chunks that no longer exist in the saved scene
+        // MttDataHandler.CleanupOrphanedChunkDirectories(terrain);
+        // // Clean up the terrain directories referring to terrain nodes no longer existing in the scene
+        // MttDataHandler.CleanupOrphanedTerrainDirectories(terrain);
+        // DirAccess.RemoveAbsolute(terrain.DataDirectory.TrimSuffix("/"));
     }
 }

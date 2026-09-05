@@ -1,7 +1,0 @@
-[gd_resource type="Resource" format=3 uid="uid://fkmt5c8qpvs6"]
-
-[ext_resource type="Script" uid="uid://bo7u10t6c3owm" path="res://addons/marchingTriangles/utils/MttChunkData.cs" id="1_y5n45"]
-
-[resource]
-resource_local_to_scene = true
-script = ExtResource("1_y5n45")

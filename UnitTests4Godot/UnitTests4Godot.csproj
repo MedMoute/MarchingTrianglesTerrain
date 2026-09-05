@@ -41,6 +41,8 @@ https://github.com/godot-gdunit-labs/gdUnit4NetExamples/blob/master/Examples/Adv
     <ItemGroup>
         <Content Include=".runsettings"/>
         <Content Include="project.godot"/>
+        <Content Include="resources\Chunks\chunk_1_1\datastruct.tres" />
+        <Content Include="resources\Chunks\chunk_1_1\metadata.tres" />
     </ItemGroup>
 
     <ItemGroup>

@@ -147,12 +147,22 @@ public class HexagonGrid
         double[] dataStructTriFrameSeed1,
         double[] dataStructTriFrameSeed2,
         Vector3I dataStructFrameDimensions,
-        Vector2I[] dataStructFullCellIndices,
-        Vector3I[] dataStructFullCellMappings,
-        Vector2I[] dataStructPendingCellIndices,
-        Vector3I?[] dataStructPendingCellsVisitsMappingKey,
-        Vector2I?[] dataStructPendingCellsVisitsMappingValue)
+        int[] dataStructFullCellIndices,
+        int[] dataStructFullCellMappings,
+        int[] dataStructPendingCellIndices,
+        int[] dataStructPendingCellsVisitsMappingKey,
+        int[] dataStructPendingCellsVisitsMappingValue)
     {
+        if (dataStructFullCellIndices.Length % 2 != 0 ||
+            dataStructFullCellMappings.Length % 3 != 0 ||
+            dataStructPendingCellIndices.Length % 2 != 0 ||
+            dataStructPendingCellsVisitsMappingKey.Length % 3 != 0 ||
+            dataStructPendingCellsVisitsMappingValue.Length % 2 != 0)
+        {
+            throw new ArgumentException("The provided argument arays do not have an expected size");
+            //TODO : Enforce a consistent size across arrays
+        }
+
         HexTileOrientationSystem frame = new HexTileOrientationSystem(
             new Vector2D(dataStructHexFrameSeed1[0], dataStructHexFrameSeed1[1]),
             new Vector2D(dataStructHexFrameSeed2[0], dataStructHexFrameSeed2[1])
@@ -160,31 +170,54 @@ public class HexagonGrid
         RegularUniformFrame dualFrame = frame.GetDual();
         HexagonGrid grid = new HexagonGrid(frame, dualFrame);
         grid.CompleteCells = new HashSet<HexTerrainCell>();
-        for (int i = 0; i < dataStructFullCellIndices.Length; i++)
+        for (int i = 0; i < dataStructFullCellIndices.Length / 2; i++)
         {
-            var cell = new HexTerrainCell(dataStructFullCellIndices[i], frame, dualFrame);
+            Vector2I fulCellIndex = new Vector2I(
+                dataStructFullCellIndices[2 * i],
+                dataStructFullCellIndices[2 * i + 1]);
+            var cell = new HexTerrainCell(
+                fulCellIndex,
+                frame,
+                dualFrame);
+
             grid.CompleteCells.Add(cell);
+
+            // Done in the cell constructor
             // for (int j = 0; j < 6; j++)
             // {
-            //     cell.DualCellsMapping.Add(j,dataStructFullCellMappings[6*i + j]);
+            //     var cellMappingVector = new Vector3I(
+            //         dataStructFullCellMappings[3 * (6 * i + j)],
+            //         dataStructFullCellMappings[3 * (6 * i + j) + 1],
+            //         dataStructFullCellMappings[3 * (6 * i + j) + 2]);
+            //     cell.DualCellsMapping.Add(j, cellMappingVector);
             // }
         }
 
-        for (int i = 0; i < dataStructPendingCellIndices.Length; i++)
+        for (int i = 0; i < dataStructPendingCellIndices.Length / 2; i++)
         {
-            var cell = new HexTerrainCell(dataStructPendingCellIndices[i], frame, dualFrame);
-            grid.PendingCells.Add(cell.CellCoordsImplicit,cell);
+            Vector2I pendingCellIndex = new Vector2I(
+                dataStructPendingCellIndices[2 * i],
+                dataStructPendingCellIndices[2 * i + 1]);
+            var cell = new HexTerrainCell(pendingCellIndex, frame, dualFrame);
+            grid.PendingCells.Add(cell.CellCoordsImplicit, cell);
+
             for (int j = 0; j < 6; j++)
             {
-                if (dataStructPendingCellsVisitsMappingKey[6 * i + j] != null)
+                if (dataStructPendingCellsVisitsMappingKey[3*(6 * i + j)] != Int32.MaxValue)
                 {
-                    cell.Visits.Add(
-                        (Vector3I)dataStructPendingCellsVisitsMappingKey[6 * i + j],
-                        (Vector2I)dataStructPendingCellsVisitsMappingValue[6 * i + j]);
+                    var cellMappingKey = new Vector3I(
+                        dataStructPendingCellsVisitsMappingKey[3 * (6 * i + j)],
+                        dataStructPendingCellsVisitsMappingKey[3 * (6 * i + j) + 1],
+                        dataStructPendingCellsVisitsMappingKey[3 * (6 * i + j) + 2]);
+                    var cellMappingValue = new Vector2I(
+                        dataStructPendingCellsVisitsMappingValue[2 * (6 * i + j)],
+                        dataStructPendingCellsVisitsMappingValue[2 * (6 * i + j) + 1]);
 
+                    cell.Visits.Add(cellMappingKey, cellMappingValue);
                 }
             }
         }
+
         return grid;
     }
 }

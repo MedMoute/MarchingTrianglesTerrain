@@ -17,6 +17,8 @@ public abstract class MttDataHandler
     public static readonly Func<Vector2I, string> ChunkSuffixProvider = (c) => $"{c.X}_{c.Y}";
     public const string TerrainSuffix = "_TerrainData";
     public const string MetadataFilename = "metadata.tres";
+    public const string DataStructFilename = "datastruct.tres";
+
     public static ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
     public static ILogger logger = factory.CreateLogger("MttDataHandler");
 
@@ -402,45 +404,56 @@ public abstract class MttDataHandler
         var chunkDir = dirPath.PathJoin(chunkName);
         EnsureDirectoryExists(chunkDir);
         // Export the chunk Data
-        MttChunkData data = ExportChunkData(chunk);
+        Tuple<MttChunkData, ChunkDataStruct> dataTuple = ExportChunkData(chunk);
         //  Clear transient data based on mode and config
         bool isBakedMode = terrain.StorageType == MarchingTrianglesTerrain.StorageMode.Baked;
 
-        // if (!isBakedMode)
-        // {
-        //     data.Mesh = null;
-        // }
+        if (!isBakedMode)
+        {
+            dataTuple.Item1.Mesh = null;
+        }
 
         if (!isBakedMode || !terrain.BakeCollision)
         {
-            data.CollisionFaces = null;
+            dataTuple.Item1.CollisionFaces = null;
         }
 
         var metadataPath = chunkDir.PathJoin(MetadataFilename);
 
-        var error = ResourceSaver.Save(data, metadataPath, ResourceSaver.SaverFlags.Compress | ResourceSaver.SaverFlags.BundleResources| ResourceSaver.SaverFlags.ReplaceSubresourcePaths);
-        error = ResourceSaver.Save(data.DataStruct,chunkDir.PathJoin("Struct.tres"), ResourceSaver.SaverFlags.Compress | ResourceSaver.SaverFlags.BundleResources| ResourceSaver.SaverFlags.ReplaceSubresourcePaths);
-        logger.LogInformation("Saved data: [Coords]{0}", data.ChunkCoords);
-
-        if (error != Error.Ok)
+        var errorMetadata = ResourceSaver.Save(dataTuple.Item1, metadataPath);
+        if (errorMetadata != Error.Ok)
         {
             GD.PrintErr("MTTDataHandler: Failed to save metadata to ", metadataPath);
+            return;
         }
-        
-        GD.Print("MSTDataHandler: Saved chunk ", chunk.Underlying.Coordinates);
+
+        var dataPath = chunkDir.PathJoin(DataStructFilename);
+
+        var errorStruct = ResourceSaver.Save(new DelegatedChunkDataStruct(dataTuple.Item2), dataPath);
+        if (errorStruct != Error.Ok)
+        {
+            GD.PrintErr("MTTDataHandler: Failed to save data structure to ", dataPath);
+            return;
+        }
+
+        logger.LogInformation("Saved data: [Coords]{0}", dataTuple.Item1.ChunkCoords);
     }
 
-    private static MttChunkData ExportChunkData(GdPluginHexTerrainChunk chunk)
+    private static Tuple<MttChunkData, ChunkDataStruct> ExportChunkData(GdPluginHexTerrainChunk chunk)
     {
         var data = new MttChunkData();
         data.ChunkCoords = chunk.Underlying.Coordinates;
         data.MergeMode = chunk.Underlying.MergeMode;
 
-        var dataStructImpl = new MttChunkData.ChunkDataStructImpl();
+        var dataStructImpl = new ChunkDataStructImpl();
 
         FillDataStructFromChunk(dataStructImpl, chunk.Underlying);
-        data.DataStruct = new MttChunkData.DelegatedChunkDataStruct(dataStructImpl);
-//        data.Mesh = chunk.Mesh;
+        if (dataStructImpl.ExistingNeighborsAsV2I == null)
+        {
+            throw new Exception("Serialization failed. Aborting.");
+        }
+
+        data.Mesh = chunk.Mesh;
 
         if (chunk.GetParent() is MarchingTrianglesTerrain { BakeCollision: true })
         {
@@ -452,7 +465,7 @@ public abstract class MttDataHandler
                     {
                         if (bodyChild is CollisionShape3D { Shape: ConcavePolygonShape3D concaveShape })
                         {
- //                           data.SetCollisionFromShape(concaveShape);
+                            data.SetCollisionFromShape(concaveShape);
                             break;
                         }
                     }
@@ -460,18 +473,16 @@ public abstract class MttDataHandler
             }
         }
 
-        logger.LogInformation("Chunk being exported : [Coords]{0}", chunk.Underlying.Coordinates);
-
-        logger.LogInformation("Data being exported : [Coords]{0}", data.ChunkCoords);
-        return data;
+        logger.LogInformation("Chunk data being exported : [Coords]{0}", chunk.Underlying.Coordinates);
+        return new Tuple<MttChunkData, ChunkDataStruct>(data, dataStructImpl);
     }
 
-    private static void ImportChunkData(GdPluginHexTerrainChunk chunk, MttChunkData data)
+    private static bool ImportChunkData(GdPluginHexTerrainChunk chunk, MttChunkData data, ChunkDataStruct dataStruct)
     {
         if (data == null)
         {
             GD.PrintErr("MTTDataHandler : ImportChunkData called with null data");
-            return;
+            return false;
         }
 
         chunk.Underlying.Coordinates = data.ChunkCoords;
@@ -499,10 +510,11 @@ public abstract class MttDataHandler
         {
             chunk._tempCollisionShape = data.GetCollisionShape();
         }
-        FillChunkFromData(data.DataStruct.GetUnderlying(), chunk.Underlying);
+
+        return FillChunkFromData(((DelegatedChunkDataStruct)dataStruct).GetUnderlying(), chunk.Underlying);
     }
 
-    public static void FillChunkFromData(MttChunkData.ChunkDataStructImpl dataStruct, HexagonalTerrainChunk chunk)
+    public static bool FillChunkFromData(ChunkDataStruct dataStruct, HexagonalTerrainChunk chunk)
     {
         if (chunk.ColorMaps == null)
         {
@@ -513,13 +525,13 @@ public abstract class MttDataHandler
         // //----------------------------------------
         // // ----> Grid Expected Size
         chunk.Dimensions = dataStruct.FrameDimensions;
-        
+
         DoubleDeltaTileOrientationSystem frame =
             new DoubleDeltaTileOrientationSystem(
-                new Vector2D(dataStruct.TriFrameSeed1[0],dataStruct.TriFrameSeed1[1]), 
-                new Vector2D(dataStruct.TriFrameSeed2[0],dataStruct.TriFrameSeed2[1])
+                new Vector2D(dataStruct.TriFrameSeed1[0], dataStruct.TriFrameSeed1[1]),
+                new Vector2D(dataStruct.TriFrameSeed2[0], dataStruct.TriFrameSeed2[1])
             );
-        chunk.DataGrid = TriangleGrid.BuildFrom(dataStruct.Values,dataStruct.FrameDimensions,frame);
+        chunk.DataGrid = TriangleGrid.BuildFrom(dataStruct.Values, dataStruct.FrameDimensions, frame);
 
         // // -- Encoded DualGrid (Hexagonal grid)
         // //----------------------------------------
@@ -530,20 +542,26 @@ public abstract class MttDataHandler
             dataStruct.TriFrameSeed1,
             dataStruct.TriFrameSeed2,
             dataStruct.FrameDimensions,
-            dataStruct.FullCellIndices,
-            dataStruct.FullCellMappings,
-            dataStruct.PendingCellIndices,
-            dataStruct.PendingCellsVisitsMappingKey,
-            dataStruct.PendingCellsVisitsMappingValue);
+            dataStruct.FullCellIndicesAsV2I,
+            dataStruct.FullCellMappingsAsV3I,
+            dataStruct.PendingCellIndicesAsV2I,
+            dataStruct.PendingCellsVisitsMappingKeyAsV3I,
+            dataStruct.PendingCellsVisitsMappingValueAsV2I);
 
         // Encoded neighbors
         //----------------------
-        chunk.existingNeighbors = [.. dataStruct.ExistingNeighbors];
+        chunk.existingNeighbors = new HashSet<Vector2I>();
+        for (int i = 0; i < dataStruct.ExistingNeighborsAsV2I.Length / 2; i++)
+        {
+            var neighbor = new Vector2I(dataStruct.ExistingNeighborsAsV2I[2 * i],
+                dataStruct.ExistingNeighborsAsV2I[2 * i + 1]);
+            chunk.existingNeighbors.Add(neighbor);
+        }
 
         // Encoded Marching Triangles properties
         //----------------------
-        chunk.MergeMode = dataStruct.MergeMode ;
-        chunk.MergeThreshold = dataStruct.MergeThreshold ;
+        chunk.MergeMode = dataStruct.MergeMode;
+        chunk.MergeThreshold = dataStruct.MergeThreshold;
         //     
         // // Encoded ColorMaps
         long zOffSet = dataStruct.FrameDimensions.X * dataStruct.FrameDimensions.Y;
@@ -556,20 +574,26 @@ public abstract class MttDataHandler
                 for (int k = 0; k < dataStruct.FrameDimensions.Z; k++)
                 {
                     var cell = new Vector3I(i, j, k);
-                        chunk.ColorMaps.SetGroundColor0(cell,dataStruct.Ground0Colors[i * xOffset + j * yOffset + k * zOffSet]);
-                        chunk.ColorMaps.SetGroundColor1(cell,dataStruct.Ground1Colors[i * xOffset + j * yOffset + k * zOffSet]);
-                        chunk.ColorMaps.SetWallColor0(cell,dataStruct.Wall0Colors[i * xOffset + j * yOffset + k * zOffSet]);
-                        chunk.ColorMaps.SetWallColor1(cell,dataStruct.Wall1Colors[i * xOffset + j * yOffset + k * zOffSet]);
+                    chunk.ColorMaps.SetGroundColor0(cell,
+                        dataStruct.Ground0Colors[i * xOffset + j * yOffset + k * zOffSet]);
+                    chunk.ColorMaps.SetGroundColor1(cell,
+                        dataStruct.Ground1Colors[i * xOffset + j * yOffset + k * zOffSet]);
+                    chunk.ColorMaps.SetWallColor0(cell,
+                        dataStruct.Wall0Colors[i * xOffset + j * yOffset + k * zOffSet]);
+                    chunk.ColorMaps.SetWallColor1(cell,
+                        dataStruct.Wall1Colors[i * xOffset + j * yOffset + k * zOffSet]);
                 }
             }
         }
+
+        return true;
     }
 
     /// <summary>
     /// copies the underlying data structures of the chunk objet into a Persistent Data Chunk Resource object
     /// </summary>
     public static void FillDataStructFromChunk(
-        MttChunkData.ChunkDataStructImpl dataStruct,
+        ChunkDataStructImpl dataStruct,
         HexagonalTerrainChunk chunk)
     {
         if (chunk.ColorMaps == null)
@@ -606,16 +630,20 @@ public abstract class MttDataHandler
         dataStruct.HexFrameSeed2 = [seed2.X, seed2.Y];
         // // ----> FullCells
         // // -------> Cell indexes
-        dataStruct.FullCellIndices = new Vector2I[chunk._terrainDualGrid.CompleteCells.Count];
+        dataStruct.FullCellIndicesAsV2I = new int[chunk._terrainDualGrid.CompleteCells.Count * 2];
         // // -------> DataIndexesMapping (FullCellIndices.length)
-        dataStruct.FullCellMappings = new Vector3I[6 * dataStruct.FullCellIndices.Length];
+        dataStruct.FullCellMappingsAsV3I = new int[6 * dataStruct.FullCellIndicesAsV2I.Length * 3];
         int cursor = 0;
         foreach (var hexTerrainCell in chunk._terrainDualGrid.CompleteCells)
         {
-            dataStruct.FullCellIndices[cursor] = hexTerrainCell.CellCoordsImplicit;
+            dataStruct.FullCellIndicesAsV2I[2 * cursor] = hexTerrainCell.CellCoordsImplicit.X;
+            dataStruct.FullCellIndicesAsV2I[2 * cursor + 1] = hexTerrainCell.CellCoordsImplicit.Y;
+
             for (int i = 0; i < 6; i++)
             {
-                dataStruct.FullCellMappings[6 * cursor + i] = hexTerrainCell.DualCellsMapping[i];
+                dataStruct.FullCellMappingsAsV3I[3 * (6 * cursor + i)] = hexTerrainCell.DualCellsMapping[i].X;
+                dataStruct.FullCellMappingsAsV3I[3 * (6 * cursor + i) + 1] = hexTerrainCell.DualCellsMapping[i].Y;
+                dataStruct.FullCellMappingsAsV3I[3 * (6 * cursor + i) + 2] = hexTerrainCell.DualCellsMapping[i].Z;
             }
 
             cursor++;
@@ -623,21 +651,45 @@ public abstract class MttDataHandler
 
         // // ----> PendingCells
         // // -------> Pending Cell indexes & Mapping
-        dataStruct.PendingCellIndices = new Vector2I[chunk._terrainDualGrid.PendingCells.Count];
-        dataStruct.PendingCellsVisitsMappingKey = new Vector3I?[chunk._terrainDualGrid.PendingCells.Count * 6];
-        dataStruct.PendingCellsVisitsMappingValue = new Vector2I?[chunk._terrainDualGrid.PendingCells.Count * 6];
+        dataStruct.PendingCellIndicesAsV2I = new int[2 * chunk._terrainDualGrid.PendingCells.Count];
+        dataStruct.PendingCellsVisitsMappingKeyAsV3I = new int[3 * chunk._terrainDualGrid.PendingCells.Count * 6];
+        dataStruct.PendingCellsVisitsMappingValueAsV2I = new int[2 * chunk._terrainDualGrid.PendingCells.Count * 6];
 
         cursor = 0;
         foreach (var kvp in chunk._terrainDualGrid.PendingCells)
         {
             var subCursor = 0;
-            dataStruct.PendingCellIndices[cursor] = kvp.Key;
+            dataStruct.PendingCellIndicesAsV2I[2 * cursor] = kvp.Key.X;
+            dataStruct.PendingCellIndicesAsV2I[2 * cursor + 1] = kvp.Key.Y;
+
             foreach (var visits in kvp.Value.Visits)
             {
-                dataStruct.PendingCellsVisitsMappingKey[6 * cursor + subCursor] = visits.Key;
-                dataStruct.PendingCellsVisitsMappingValue[6 * cursor + subCursor] = visits.Value;
+                dataStruct.PendingCellsVisitsMappingKeyAsV3I[3 * (6 * cursor + subCursor)] = visits.Key.X;
+                dataStruct.PendingCellsVisitsMappingKeyAsV3I[3 * (6 * cursor + subCursor) + 1] = visits.Key.Y;
+                dataStruct.PendingCellsVisitsMappingKeyAsV3I[3 * (6 * cursor + subCursor) + 2] = visits.Key.Z;
+
+                dataStruct.PendingCellsVisitsMappingValueAsV2I[2 * (6 * cursor + subCursor)] = visits.Value.X;
+                dataStruct.PendingCellsVisitsMappingValueAsV2I[2 * (6 * cursor + subCursor) + 1] = visits.Value.Y;
+
                 subCursor++;
             }
+
+            // Fill the array with Integer.MAX_VALUE so we do not assume the value is 0;
+            for (int i = subCursor; i < 6; i++)
+            {
+                {
+                    dataStruct.PendingCellsVisitsMappingKeyAsV3I[3 * (6 * cursor + subCursor)] = Int32.MaxValue;
+                    dataStruct.PendingCellsVisitsMappingKeyAsV3I[3 * (6 * cursor + subCursor) + 1] = Int32.MaxValue;
+                    dataStruct.PendingCellsVisitsMappingKeyAsV3I[3 * (6 * cursor + subCursor) + 2] = Int32.MaxValue;
+
+                    dataStruct.PendingCellsVisitsMappingValueAsV2I[2 * (6 * cursor + subCursor)] = Int32.MaxValue;
+                    dataStruct.PendingCellsVisitsMappingValueAsV2I[2 * (6 * cursor + subCursor) + 1] = Int32.MaxValue;
+
+                    subCursor++;
+                }
+            }
+
+            subCursor = 0;
 
             cursor++;
         }
@@ -645,7 +697,16 @@ public abstract class MttDataHandler
 
         // Encoded neighbors
         //----------------------
-        dataStruct.ExistingNeighbors = chunk.existingNeighbors.ToArray();
+        dataStruct.ExistingNeighborsAsV2I = new int[2 * chunk.existingNeighbors.Count];
+        cursor = 0;
+        foreach (var neighbor in chunk.existingNeighbors)
+        {
+            dataStruct.ExistingNeighborsAsV2I[2 * cursor] = neighbor.X;
+            dataStruct.ExistingNeighborsAsV2I[2 * cursor + 1] = neighbor.Y;
+            cursor++;
+        }
+
+        cursor = 0;
 
         // Encoded Marching Triangles properties
         //----------------------
@@ -719,19 +780,19 @@ public abstract class MttDataHandler
     }
 
 
-    public static void LoadTerrainData(MarchingTrianglesTerrain terrain)
+    public static bool LoadTerrainData(MarchingTrianglesTerrain terrain)
     {
         var dirPath = terrain.DataDirectory;
         GD.Print("MttDataHandler : LoadTerrainData");
         if (dirPath.Length == 0)
         {
-            return;
+            return false;
         }
 
         var dir = DirAccess.Open(dirPath);
         if (dir == null)
         {
-            return;
+            return false;
         }
 
         // Scan the chunk directories with the expected format : ChunkPrefix + "X_Y"
@@ -758,18 +819,25 @@ public abstract class MttDataHandler
 
         if (chunkDirs.Count == 0)
         {
-            return;
+            return false;
         }
 
         GD.Print("MttDataHandler  :Loading " + chunkDirs.Count + " chunk(s) from " + dirPath);
 
+        bool onceSucceed = false;
         foreach (var coords in chunkDirs)
         {
-            LoadChunkFromDirectory(terrain, coords);
+            var res = LoadChunkFromDirectory(terrain, coords);
+            if (!onceSucceed)
+            {
+                onceSucceed = res;
+            }
         }
+
+        return onceSucceed;
     }
 
-    private static void LoadChunkFromDirectory(MarchingTrianglesTerrain terrain, Vector2I coords)
+    private static bool LoadChunkFromDirectory(MarchingTrianglesTerrain terrain, Vector2I coords)
     {
         var dirPath = terrain.DataDirectory;
         var chunkName = String.Format("{0}{1}_{2}", ChunkPrefix, coords.X, coords.Y);
@@ -779,20 +847,40 @@ public abstract class MttDataHandler
         var exists = terrain.Chunks.TryGetValue(coords, out var chunk);
         if (!exists)
         {
-            return;
+            logger.LogInformation("Chunk " + coords + " not found in the terrain. Load from disk is aborted");
+            return false;
         }
 
+        bool success = false;
         //Load metadata source data
         var metadataPath = chunkDir.PathJoin(MetadataFilename);
+        var dataStruct = chunkDir.PathJoin(DataStructFilename);
+
         if (ResourceLoader.Exists(metadataPath))
         {
-            if (FileUtils.Load(metadataPath) is MttChunkData data)
+            var res = ResourceLoader.Load(metadataPath, "", ResourceLoader.CacheMode.Ignore);
+            var resStruct = ResourceLoader.Load(dataStruct, "", ResourceLoader.CacheMode.Ignore);
+
+            if (res is MttChunkData metadata && resStruct is DelegatedChunkDataStruct data)
             {
-                ImportChunkData(chunk, data);
+                success = ImportChunkData(chunk, metadata, data);
+            }
+            else
+            {
+                logger.LogInformation("Loaded File " + metadataPath + " is not of the expected type.");
             }
         }
+        else
+        {
+            logger.LogInformation("File " + metadataPath + " does not exist.");
+        }
 
-        GD.Print("MttDataHandler : Loaded chunk " + coords);
+        if (success)
+        {
+            GD.Print("MttDataHandler : Loaded chunk " + coords);
+        }
+
+        return success;
     }
 
     /// <summary>
@@ -908,13 +996,5 @@ public abstract class MttDataHandler
         }
 
         dir.ListDirEnd();
-    }
-}
-
-public partial class MyClass : ResourceFormatSaver
-{
-    public override string[] _GetRecognizedExtensions(Resource resource)
-    {
-        return ["zob"];
     }
 }
