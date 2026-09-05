@@ -11,16 +11,22 @@ using Microsoft.Extensions.Logging;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
+/// <summary>
+/// Utility class for handling the project-related IO operations
+/// (mainly Saving/Loading chunks from a directory)
+/// </summary>
 public abstract class MttDataHandler
 {
-    public const string ChunkPrefix = "chunk_";
-    public static readonly Func<Vector2I, string> ChunkSuffixProvider = (c) => $"{c.X}_{c.Y}";
-    public const string TerrainSuffix = "_TerrainData";
-    public const string MetadataFilename = "metadata.tres";
-    public const string DataStructFilename = "datastruct.tres";
+    internal const string ChunkPrefix = "chunk_";
+    internal static readonly Func<Vector2I, string> ChunkSuffixProvider = (c) => $"{c.X}_{c.Y}";
+    internal const string TerrainSuffix = "_TerrainData";
+    // TODO :: consider switching to .res+compress (or add a flag/option ?)
+    // TODO : Sanitize on loading to avoid potential remote code execution
+    internal const string MetadataFilename = "metadata.tres";
+    internal const string DataStructFilename = "datastruct.tres";
 
-    public static ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
-    public static ILogger logger = factory.CreateLogger("MttDataHandler");
+    private static ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
+    private static ILogger logger = factory.CreateLogger("MttDataHandler");
 
     /// <summary>
     /// Generates a default storing directory and returns its path
@@ -55,6 +61,11 @@ public abstract class MttDataHandler
         return Guid.NewGuid().ToString();
     }
 
+    /// <summary>
+    /// Saves the chunks of a given terrain at the directory defined
+    /// in the provided terrain's settings. 
+    /// </summary>
+    /// <param name="terrain"></param>
     public static void SaveChunks(MarchingTrianglesTerrain terrain)
     {
         var dirPath = terrain.DataDirectory;
@@ -122,7 +133,7 @@ public abstract class MttDataHandler
     }
 
     /// Cleans up orphaned chunk directories that no longer exist in the scene.
-    internal static void CleanupOrphanedChunkDirectories(MarchingTrianglesTerrain terrain)
+    private static void CleanupOrphanedChunkDirectories(MarchingTrianglesTerrain terrain)
     {
         var dirPath = terrain.DataDirectory;
         if (dirPath.Length == 0)
@@ -226,7 +237,7 @@ public abstract class MttDataHandler
 
     /// Clean up terrain data directories for terrains that no longer exist in the saved scene.
     /// Called during save to prevent disk bloat from deleted terrains.
-    internal static void CleanupOrphanedTerrainDirectories(MarchingTrianglesTerrain terrain)
+    private static void CleanupOrphanedTerrainDirectories(MarchingTrianglesTerrain terrain)
     {
         if (!terrain.IsInsideTree())
         {
@@ -283,6 +294,10 @@ public abstract class MttDataHandler
         }
     }
 
+    /// <summary>
+    /// Recursively deletes a directory.
+    /// </summary>
+    /// <param name="directoryPath"></param>
     private static void DeleteDirectoryRecursive(string directoryPath)
     {
         var dir = DirAccess.Open(directoryPath);
@@ -404,7 +419,7 @@ public abstract class MttDataHandler
         var chunkDir = dirPath.PathJoin(chunkName);
         EnsureDirectoryExists(chunkDir);
         // Export the chunk Data
-        Tuple<MttChunkData, ChunkDataStruct> dataTuple = ExportChunkData(chunk);
+        Tuple<MttChunkData, IChunkDataStruct> dataTuple = ExportChunkData(chunk);
         //  Clear transient data based on mode and config
         bool isBakedMode = terrain.StorageType == MarchingTrianglesTerrain.StorageMode.Baked;
 
@@ -439,7 +454,11 @@ public abstract class MttDataHandler
         logger.LogInformation("Saved data: [Coords]{0}", dataTuple.Item1.ChunkCoords);
     }
 
-    private static Tuple<MttChunkData, ChunkDataStruct> ExportChunkData(GdPluginHexTerrainChunk chunk)
+    /// <summary>
+    /// Exports a chunk's data into a set of Resources in order to serialize it.
+    /// </summary>
+    /// <returns>the Serializable resources</returns>
+    private static Tuple<MttChunkData, IChunkDataStruct> ExportChunkData(GdPluginHexTerrainChunk chunk)
     {
         var data = new MttChunkData();
         data.ChunkCoords = chunk.Underlying.Coordinates;
@@ -474,13 +493,17 @@ public abstract class MttDataHandler
         }
 
         logger.LogInformation("Chunk data being exported : [Coords]{0}", chunk.Underlying.Coordinates);
-        return new Tuple<MttChunkData, ChunkDataStruct>(data, dataStructImpl);
+        return new Tuple<MttChunkData, IChunkDataStruct>(data, dataStructImpl);
     }
 
+    /// <summary>
+    /// Imports a chunk's data from a set of Resources in order to deserialize the info
+    /// available in the Resources.
+    /// </summary>
     private static bool ImportChunkData(
         GdPluginHexTerrainChunk chunk,
         MttChunkData data, 
-        ChunkDataStruct dataStruct)
+        IChunkDataStruct dataStruct)
     {
         if (data == null)
         {
@@ -517,8 +540,13 @@ public abstract class MttDataHandler
         return FillChunkFromData(((DelegatedChunkDataStruct)dataStruct).GetUnderlying(), chunk.Underlying);
     }
 
-    public static bool FillChunkFromData(
-        ChunkDataStruct dataStruct, 
+    /// <summary>
+    /// Fills a chunk with the data available in the provided IChunkDataStruct
+    /// </summary>
+    /// <param name="dataStruct">provided data</param>
+    /// <param name="chunk">chunk to fill</param>
+   public static bool FillChunkFromData(
+        IChunkDataStruct dataStruct, 
         HexagonalTerrainChunk chunk)
     {
         if (chunk.ColorMaps == null)
@@ -597,7 +625,8 @@ public abstract class MttDataHandler
     }
 
     /// <summary>
-    /// copies the underlying data structures of the chunk objet into a Persistent Data Chunk Resource object
+    /// Copies the underlying data structures of the chunk objet
+    /// into a Persistent Data Chunk Resource object
     /// </summary>
     public static void FillDataStructFromChunk(
         ChunkDataStructImpl dataStruct,
@@ -763,6 +792,9 @@ public abstract class MttDataHandler
         }
     }
 
+    /// <summary>
+    /// Checks whether the chunk metadata file exists within a directory for a given set of chunk coordinates.
+    /// </summary>
     private static bool MetadataExists(string dirPath, Vector2I underlyingCoordinates)
     {
         if (dirPath.Length == 0)
@@ -806,7 +838,7 @@ public abstract class MttDataHandler
     /// <summary>
     /// Load the stored terrain data from its default path.
     /// </summary>
-    /// By default the loading doesnt lod the non-existing chunks of the terrain if there are some unreferenced
+    /// By default, the loading does not load the non-existing chunks of the terrain if there are some unreferenced
     /// chunks in the loaded data. This can be forced by setting the "forceLoadFrom Dir" parameter to "true".
     /// <param name="terrain"></param>
     /// <param name="forceLoadFromDir"></param>

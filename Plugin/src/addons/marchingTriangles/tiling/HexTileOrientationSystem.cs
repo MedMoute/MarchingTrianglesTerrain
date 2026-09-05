@@ -8,6 +8,9 @@ using MathNet.Spatial.Units;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 
+/// <summary>
+/// Uniform frame of the Euclidean plane creating a hexagonal tiling.
+/// </summary>
 public class HexTileOrientationSystem : RegularUniformFrame
 {
     public int PolygonCount => 1;
@@ -15,9 +18,9 @@ public class HexTileOrientationSystem : RegularUniformFrame
 
     public Vector2D[] UnscaledOriginCellCentroidPositions { get; }
 
-    public Vector2D InitialSeedVector { get; }
+    internal Vector2D InitialSeedVector { get; }
 
-    public Matrix<double> Transform
+    public  Matrix<double> Transform
     {
         get => _transform;
         private set

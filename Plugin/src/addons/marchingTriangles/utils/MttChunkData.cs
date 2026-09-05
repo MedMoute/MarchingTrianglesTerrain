@@ -4,6 +4,9 @@ using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
+/// <summary>
+/// Resource -based classd used for the serialization of a Chunk's metadata
+/// </summary>
 [Tool]
 // Chunk Data Exported by the plugin
 public partial class MttChunkData : Resource
@@ -12,6 +15,8 @@ public partial class MttChunkData : Resource
     [Export] public string ParentTerrainId { get; internal set; }
     [Export] public Vector2I ChunkCoords { get; internal set; }
     [Export] public int MergeMode { get; internal set; }
+    
+    //TODO -> move these out of the metadata file
     [Export] public Array<byte> GroundTexturesIdx { get; internal set; }
     [Export] public Array<byte> WallTexturesIdx { get; internal set; }
     [Export] public Mesh Mesh { get; internal set; }
@@ -41,8 +46,10 @@ public partial class MttChunkData : Resource
     }
 }
 
+/// <summary>
+/// Enumeration for disclaiming the format used by the serialization.
+/// </summary>
 public enum DataContent
 {
-    V1_STRUCT,
-    V1_FULL
+    V1_STRUCT
 }

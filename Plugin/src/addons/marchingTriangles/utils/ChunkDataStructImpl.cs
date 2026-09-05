@@ -5,7 +5,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 /// <summary>
 /// ChunkDataStruct Implementation based on AutoProperties
 /// </summary>
-public class ChunkDataStructImpl : ChunkDataStruct
+public class ChunkDataStructImpl : IChunkDataStruct
 {
     public Vector3I FrameDimensions { get; set; }
     public double[] TriFrameSeed1 { get; set; }

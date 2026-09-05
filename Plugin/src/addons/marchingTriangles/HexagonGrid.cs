@@ -179,6 +179,8 @@ public class HexagonGrid
             Vector2I fulCellIndex = new Vector2I(
                 dataStructFullCellIndices[2 * i],
                 dataStructFullCellIndices[2 * i + 1]);
+            
+            
             var cell = new HexTerrainCell(
                 fulCellIndex,
                 frame,

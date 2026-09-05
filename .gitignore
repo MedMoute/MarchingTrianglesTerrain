@@ -12,6 +12,8 @@ obj/
 
 ### DotSettings ###
 *.DotSettings
+*.DotSettings.user
+
 
 ### Godot ###
 # Godot 4+ specific ignores

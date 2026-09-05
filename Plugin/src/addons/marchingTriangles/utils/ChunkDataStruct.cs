@@ -2,12 +2,16 @@ using Godot;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
-public interface ChunkDataStruct
+/// <summary>
+/// Interface for serializing the data structure of a Chunk.
+/// </summary>
+/// All fields should be Godot.Variant-compatible or arrays of Variants.
+public interface IChunkDataStruct
 {
     // -- Encoded Data grid (TriangleGrid)
     //----------------------------------------
     // ----> Grid Expected Size
-    public abstract Vector3I FrameDimensions { get; set; }
+    public Vector3I FrameDimensions { get; set; }
 
     // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
     public double[] TriFrameSeed1 { get; set; }

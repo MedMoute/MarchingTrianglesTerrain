@@ -3,8 +3,16 @@ using Godot;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
-public class FileUtils
+/// <summary>
+/// Utility class for File and IO related operations.
+/// </summary>
+internal static class FileUtils
 {
+    /// <summary>
+    /// Returns the size of a directory in bytes by recursively browsing its contents. 
+    /// </summary>
+    /// <param name="dirPath">the pas of the scanned directory</param>
+    /// <returns></returns>
     public static int GetDirectorySizeRecursive(string dirPath)
     {
         var totalSize = 0;

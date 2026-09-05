@@ -2,6 +2,9 @@ using Godot;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
+/// <summary>
+/// Utility class for Godot Engine-specific tasks.
+/// </summary>
 public class EngineUtils
 {
     public static Node GetRootNode(Node node)

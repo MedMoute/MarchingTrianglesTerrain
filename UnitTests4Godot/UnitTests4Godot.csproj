@@ -35,7 +35,7 @@ https://github.com/godot-gdunit-labs/gdUnit4NetExamples/blob/master/Examples/Adv
         <PackageReference Include="gdUnit4.api" Version="5.1.0-rc3"/>
         <!-- Test adapter to integrate GdUnit4 with .NET test runners -->
         <PackageReference Include="gdUnit4.test.adapter" Version="3.0.0"/>
-        <PackageReference Include="NUnitTestAdapter.WithFramework" Version="2.0.0"/>
+        <PackageReference Include="NUnit" Version="4.2.2"/>
     </ItemGroup>
 
     <ItemGroup>

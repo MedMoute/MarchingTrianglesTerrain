@@ -1,15 +1,18 @@
 using Godot;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
-
+/// <summary>
+/// IChunkDataSource implementation using a delegate pattern : relying on an underlying implementation. 
+/// </summary>
+/// <param name="underlying"></param>
 [Tool]
-public partial class DelegatedChunkDataStruct(ChunkDataStruct underlying) : Resource, ChunkDataStruct
+public partial class DelegatedChunkDataStruct(IChunkDataStruct underlying) : Resource, IChunkDataStruct
 {
 
     public DelegatedChunkDataStruct() : this(new ChunkDataStructImpl())
     {}
     
-    public ChunkDataStruct GetUnderlying()
+    public IChunkDataStruct GetUnderlying()
     {
         return underlying;
     }

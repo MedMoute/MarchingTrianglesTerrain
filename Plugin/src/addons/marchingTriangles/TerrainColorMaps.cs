@@ -151,7 +151,4 @@ public class TerrainColorMaps(
 
         return true;
     }
-    
-    
-    
 }

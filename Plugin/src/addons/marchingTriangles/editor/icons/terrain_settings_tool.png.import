@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d2ms3ndp2fq7n"
-path="res://.godot/imported/terrain_settings_tool.png-7602ba31aa378f871ba8c5053ece8fe9.ctex"
+path="res://.godot/imported/terrain_settings_tool.png-9d4d5f3be5839ddbba1a10db5b704f56.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/marchingTriangles/editor/icons/terrain_settings_tool.png"
-dest_files=["res://.godot/imported/terrain_settings_tool.png-7602ba31aa378f871ba8c5053ece8fe9.ctex"]
+source_file="res://src/addons/marchingTriangles/editor/icons/terrain_settings_tool.png"
+dest_files=["res://.godot/imported/terrain_settings_tool.png-9d4d5f3be5839ddbba1a10db5b704f56.ctex"]
 
 [params]
 
