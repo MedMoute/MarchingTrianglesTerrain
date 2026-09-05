@@ -477,7 +477,10 @@ public abstract class MttDataHandler
         return new Tuple<MttChunkData, ChunkDataStruct>(data, dataStructImpl);
     }
 
-    private static bool ImportChunkData(GdPluginHexTerrainChunk chunk, MttChunkData data, ChunkDataStruct dataStruct)
+    private static bool ImportChunkData(
+        GdPluginHexTerrainChunk chunk,
+        MttChunkData data, 
+        ChunkDataStruct dataStruct)
     {
         if (data == null)
         {
@@ -514,7 +517,9 @@ public abstract class MttDataHandler
         return FillChunkFromData(((DelegatedChunkDataStruct)dataStruct).GetUnderlying(), chunk.Underlying);
     }
 
-    public static bool FillChunkFromData(ChunkDataStruct dataStruct, HexagonalTerrainChunk chunk)
+    public static bool FillChunkFromData(
+        ChunkDataStruct dataStruct, 
+        HexagonalTerrainChunk chunk)
     {
         if (chunk.ColorMaps == null)
         {
@@ -544,6 +549,8 @@ public abstract class MttDataHandler
             dataStruct.FrameDimensions,
             dataStruct.FullCellIndicesAsV2I,
             dataStruct.FullCellMappingsAsV3I,
+            dataStruct.FullCellVisitsMappingKeyAsV3I,
+            dataStruct.FullCellVisitsMappingValueAsV2I,
             dataStruct.PendingCellIndicesAsV2I,
             dataStruct.PendingCellsVisitsMappingKeyAsV3I,
             dataStruct.PendingCellsVisitsMappingValueAsV2I);
@@ -633,6 +640,9 @@ public abstract class MttDataHandler
         dataStruct.FullCellIndicesAsV2I = new int[chunk._terrainDualGrid.CompleteCells.Count * 2];
         // // -------> DataIndexesMapping (FullCellIndices.length)
         dataStruct.FullCellMappingsAsV3I = new int[6 * dataStruct.FullCellIndicesAsV2I.Length * 3];
+        dataStruct.FullCellVisitsMappingKeyAsV3I = new int[6 * dataStruct.FullCellIndicesAsV2I.Length * 3];
+        dataStruct.FullCellVisitsMappingValueAsV2I = new int[6 * dataStruct.FullCellIndicesAsV2I.Length * 3];
+
         int cursor = 0;
         foreach (var hexTerrainCell in chunk._terrainDualGrid.CompleteCells)
         {
@@ -644,6 +654,19 @@ public abstract class MttDataHandler
                 dataStruct.FullCellMappingsAsV3I[3 * (6 * cursor + i)] = hexTerrainCell.DualCellsMapping[i].X;
                 dataStruct.FullCellMappingsAsV3I[3 * (6 * cursor + i) + 1] = hexTerrainCell.DualCellsMapping[i].Y;
                 dataStruct.FullCellMappingsAsV3I[3 * (6 * cursor + i) + 2] = hexTerrainCell.DualCellsMapping[i].Z;
+            }
+
+            int subCursor = 0;
+            foreach (var visits in hexTerrainCell.Visits)
+            {
+                dataStruct.FullCellVisitsMappingKeyAsV3I[3 * (6 * cursor + subCursor)] = visits.Key.X;
+                dataStruct.FullCellVisitsMappingKeyAsV3I[3 * (6 * cursor + subCursor) + 1] = visits.Key.Y;
+                dataStruct.FullCellVisitsMappingKeyAsV3I[3 * (6 * cursor + subCursor) + 2] = visits.Key.Z;
+
+                dataStruct.FullCellVisitsMappingValueAsV2I[2 * (6 * cursor + subCursor)] = visits.Value.X;
+                dataStruct.FullCellVisitsMappingValueAsV2I[2 * (6 * cursor + subCursor) + 1] = visits.Value.Y;
+
+                subCursor++;
             }
 
             cursor++;
@@ -780,7 +803,15 @@ public abstract class MttDataHandler
     }
 
 
-    public static bool LoadTerrainData(MarchingTrianglesTerrain terrain)
+    /// <summary>
+    /// Load the stored terrain data from its default path.
+    /// </summary>
+    /// By default the loading doesnt lod the non-existing chunks of the terrain if there are some unreferenced
+    /// chunks in the loaded data. This can be forced by setting the "forceLoadFrom Dir" parameter to "true".
+    /// <param name="terrain"></param>
+    /// <param name="forceLoadFromDir"></param>
+    /// <returns></returns>
+    public static bool LoadTerrainData(MarchingTrianglesTerrain terrain, bool forceLoadFromDir = false)
     {
         var dirPath = terrain.DataDirectory;
         GD.Print("MttDataHandler : LoadTerrainData");
@@ -827,17 +858,33 @@ public abstract class MttDataHandler
         bool onceSucceed = false;
         foreach (var coords in chunkDirs)
         {
-            var res = LoadChunkFromDirectory(terrain, coords);
+            var res = LoadChunkFromDirectory(terrain, coords, forceLoadFromDir);
             if (!onceSucceed)
             {
                 onceSucceed = res;
             }
-        }
 
+            if (!res) continue;
+            
+            //Set the data fetching functions for the new chunks' cells
+            foreach (var hexTerrainCell in terrain.Chunks[coords].Underlying._terrainDualGrid.PendingCells.Values)
+            {
+                hexTerrainCell.SetDataFetchingFunction(terrain.TerrainSettings.ChunkDimensions,
+                    v => terrain._neighborChunkProviderProvider(coords, v).DataGrid,
+                    v => terrain.Chunks[coords].Underlying.existingNeighbors.Contains(v));
+            }
+            foreach (var hexTerrainCell in terrain.Chunks[coords].Underlying._terrainDualGrid.CompleteCells)
+            {
+                hexTerrainCell.SetDataFetchingFunction(terrain.TerrainSettings.ChunkDimensions,
+                    v => terrain._neighborChunkProviderProvider(coords, v).DataGrid,
+                    v => terrain.Chunks[coords].Underlying.existingNeighbors.Contains(v));
+            }
+        }
+        
         return onceSucceed;
     }
 
-    private static bool LoadChunkFromDirectory(MarchingTrianglesTerrain terrain, Vector2I coords)
+    private static bool LoadChunkFromDirectory(MarchingTrianglesTerrain terrain, Vector2I coords, bool forceLoadFromDir)
     {
         var dirPath = terrain.DataDirectory;
         var chunkName = String.Format("{0}{1}_{2}", ChunkPrefix, coords.X, coords.Y);
@@ -845,10 +892,18 @@ public abstract class MttDataHandler
 
         // Mesh, collision, and grass are regenerated separately by the chunk
         var exists = terrain.Chunks.TryGetValue(coords, out var chunk);
-        if (!exists)
+        if (!exists && !forceLoadFromDir)
         {
             logger.LogInformation("Chunk " + coords + " not found in the terrain. Load from disk is aborted");
             return false;
+        }
+
+        if (!exists)
+        {
+            //Create a chunk in the terrain
+            chunk = terrain.AddChunkInternal(coords);
+            terrain.AddChild(chunk);
+            EngineUtils.SetOwnerAsSceneRoot(chunk);
         }
 
         bool success = false;

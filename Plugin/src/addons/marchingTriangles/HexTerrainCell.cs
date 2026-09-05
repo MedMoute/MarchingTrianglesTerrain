@@ -144,6 +144,7 @@ public class HexTerrainCell
         Func<Vector2I, TriangleGrid> dataProviderProvider,
         Func<Vector2I, bool> doesNeighboringChunkExist)
     {
+        /// TODO Memoize
         GetVertexData = i =>
         {
             Vector3I vertexIdxInDual = DualCellsMapping[i];

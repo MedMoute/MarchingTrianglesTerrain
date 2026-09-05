@@ -30,7 +30,8 @@ public interface ChunkDataStruct
 
     // -------> DataIndexesMapping (FullCellIndices.length)
     public int[] FullCellMappingsAsV3I { get; set; }
-
+    public int[] FullCellVisitsMappingKeyAsV3I { get; set; }
+    public int[] FullCellVisitsMappingValueAsV2I { get; set; }
     // ----> PendingCells
     // -------> Pending Cell indexes & Mapping
     public int[] PendingCellIndicesAsV2I { get; set; }

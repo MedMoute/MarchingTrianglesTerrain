@@ -15,6 +15,8 @@ public class ChunkDataStructImpl : ChunkDataStruct
     public double[] HexFrameSeed2 { get; set; }
     public int[] FullCellIndicesAsV2I { get; set; }
     public int[] FullCellMappingsAsV3I { get; set; }
+    public int[] FullCellVisitsMappingKeyAsV3I { get; set; }
+    public int[] FullCellVisitsMappingValueAsV2I { get; set; }
     public int[] PendingCellIndicesAsV2I { get; set; }
 
     public int[] PendingCellsVisitsMappingKeyAsV3I { get; set; }

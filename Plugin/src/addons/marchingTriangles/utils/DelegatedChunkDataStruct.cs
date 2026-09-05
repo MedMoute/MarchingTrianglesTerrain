@@ -80,7 +80,19 @@ public partial class DelegatedChunkDataStruct(ChunkDataStruct underlying) : Reso
         get => underlying.FullCellMappingsAsV3I;
         set => underlying.FullCellMappingsAsV3I = value;
     }
+    [Export]
+    public int[] FullCellVisitsMappingKeyAsV3I
+    {
+        get => underlying.FullCellVisitsMappingKeyAsV3I;
+        set => underlying.FullCellVisitsMappingKeyAsV3I = value;
+    }
 
+    [Export]
+    public int[] FullCellVisitsMappingValueAsV2I
+    {
+        get => underlying.FullCellVisitsMappingValueAsV2I;
+        set => underlying.FullCellVisitsMappingValueAsV2I = value;
+    }
     // ----> PendingCells
     // -------> Pending Cell indexes & Mapping
     [Export]

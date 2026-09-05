@@ -149,6 +149,8 @@ public class HexagonGrid
         Vector3I dataStructFrameDimensions,
         int[] dataStructFullCellIndices,
         int[] dataStructFullCellMappings,
+        int[] dataStructFullCellVisitsMappingKey,
+        int[] dataStructFullCellVisitsMappingValue,
         int[] dataStructPendingCellIndices,
         int[] dataStructPendingCellsVisitsMappingKey,
         int[] dataStructPendingCellsVisitsMappingValue)
@@ -162,6 +164,8 @@ public class HexagonGrid
             throw new ArgumentException("The provided argument arays do not have an expected size");
             //TODO : Enforce a consistent size across arrays
         }
+
+        Vector2I chunkDimensions = new Vector2I(dataStructFrameDimensions.X, dataStructFrameDimensions.Y);
 
         HexTileOrientationSystem frame = new HexTileOrientationSystem(
             new Vector2D(dataStructHexFrameSeed1[0], dataStructHexFrameSeed1[1]),
@@ -179,6 +183,17 @@ public class HexagonGrid
                 fulCellIndex,
                 frame,
                 dualFrame);
+            for (int j = 0; j < 6; j++)
+            {
+                var cellMappingKey = new Vector3I(
+                    dataStructFullCellVisitsMappingKey[3 * (6 * i + j)],
+                    dataStructFullCellVisitsMappingKey[3 * (6 * i + j) + 1],
+                    dataStructFullCellVisitsMappingKey[3 * (6 * i + j) + 2]);
+                var cellMappingValue = new Vector2I(
+                    dataStructFullCellVisitsMappingValue[2 * (6 * i + j)],
+                    dataStructFullCellVisitsMappingValue[2 * (6 * i + j) + 1]);
+                cell.Visits.Add(cellMappingKey, cellMappingValue);
+            }
 
             grid.CompleteCells.Add(cell);
 
@@ -203,7 +218,7 @@ public class HexagonGrid
 
             for (int j = 0; j < 6; j++)
             {
-                if (dataStructPendingCellsVisitsMappingKey[3*(6 * i + j)] != Int32.MaxValue)
+                if (dataStructPendingCellsVisitsMappingKey[3 * (6 * i + j)] != Int32.MaxValue)
                 {
                     var cellMappingKey = new Vector3I(
                         dataStructPendingCellsVisitsMappingKey[3 * (6 * i + j)],
@@ -212,7 +227,6 @@ public class HexagonGrid
                     var cellMappingValue = new Vector2I(
                         dataStructPendingCellsVisitsMappingValue[2 * (6 * i + j)],
                         dataStructPendingCellsVisitsMappingValue[2 * (6 * i + j) + 1]);
-
                     cell.Visits.Add(cellMappingKey, cellMappingValue);
                 }
             }
