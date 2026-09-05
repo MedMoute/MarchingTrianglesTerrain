@@ -77,10 +77,10 @@ public class TestSaveActions
         var structRes = GD.Load<DelegatedChunkDataStruct>(dataFile.Item2);
         
         // Arrays
-        Assert.NotNull(res.CollisionFaces);
+        Assert.That(res.CollisionFaces,Is.Not.Null);
         AssertThat(res.CollisionFaces.Length).IsGreater(0);
         //Mesh
-        Assert.NotNull(res.Mesh);
+        Assert.That(res.Mesh,Is.Not.Null);
         AssertThat(res.Mesh.GetSurfaceCount()).IsGreater(0);
 
         // Compare the Loaded resource (NOT AS A CHUNK - as this test is not about chunk loading)
