@@ -7,9 +7,13 @@
     <LangVersion>latestmajor</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+    <PackageReference Include="MathNet.Numerics" Version="6.0.0-beta2" />
     <PackageReference Include="MathNet.Spatial" Version="0.6.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.17" />
-    <PackageReference Include="NUnit" Version="4.6.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="11.0.0-preview.7.26381.103" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.7.26381.103" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="11.0.0-preview.7.26381.103" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="src\" />
   </ItemGroup>
 </Project>

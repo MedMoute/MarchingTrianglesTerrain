@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://betoa8a8g0wjk"]
+
+[ext_resource type="Script" uid="uid://bnk4fbldycp7r" path="res://addons/marchingTriangles/MarchingTrianglesTerrain.cs" id="1_12c36"]
+
+[sub_resource type="CSharpScript" id="CSharpScript_mncer"]
+
+[sub_resource type="Resource" id="Resource_cguwc"]
+script = SubResource("CSharpScript_mncer")
+
+[sub_resource type="CSharpScript" id="CSharpScript_wicfy"]
+
+[sub_resource type="Resource" id="Resource_go42g"]
+script = SubResource("CSharpScript_wicfy")
+NewTexturesNames = SubResource("Resource_cguwc")
+QuickPaints = null
+
+[node name="TestScene" type="Node3D" unique_id=1319442563]
+
+[node name="MarchingTrianglesTerrain" type="Node3D" parent="." unique_id=2071461161]
+script = ExtResource("1_12c36")
+DataDirectory = "res://TestScene_TerrainData/MarchingTrianglesTerrain_b313dabe-6fa3-43a2-aeea-fed118f32a04"
+StorageInitialized = true
+CurrentTexturePreset = SubResource("Resource_go42g")
+metadata/_custom_type_script = "uid://bnk4fbldycp7r"
