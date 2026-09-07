@@ -144,18 +144,19 @@ public class HexTileOrientationSystem : RegularUniformFrame
 
     public RegularUniformFrame GetDual()
     {
-        Console.WriteLine("Dual prep :");
-        Console.WriteLine(" Hex center [0,0] =" +
-                          TerrainToolPluginHelper.FormatVector2(
-                              ((RegularUniformFrame)this).GetCellCentroid(Vector2I.Zero, 0)));
-
-        var sb = new StringBuilder();
-
-        ((RegularUniformFrame)this).GetVertexPositions(Vector2I.Zero).ForEach
-        (param =>
-            sb.Append(" - ").Append(TerrainToolPluginHelper.FormatVector2(param.Item1))
-        );
-        Console.WriteLine("{0} \n     Points : {1}", Vector2I.Zero, sb);
+        // // Debug statement
+        // Console.WriteLine("Dual prep :");
+        // Console.WriteLine(" Hex center [0,0] =" +
+        //                   TerrainToolPluginHelper.FormatVector2(
+        //                       ((RegularUniformFrame)this).GetCellCentroid(Vector2I.Zero, 0)));
+        //
+        // var sb = new StringBuilder();
+        //
+        // ((RegularUniformFrame)this).GetVertexPositions(Vector2I.Zero).ForEach
+        // (param =>
+        //     sb.Append(" - ").Append(TerrainToolPluginHelper.FormatVector2(param.Item1))
+        // );
+        // Console.WriteLine("{0} \n     Points : {1}", Vector2I.Zero, sb);
 
         return new DoubleDeltaTileOrientationSystem(
             ((RegularUniformFrame)this).GetVertex(Vector2I.Zero, GetPolygonVertexCount(0) - 2, 0),

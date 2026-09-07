@@ -12,8 +12,8 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 public class HexTerrainCell
 {
     // Temp constants
-    public static float a = 0.33f;
-    public static double theta = 0.2d;
+    public static float a = 0.8f;
+    public static double theta = 0.0d;
 
     /// <summary>
     /// The coordinates of the current cell in the paren chunk's hex frame.
@@ -303,10 +303,9 @@ public class HexTerrainCell
     /// The z coordinate is computed by adding a value f(α,θ) to the middle vertex z value, where :
     /// </p>
     /// <code>
-    ///                 (1-α-α²)*tan(θ)
-    ///  f(α,θ) = δ * -------------------
-    ///               (1-2α)*tan(θ)+δ(1-α)
+    ///  f(α,θ) = α * (δ - D * tan(θ))
     /// </code>
+    /// and D is the length of the Edge when projected on the [xOz] plane
     /// <p>
     /// If the edge's height is below the threshold, the newly created point for the edge is simply the middle vertex. 
     /// </p>
@@ -319,7 +318,9 @@ public class HexTerrainCell
         Vector3[] triangle,
         int mask)
     {
-        //
+        // //Debug statement
+        // Console.WriteLine("Processing triangle [mask = "+mask+"]");
+        
         Vector3[] tri = triangle;
         Dictionary<int, Tuple<Vector3, Vector3?>> newPoints = new Dictionary<int, Tuple<Vector3, Vector3?>>();
         List<Vector3> flatNewPoints = new List<Vector3>();
@@ -342,12 +343,14 @@ public class HexTerrainCell
                 var delta = (start.Y - end.Y) / 2;
                 var alpha = a;
                 var newPoint = start + alpha * (midpoint - start);
-                // Recompute z value according to the formula
+                // Recompute Y value according to the formula
                 float D = MathF.Sqrt((start.X - midpoint.X) * (start.X - midpoint.X) +
                                      (start.Z - midpoint.Z) * (start.Z - midpoint.Z));
                 var v = (float)(alpha * (delta - D * Math.Tan(theta)));
-                newPoint.Y += -Math.Sign(delta)*v;
-                Console.WriteLine("{4} = [{5},{6}] : f({0},{1},{2}) = {3}", delta, alpha, theta, v, i, start, end);
+                newPoint.Y += v;
+                // //Debug statement
+                // Console.WriteLine("Edge#{4} = [{5}] : f({0},{1},{2}) = {3}", delta, alpha, theta, v, i, newPoint);
+                // Console.WriteLine("Edge#{4} = [{5}] : f({0},{1},{2}) = {3}", delta, alpha, theta, -v, i, 2 * midpoint - newPoint);
 
                 newPoints.Add(i, new Tuple<Vector3, Vector3?>(
                     newPoint,
@@ -532,7 +535,6 @@ public class HexTerrainCell
         if (tri.Length !=3)
             throw new Exception("Illegal Argument");
         var z =  Vector3.Up.Dot((tri[1] - tri[0]).Cross(tri[2] - tri[0])) / 2;
-        Console.WriteLine(z);
         return z;
     }
     // TODO : buffer recycling
@@ -573,6 +575,13 @@ public class HexTerrainCell
 
     public Action PlanCellProcessing(GdPluginHexTerrainChunk chunk)
     {
+        var tempHexagonData = ExtractDataFromCell();
+
+        return () => { DoMarchingTrianglesOnFullCell(tempHexagonData, chunk); };
+    }
+
+    public Dictionary<Vector2D, float> ExtractDataFromCell()
+    {
         Dictionary<Vector2D, float> tempHexagonData = new();
 
         for (int i = 0; i < VertexCount; i++)
@@ -582,7 +591,7 @@ public class HexTerrainCell
                 GetVertexData(i));
         }
 
-        return () => { DoMarchingTrianglesOnFullCell(tempHexagonData, chunk); };
+        return tempHexagonData;
     }
 
     private void DoMarchingTrianglesOnFullCell(Dictionary<Vector2D, float> tempHexagonData,

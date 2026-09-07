@@ -7,6 +7,7 @@
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AComparer_002Ecs_002Fl_003A_002E_002E_003F_002Econfig_003FJetBrains_003FRider2026_002E2_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003Fc36826dde8314844856225c5daec047dd1a000_003F78_003F2a2641e5_003FComparer_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ACSharpInstanceBridge_002Ecs_002Fl_003A_002E_002E_003F_002Econfig_003FJetBrains_003FRider2026_002E2_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003F835bac92dfd94732839efbaa77664df25e8000_003F9a_003F4f1d8c8a_003FCSharpInstanceBridge_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ADictionary_00602_002Ecs_002Fl_003A_002E_002E_003F_002Econfig_003FJetBrains_003FRider2026_002E2_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003Fc36826dde8314844856225c5daec047dd1a000_003F47_003Fefd0f48b_003FDictionary_00602_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AEnumerable_002Ecs_002Fl_003A_002E_002E_003F_002Econfig_003FJetBrains_003FRider2026_002E2_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003Fc5761d0b52534bd8bd6c83877f95383478a00_003F8c_003Fa23522da_003FEnumerable_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AIComparer_00601_002Ecs_002Fl_003A_002E_002E_003F_002Econfig_003FJetBrains_003FRider2026_002E2_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003Fc36826dde8314844856225c5daec047dd1a000_003Fb7_003F8dbd770c_003FIComparer_00601_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AList_00601_002Ecs_002Fl_003A_002E_002E_003F_002Econfig_003FJetBrains_003FRider2026_002E2_003Fresharper_002Dhost_003FDecompilerCache_003Fdecompiler_003Fc36826dde8314844856225c5daec047dd1a000_003Fc5_003Fc1880f01_003FList_00601_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AMarchingTrianglesTerrain_002Eaddons_002EmarchingTriangles_002EMarchingTrianglesTerrain_005FScriptMethods_002Egenerated_002Ecs_002Fl_003A_002E_002E_003F_002Econfig_003FJetBrains_003FRider2026_002E2_003Fresharper_002Dhost_003FSourcesCache_003F99307bfd262c7e5dcecaad53267e6f25bafbc_003FMarchingTrianglesTerrain_002Eaddons_002EmarchingTriangles_002EMarchingTrianglesTerrain_005FScriptMethods_002Egenerated_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
@@ -31,9 +32,17 @@
 	<s:String x:Key="/Default/Environment/Hierarchy/Build/BuildTool/CustomBuildToolPath/@EntryValue">/usr/lib/dotnet/sdk/9.0.118/MSBuild.dll</s:String>
 	<s:String x:Key="/Default/Environment/Hierarchy/Build/BuildTool/DotNetCliExePath/@EntryValue">/usr/lib/dotnet/dotnet</s:String>
 	<s:Boolean x:Key="/Default/Environment/UnitTesting/CaptureOutputInternal/@EntryValue">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=acdbc762_002Dec35_002D4eee_002Db312_002D95adfbcbe1e6/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="TestTriangleProcessing" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+	
+	
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=acdbc762_002Dec35_002D4eee_002Db312_002D95adfbcbe1e6/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="TestTriangleProcessing" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;TestAncestor&gt;
     &lt;TestId&gt;NUnit3x::FBA7864A-75D9-441D-8662-CCB2527AC9C6::net9.0::UnitTests.TestTriangleProcessing&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=e781c40e_002D4610_002D4ccd_002Da1cf_002D23c1c8fd1921/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="TestProcessingOfTwoTriangles" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;NUnit3x::FBA7864A-75D9-441D-8662-CCB2527AC9C6::net9.0::UnitTests.TestTriangleProcessing.TestProcessingOfTwoTriangles&lt;/TestId&gt;
+    &lt;TestId&gt;NUnit3x::FBA7864A-75D9-441D-8662-CCB2527AC9C6::net9.0::UnitTests.TestTriangleProcessing.TestProcessingOfSingleCell&lt;/TestId&gt;
   &lt;/TestAncestor&gt;
 &lt;/SessionState&gt;</s:String>
 	

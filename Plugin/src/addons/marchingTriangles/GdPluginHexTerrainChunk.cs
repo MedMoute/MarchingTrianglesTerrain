@@ -240,7 +240,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             tasks.Add(reprocessHex ? hexagonCell.PlanCellProcessing(this) : hexagonCell.CopyCellDataToPending(this));
         }
 
-        // TODO batch processing with reuse of threads (FJP) otherwise its more costly to do in //
+        // TODO batch processing with reuse of threads (FJP) otherwise its more costly to do in (//)
         //Parallel.Invoke(tasks.ToArray());
 
         foreach (var action in tasks)
