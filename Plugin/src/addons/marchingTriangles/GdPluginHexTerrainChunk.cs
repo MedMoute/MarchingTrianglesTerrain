@@ -251,7 +251,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         Underlying.NeedUpdate.Clear();
     }
 
-    public void ProcessPointsIntoMeshTriangles(List<Tuple<Vector3[], bool>> trianglesWithWallEdges, HexTerrainCell cell)
+    public void ProcessPointsIntoMeshTriangles(HexTerrainCell cell)
     {
         CellDataArrays dataArray = cell.TempDataArrays;
         dataArray.EnsureProcessable();

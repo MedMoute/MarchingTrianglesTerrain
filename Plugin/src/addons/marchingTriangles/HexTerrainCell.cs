@@ -5,11 +5,16 @@ using System.Text;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MathNet.Spatial.Euclidean;
+using static MarchingTrianglesTerrain.addons.marchingTriangles.utils.EngineUtils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
 public class HexTerrainCell
 {
+    // Temp constants
+    public static float a = 0.33f;
+    public static double theta = 0.2d;
+
     /// <summary>
     /// The coordinates of the current cell in the paren chunk's hex frame.
     /// Since the Hexagonal tiling only have one cell, the Z component can be skipped 
@@ -241,19 +246,18 @@ public class HexTerrainCell
                    (Math.Abs(B.Y - C.Y) > chunk.Underlying.MergeThreshold ? 1 : 0) * 2 +
                    (Math.Abs(A.Y - B.Y) > chunk.Underlying.MergeThreshold ? 1 : 0) * 1;
 
-        List<Vector3[]> newTriangles = SplitTriangle(tri);
-        List<Tuple<Vector3[], bool>> trianglesWithWallEdges = ProcessWallEdges(newTriangles, Mask, chunk);
+        List<TriangleInfo> trianglesWithWallEdges = ProcessTriangle(tri, Mask);
         ProcessTrianglesIntoPoints(trianglesWithWallEdges, chunk);
-        chunk.ProcessPointsIntoMeshTriangles(trianglesWithWallEdges, this);
+        chunk.ProcessPointsIntoMeshTriangles(this);
         TempDataArrays.Clear();
     }
 
-    private void ProcessTrianglesIntoPoints(List<Tuple<Vector3[], bool>> trianglesWithWallEdges,
+    private void ProcessTrianglesIntoPoints(List<TriangleInfo> trianglesWithWallEdges,
         GdPluginHexTerrainChunk chunk)
     {
         foreach (var trianglesWithWallEdge in trianglesWithWallEdges)
         {
-            if (trianglesWithWallEdge.Item2)
+            if (trianglesWithWallEdge.IsWall)
             {
                 FloorMode = false;
             }
@@ -262,50 +266,275 @@ public class HexTerrainCell
                 FloorMode = true;
             }
 
-            foreach (var point in trianglesWithWallEdge.Item1)
+            foreach (var point in trianglesWithWallEdge.Points)
             {
                 chunk.AddPoint(point, Vector2.Zero, this);
             }
         }
     }
 
-    private List<Tuple<Vector3[], bool>> ProcessWallEdges(
-        List<Vector3[]> newTriangles,
-        int mask,
-        GdPluginHexTerrainChunk chunk)
+    /// <summary>
+    /// Returns the sub triangles created by applying the marching triangles' algorithm on triangles that have
+    /// at least one edge with a height delta superion to the algorithm threshold.
+    /// </summary>
+    /// <p>
+    /// This method is the core function of the spatial transformation
+    /// made by the Marching Triangles algorithm.
+    ///</p><p>
+    /// Since we are aware that at least one edge is to be processed, we can create all the required points.
+    /// </p><p>
+    /// This method processes a set of 3 non-equal points, therefore forming a triangle, into
+    /// a set of non-coplanar subtriangles.
+    /// In order to do so, we process each edge of the triangle, in order to determine the
+    /// positions of the points of the subtriangles.
+    /// </p><p>
+    /// For each edge that has a height (Δ=2*δ) over the algorithm threshold, the position of
+    /// the newly created points defined by a set of two parameters :
+    ///</p>
+    /// <ul>
+    /// <li> The "Ledge size" α , a real value in ]0,1[ representing how close the new points are
+    /// to the middle of the edge</li>
+    /// <li> The "Height bleed angle" θ, a real value defined in ]0, (π/2)- atan(α/δ)[</li>
+    ///</ul>
+    /// The (x,y) coordinates of the newly created points are defined by linear interpolation
+    /// between one of the edge vertices and its middle vertex, α being the lerp factor.
+    ///
+    /// <p>
+    /// The z coordinate is computed by adding a value f(α,θ) to the middle vertex z value, where :
+    /// </p>
+    /// <code>
+    ///                 (1-α-α²)*tan(θ)
+    ///  f(α,θ) = δ * -------------------
+    ///               (1-2α)*tan(θ)+δ(1-α)
+    /// </code>
+    /// <p>
+    /// If the edge's height is below the threshold, the newly created point for the edge is simply the middle vertex. 
+    /// </p>
+    /// <p>
+    /// Once all the points have been determined, we trivially rebuild a set of triangles using the Triangles Fan
+    /// algorithm, since the polygon is convex. (https://en.wikipedia.org/wiki/Fan_triangulation)
+    /// </p>
+    /// <returns>An enumeration of triangles flagged on whether the triangles represent wall or not</returns>
+    public static List<TriangleInfo> ProcessTriangle(
+        Vector3[] triangle,
+        int mask)
     {
-        if (newTriangles.Count != 4 || newTriangles.Any(triData => triData.Length != 3))
+        //
+        Vector3[] tri = triangle;
+        Dictionary<int, Tuple<Vector3, Vector3?>> newPoints = new Dictionary<int, Tuple<Vector3, Vector3?>>();
+        List<Vector3> flatNewPoints = new List<Vector3>();
+        List<TriangleInfo> res = new List<TriangleInfo>();
+        // We loop over the edges of the initial triangle.
+        // the Edge #i => [P(i),P(i+1)]
+        for (int i = 0; i <= 2; i++)
         {
-            throw new ArgumentException("The provided list of triangles is malformed.", nameof(newTriangles));
+            Vector3 start = tri[i];
+            Vector3 end = tri[mod(i + 1, 3)];
+            var midpoint = (start + end) / 2;
+            if ((mask & (1 << i)) == 0)
+            {
+                // The edge is not over the threshold, we add the middle point
+                newPoints.Add(i, new Tuple<Vector3, Vector3?>(midpoint, null));
+                flatNewPoints.Add(midpoint);
+            }
+            else
+            {
+                var delta = (start.Y - end.Y) / 2;
+                var alpha = a;
+                var newPoint = start + alpha * (midpoint - start);
+                // Recompute z value according to the formula
+                float D = MathF.Sqrt((start.X - midpoint.X) * (start.X - midpoint.X) +
+                                     (start.Z - midpoint.Z) * (start.Z - midpoint.Z));
+                var v = (float)(alpha * (delta - D * Math.Tan(theta)));
+                newPoint.Y += -Math.Sign(delta)*v;
+                Console.WriteLine("{4} = [{5},{6}] : f({0},{1},{2}) = {3}", delta, alpha, theta, v, i, start, end);
+
+                newPoints.Add(i, new Tuple<Vector3, Vector3?>(
+                    newPoint,
+                    2 * midpoint - newPoint));
+                flatNewPoints.Add(newPoint);
+                flatNewPoints.Add(2 * midpoint - newPoint);
+            }
+        }
+        // From these new points, and the ordered list of those,
+        // It is possible to recreate a list of ordered triangles that we will return
+
+        // Step 1 :
+        // Find the 3 triangles containing one pre-existing vertex :
+        // The other points forming the triangle are the computed new points of the previous point,
+        // the second if there are two, the first otherwise.
+        //
+        // TODO : clarify what is the condition for wall = true
+        for (int i = 0; i <= 2; i++)
+        {
+            var tInfo = new TriangleInfo
+            {
+                IsWall = false,
+                SeedPointIdx = i,
+                SeedPoint = tri[i],
+                Points =
+                {
+                    [0] = newPoints[mod(i - 1, 3)].Item2.HasValue
+                        ? newPoints[mod(i - 1, 3)].Item2.Value
+                        : newPoints[mod(i - 1, 3)].Item1,
+                    [1] = tri[i],
+                    [2] = newPoints[i].Item1
+                },
+                edgeBorderFlags =
+                {
+                    [0] = true,
+                    [1] = true,
+                    [2] = false
+                }
+            };
+            res.Add(tInfo);
         }
 
-        var result = new List<Tuple<Vector3[], bool>>();
-
-        switch (mask)
+        // Part 2 :
+        // Get the other triangles as part of a triangle fan originated for the first
+        // new point of the list of new points;
+        for (int i = 0; i < flatNewPoints.Count - 2; i++)
         {
-            case 0:
-                result.AddRange(newTriangles.Select(triangle => new Tuple<Vector3[], bool>(triangle, false)));
-                break;
-            case 7:
-                result.AddRange(newTriangles.Select(triangle => new Tuple<Vector3[], bool>(triangle, true)));
-                break;
-            case 1:
-            case 2:
-            case 4:
-                result.AddRange(newTriangles.Select(triangle => new Tuple<Vector3[], bool>(triangle, false)));
-                GD.Print("Single Edge over threshold");
-                break;
-            case 3:
-            case 5:
-            case 6:
-                result.AddRange(newTriangles.Select(triangle => new Tuple<Vector3[], bool>(triangle, false)));
-                //GD.Print("Double Edges over threshold");
-                break;
+            //Debug
+            var tInfo = new TriangleInfo
+            {
+                IsWall = true,
+                SeedPointIdx = null,
+                SeedPoint = flatNewPoints[0],
+                Points =
+                {
+                    //
+                    [0] = flatNewPoints[0],
+                    [1] = flatNewPoints[i + 1],
+                    [2] = flatNewPoints[i + 2]
+                },
+            };
+            switch (mask, i) // Easier to bruteforce :3
+            {
+                case (0, 0):
+                    tInfo.edgeBorderFlags = [false, false, false];
+                    break;
+
+                case (1, 0):
+                    tInfo.edgeBorderFlags = [true, false, false];
+                    break;
+                case (1, 1):
+                    tInfo.edgeBorderFlags = [false, false, false];
+                    break;
+
+                case (2, 0):
+                    tInfo.edgeBorderFlags = [false, true, false];
+                    break;
+                case (2, 1):
+                    tInfo.edgeBorderFlags = [false, false, false];
+                    break;
+
+                case (3, 0):
+                    tInfo.edgeBorderFlags = [true, false, false];
+                    break;
+                case (3, 1):
+                    tInfo.edgeBorderFlags = [false, true, false];
+                    break;
+                case (3, 2):
+                    tInfo.edgeBorderFlags = [false, false, false];
+                    break;
+
+                case (4, 0):
+                    tInfo.edgeBorderFlags = [false, false, false];
+                    break;
+                case (4, 1):
+                    tInfo.edgeBorderFlags = [false, true, false];
+                    break;
+
+                case (5, 0):
+                    tInfo.edgeBorderFlags = [true, false, false];
+                    break;
+                case (5, 1):
+                    tInfo.edgeBorderFlags = [false, false, false];
+                    break;
+                case (5, 2):
+                    tInfo.edgeBorderFlags = [false, true, false];
+                    break;
+
+                case (6, 0):
+                    tInfo.edgeBorderFlags = [false, true, false];
+                    break;
+                case (6, 1):
+                    tInfo.edgeBorderFlags = [false, false, false];
+                    break;
+                case (6, 2):
+                    tInfo.edgeBorderFlags = [false, true, false];
+                    break;
+
+                case (7, 0):
+                    tInfo.edgeBorderFlags = [true, false, false];
+                    break;
+                case (7, 1):
+                    tInfo.edgeBorderFlags = [false, true, false];
+                    break;
+                case (7, 2):
+                    tInfo.edgeBorderFlags = [false, false, false];
+                    break;
+                case (7, 3):
+                    tInfo.edgeBorderFlags = [false, true, false];
+                    break;
+                default:
+                    throw new Exception("Illegal state");
+            }
+
+            res.Add(tInfo);
         }
 
-        return result;
+        return res;
     }
 
+
+    public class TriangleInfo
+    {
+        public bool IsWall { get; set; } = false;
+        public Vector3 SeedPoint { get; set; } = Vector3.One * float.MaxValue;
+        public int? SeedPointIdx { get; set; } = null;
+
+        public Vector3[] Points { get; set; } = new Vector3[3];
+        public bool[] edgeBorderFlags { get; set; } = new bool[3];
+
+        public List<Tuple<Vector3, Vector3>> GetBorderEdges()
+        {
+            var res = new List<Tuple<Vector3, Vector3>>();
+
+            for (int i = 0; i <= 2; i++)
+            {
+                if (edgeBorderFlags[i])
+                {
+                    res.Add(new Tuple<Vector3, Vector3>(Points[i], Points[mod(i + 1, 3)]));
+                }
+            }
+
+            return res;
+        }
+
+        public List<Tuple<Vector3, Vector3>> GetEdges()
+        {
+            var res = new List<Tuple<Vector3, Vector3>>();
+
+            for (int i = 0; i <= 2; i++)
+            {
+                res.Add(new Tuple<Vector3, Vector3>(Points[i], Points[mod(i + 1, 3)]));
+            }
+
+            return res;
+        }
+
+
+    }
+    public static double GetSignedArea(Vector3[] tri)
+    {
+        if (tri.Length !=3)
+            throw new Exception("Illegal Argument");
+        var z =  Vector3.Up.Dot((tri[1] - tri[0]).Cross(tri[2] - tri[0])) / 2;
+        Console.WriteLine(z);
+        return z;
+    }
     // TODO : buffer recycling
     /// <summary>
     /// Splits a triangle into 4 sub-triangles that will have the same area.

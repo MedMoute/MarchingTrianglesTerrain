@@ -16,9 +16,9 @@ QuickPaints = null
 
 [node name="TestScene" type="Node3D" unique_id=1319442563]
 
-[node name="MarchingTrianglesTerrain" type="Node3D" parent="." unique_id=2071461161]
+[node name="MarchingTrianglesTerrain" type="Node3D" parent="." unique_id=445820403]
 script = ExtResource("1_12c36")
-DataDirectory = "res://TestScene_TerrainData/MarchingTrianglesTerrain_b313dabe-6fa3-43a2-aeea-fed118f32a04"
+DataDirectory = "res://TestScene_TerrainData/MarchingTrianglesTerrain_00d31245-63e1-4acc-97d3-1961e9959d2b"
 StorageInitialized = true
 CurrentTexturePreset = SubResource("Resource_go42g")
 metadata/_custom_type_script = "uid://bnk4fbldycp7r"
