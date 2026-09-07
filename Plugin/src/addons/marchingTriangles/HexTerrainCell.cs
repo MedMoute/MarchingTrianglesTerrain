@@ -11,9 +11,10 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
 public class HexTerrainCell
 {
+    // TODO : Cell based ?
     // Temp constants
-    public static float a = 0.8f;
-    public static double theta = 0.0d;
+    public static double a = 0.5f;
+    public static double theta = 0.1d;
 
     /// <summary>
     /// The coordinates of the current cell in the paren chunk's hex frame.
@@ -320,11 +321,12 @@ public class HexTerrainCell
     {
         // //Debug statement
         // Console.WriteLine("Processing triangle [mask = "+mask+"]");
-        
+
         Vector3[] tri = triangle;
         Dictionary<int, Tuple<Vector3, Vector3?>> newPoints = new Dictionary<int, Tuple<Vector3, Vector3?>>();
         List<Vector3> flatNewPoints = new List<Vector3>();
         List<TriangleInfo> res = new List<TriangleInfo>();
+        var comparer = new V3Comp();
         // We loop over the edges of the initial triangle.
         // the Edge #i => [P(i),P(i+1)]
         for (int i = 0; i <= 2; i++)
@@ -342,15 +344,32 @@ public class HexTerrainCell
             {
                 var delta = (start.Y - end.Y) / 2;
                 var alpha = a;
-                var newPoint = start + alpha * (midpoint - start);
+                var newPoint = new Vector3(
+                    start.X + (float)alpha * (midpoint - start).X,
+                    start.Y + (float)alpha * (midpoint - start).Y,
+                    start.Z + (float)alpha * (midpoint - start).Z);
                 // Recompute Y value according to the formula
-                float D = MathF.Sqrt((start.X - midpoint.X) * (start.X - midpoint.X) +
+                double D = Math.Sqrt((start.X - midpoint.X) * (start.X - midpoint.X) +
                                      (start.Z - midpoint.Z) * (start.Z - midpoint.Z));
-                var v = (float)(alpha * (delta - D * Math.Tan(theta)));
+                var v = (float)(alpha * (delta - D * comparer.Compare(start, midpoint) * Math.Tan(theta)));
                 newPoint.Y += v;
                 // //Debug statement
                 // Console.WriteLine("Edge#{4} = [{5}] : f({0},{1},{2}) = {3}", delta, alpha, theta, v, i, newPoint);
                 // Console.WriteLine("Edge#{4} = [{5}] : f({0},{1},{2}) = {3}", delta, alpha, theta, -v, i, 2 * midpoint - newPoint);
+
+                // var newPointConjugate = new Vector3(
+                //     end.X + (float)alpha * (midpoint - end).X,
+                //     end.Y + (float)alpha * (midpoint - end).Y,
+                //     end.Z + (float)alpha * (midpoint - end).Z);
+                // // Recompute Y value according to the formula
+                // v = (float)(alpha * (delta - D * comparer.Compare(end, midpoint) * Math.Tan(theta)));
+                // newPointConjugate.Y += v;
+                //
+                // // newPoints.Add(i, new Tuple<Vector3, Vector3?>(
+                // //     newPoint,
+                // //     newPointConjugate));
+                // // flatNewPoints.Add(newPoint);
+                // // flatNewPoints.Add(newPointConjugate);
 
                 newPoints.Add(i, new Tuple<Vector3, Vector3?>(
                     newPoint,
@@ -527,16 +546,16 @@ public class HexTerrainCell
 
             return res;
         }
-
-
     }
+
     public static double GetSignedArea(Vector3[] tri)
     {
-        if (tri.Length !=3)
+        if (tri.Length != 3)
             throw new Exception("Illegal Argument");
-        var z =  Vector3.Up.Dot((tri[1] - tri[0]).Cross(tri[2] - tri[0])) / 2;
+        var z = Vector3.Up.Dot((tri[1] - tri[0]).Cross(tri[2] - tri[0])) / 2;
         return z;
     }
+
     // TODO : buffer recycling
     /// <summary>
     /// Splits a triangle into 4 sub-triangles that will have the same area.
@@ -648,5 +667,17 @@ internal class CellDataArrays(Vector2I cellCoord)
         Custom1Value.Clear();
         MatBlend.Clear();
         Floor.Clear();
+    }
+}
+
+public class V3Comp : IComparer<Vector3>
+{
+    public int Compare(Vector3 x, Vector3 y)
+    {
+        var xComparison = x.X.CompareTo(y.X);
+        if (xComparison != 0) return xComparison;
+        var yComparison = x.Y.CompareTo(y.Y);
+        if (yComparison != 0) return yComparison;
+        return x.Z.CompareTo(y.Z);
     }
 }

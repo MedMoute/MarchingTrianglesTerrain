@@ -5,8 +5,25 @@ using MathNet.Spatial.Euclidean;
 
 namespace UnitTests;
 
-public class TestTriangleProcessing
+public class TestTriangleProcessingNoEdgeBleed
 {
+    private double initAValue;
+    private double initThetaValue;
+
+    [SetUp]
+    public void Setup()
+    {
+        initAValue = HexTerrainCell.a;
+        initThetaValue = HexTerrainCell.theta;
+    }
+
+    [TearDown]
+    public void Teardown()
+    {
+        HexTerrainCell.a = initAValue;
+        HexTerrainCell.theta = initThetaValue;
+    }
+
     [Test]
     // TODO Asserts
     public void TestBasicTriangleProcessing()
@@ -54,6 +71,8 @@ public class TestTriangleProcessing
     {
         //SETUP
         // 
+        HexTerrainCell.a = (float)0.5;
+        HexTerrainCell.theta = 0;
         var frame = new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 1));
         var dualFrame = frame.GetDual();
 
@@ -141,10 +160,10 @@ public class TestTriangleProcessing
 
         Console.WriteLine();
         Console.WriteLine("Base triangles' seaming Edge : ");
-        Console.WriteLine("[" + seamEdgeStart + "," + seamEdgeEnd+"]");
+        Console.WriteLine("[" + seamEdgeStart + "," + seamEdgeEnd + "]");
 
 
-    //Bruteforce find the closest border edge by sampling an edge and estimating the
+        //Bruteforce find the closest border edge by sampling an edge and estimating the
         //Hausdorff distance between the samples and the other edges' samples
         List<Vector3[]> sampledEdges = new List<Vector3[]>();
         List<Tuple<Vector3, Vector3>> edges = new List<Tuple<Vector3, Vector3>>();
@@ -240,8 +259,8 @@ public class TestTriangleProcessing
     [Test]
     public void TestProcessingOfSingleCell()
     {
-        Vector2I cellCoords = Vector2I.Zero;
-
+        HexTerrainCell.a = (float)0.5;
+        HexTerrainCell.theta = 0;
         var frame = new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 1));
         var dualFrame = frame.GetDual();
 
@@ -286,46 +305,7 @@ public class TestTriangleProcessing
     }
 
 
-    public class V3Comp : IComparer<Vector3>
-    {
-        public int Compare(Vector3 x, Vector3 y)
-        {
-            var xComparison = x.X.CompareTo(y.X);
-            if (xComparison != 0) return xComparison;
-            var yComparison = x.Y.CompareTo(y.Y);
-            if (yComparison != 0) return yComparison;
-            return x.Z.CompareTo(y.Z);
-        }
-    }
-
-    class FloatArrayComparer : IEqualityComparer<float[]>
-    {
-        public bool Equals(float[]? x, float[]? y)
-        {
-            if (x?.Length != y?.Length)
-                return false;
-            for (int i = 0; i < x?.Length; i++)
-            {
-                if (MathF.Abs(x[i] - y[i]) > 1e-5)
-                    return false;
-            }
-
-            return true;
-        }
-
-        public int GetHashCode(float[] obj)
-        {
-            var v = 31;
-            for (int i = 0; i < obj.Length; i++)
-            {
-                v = v * 31 * HashCode.Combine(obj[i]) + 7;
-            }
-
-            return v;
-        }
-    }
-
-    private static List<HexTerrainCell.TriangleInfo> ProcessTriangleGeometryIntoSplitTriangles(HexTerrainCell cell,
+    internal static List<HexTerrainCell.TriangleInfo> ProcessTriangleGeometryIntoSplitTriangles(HexTerrainCell cell,
         int i, Dictionary<Vector2D, float> data)
     {
         var tri = GetCellTriangle(cell, i, data);
@@ -341,7 +321,7 @@ public class TestTriangleProcessing
         return trianglesWithWallEdges;
     }
 
-    private static Vector3[] GetCellTriangle(HexTerrainCell cell, int i, Dictionary<Vector2D, float> data)
+    internal static Vector3[] GetCellTriangle(HexTerrainCell cell, int i, Dictionary<Vector2D, float> data)
     {
         Vector2D center = cell.CenterPosition;
         var posB = cell.VertexPositionsInPlane[i];
@@ -358,10 +338,10 @@ public class TestTriangleProcessing
     }
 
 
-    private static (Dictionary<float[], int> dico, List<float[]> borderEdgesAsSets, List<float[]>
+    internal static (Dictionary<float[], int> dico, List<float[]> borderEdgesAsSets, List<float[]>
         manifoldBorderEdgesAsSets) ReprocessEdgeGeometry(List<HexTerrainCell.TriangleInfo> res)
     {
-        var dico = new Dictionary<float[], int>(new FloatArrayComparer());
+        var dico = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
         var borderEdgesAsSets = new List<float[]>();
         var manifoldBordersAsSets = new List<float[]>();
 
@@ -398,7 +378,7 @@ public class TestTriangleProcessing
         return (dico, borderEdgesAsSets, manifoldBordersAsSets);
     }
 
-    private static void AssertIsTriangleManifold(List<HexTerrainCell.TriangleInfo> res)
+    internal static void AssertIsTriangleManifold(List<HexTerrainCell.TriangleInfo> res)
     {
         var (
             dico,
@@ -417,5 +397,42 @@ public class TestTriangleProcessing
             Assert.That(
                 kvp.Value == 2 || kvp.Value == 1 && borderEdgesAsSets.Any(o => o.SequenceEqual(kvp.Key)), Is.True);
         }
+    }
+}
+
+public class FloatArrayComparer : IEqualityComparer<float[]>
+{
+    internal FloatArrayComparer(double epsilon)
+    {
+        this.epsilon = epsilon;
+    }
+    private double epsilon;
+    public bool Equals(float[]? x, float[]? y)
+    {
+        if (x?.Length != y?.Length)
+            return false;
+        for (int i = 0; i < x?.Length; i++)
+        {
+            if (Math.Abs(x[i] - y[i]) > epsilon)
+            {
+                Console.WriteLine(Math.Abs(x[i] - y[i]));
+                return false;
+
+            }
+        }
+
+        return true;
+    }
+
+    public int GetHashCode(float[] obj)
+    {
+        var v = 31;
+        for (int i = 0; i < obj.Length; i++)
+        {
+            // Proximity of hashcode so that buckets are similar for similar points 
+            v = v * 31 * (int)(100*(obj[i])) + 7;
+        }
+
+        return v;
     }
 }
