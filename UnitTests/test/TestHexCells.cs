@@ -24,7 +24,7 @@ public class TestHexCells
 
             var terrainHeightMap = TriangleGrid.BuildFrom(src1, src2, regularUniformFrame);
             var terrainDualGrid = HexagonGrid.BuildFromDual(terrainHeightMap, Vector2I.One * dimension,
-                v => v is { X: 0, Y: 0 } ? terrainHeightMap : null,
+                v => (v is { X: 0, Y: 0 } ? terrainHeightMap : null) ?? throw new InvalidOperationException(),
                 v=>v is { X: 0, Y: 0 });
 
             HexTerrainCell cell = terrainDualGrid.CompleteCells.First();

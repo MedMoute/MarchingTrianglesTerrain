@@ -13,7 +13,7 @@ public class HexagonGrid
 {
     public RegularUniformFrame Frame { get; }
 
-    public Dictionary<Vector2I, HexTerrainCell> PendingCells { get; } = new();
+    public Dictionary<Vector2I, HexTerrainCell?> PendingCells { get; } = new();
 
     public HashSet<HexTerrainCell> CompleteCells = new();
 

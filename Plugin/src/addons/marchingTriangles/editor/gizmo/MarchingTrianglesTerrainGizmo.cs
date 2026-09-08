@@ -20,7 +20,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
 
     private Material BrushMaterial => GetPlugin().GetMaterial(nameof(MarchingTrianglesGizmoPlugin.BrushMesh));
 
-    private Dictionary<StringName, Material> _chunkActionMaterials = new();
+    private Dictionary<StringName, Material?> _chunkActionMaterials = new();
 
     private readonly MarchingTrianglesTerrainPlugin _terrainPlugin = MarchingTrianglesTerrainPlugin.Instance;
 
@@ -36,7 +36,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             return false;
         }
 
-        _chunkActionMaterials = new Dictionary<StringName, Material>
+        _chunkActionMaterials = new Dictionary<StringName, Material?>
         {
             {
                 nameof(MarchingTrianglesTerrain.RemoveChunk),
@@ -58,7 +58,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         return _chunkActionMaterials.Count != 0;
     }
 
-    private Material FetchMaterial(StringName name)
+    private Material? FetchMaterial(StringName name)
     {
         var material = _chunkActionMaterials.GetValueOrDefault(name, null);
         if (material == null)
@@ -98,7 +98,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         var pos = ProcessBrushAndPattern(terrain, sb);
 
         //The size of the brush cell mesh is adjusted dynamically before drawing :
-        if (MarchingTrianglesGizmoPlugin.BrushMesh != null && _terrainPlugin.CurTerrainNode!=null)
+        if (MarchingTrianglesGizmoPlugin.BrushMesh != null && _terrainPlugin.CurTerrainNode != null)
         {
             MarchingTrianglesGizmoPlugin.BrushMesh.Size =
                 Vector2.One * _terrainPlugin.CurTerrainNode.TerrainSettings.CellScale / 2;
@@ -116,7 +116,6 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             AddDebugStatementAboutDrawnPattern(patternDrawCalls, sb);
             GD.Print(sb.ToString());
         }
-
     }
 
     private static void AddDebugStatementAboutDrawnPattern(Dictionary<Vector2I, int> patternDrawCalls, StringBuilder sb)
@@ -146,8 +145,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         Material highlightChunkMat = FetchMaterial(nameof(MarchingTrianglesGizmoPlugin.HighlightColor));
 
 
-        if (terrain == null ||
-            EditorInterface.Singleton.GetSelection().GetSelectedNodes().Count != 1 ||
+        if (EditorInterface.Singleton.GetSelection().GetSelectedNodes().Count != 1 ||
             EditorInterface.Singleton.GetSelection().GetSelectedNodes()[0] != terrain)
         {
             // DEBUG Statement
@@ -388,7 +386,8 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             if (_terrainPlugin.PluginHelper.WallPainting)
             {
                 sb.Append(" | Brush radius drawn at pos : " + brushTransform.Origin);
-                AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null, brushTransform);
+                AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null,
+                    brushTransform);
             }
         }
         else if (_terrainPlugin.SelectedMode != TerrainToolMode.Smooth &&
@@ -400,7 +399,8 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                       TerrainSettings.OrientationSystem.GetCell(new Vector2D(brushTransform.Origin.X,
                           brushTransform.Origin.Z)));
 
-            AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null, brushTransform);
+            AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null,
+                brushTransform);
         }
 
 

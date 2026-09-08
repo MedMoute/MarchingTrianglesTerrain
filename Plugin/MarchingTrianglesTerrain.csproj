@@ -1,19 +1,20 @@
 <Project Sdk="Godot.NET.Sdk/4.6.2">
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net9.0</TargetFramework>
-    <EnableDynamicLoading>true</EnableDynamicLoading>
-    <RootNamespace>MarchingTrianglesTerrain</RootNamespace>
-    <LangVersion>latestmajor</LangVersion>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="MathNet.Numerics" Version="6.0.0-beta2" />
-    <PackageReference Include="MathNet.Spatial" Version="0.6.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="11.0.0-preview.7.26381.103" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.7.26381.103" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="11.0.0-preview.7.26381.103" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="src\" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net9.0</TargetFramework>
+        <EnableDynamicLoading>true</EnableDynamicLoading>
+        <RootNamespace>MarchingTrianglesTerrain</RootNamespace>
+        <LangVersion>latestmajor</LangVersion>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="MathNet.Numerics" Version="6.0.0-beta2"/>
+        <PackageReference Include="MathNet.Spatial" Version="0.6.0"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11"/>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.11"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Folder Include="src\"/>
+    </ItemGroup>
 </Project>

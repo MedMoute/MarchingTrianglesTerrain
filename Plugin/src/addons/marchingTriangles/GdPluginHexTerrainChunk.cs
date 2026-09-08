@@ -17,7 +17,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     /// </summary>
     public static readonly uint DefaultCollisionLayer = 17;
 
-    internal ConcavePolygonShape3D _tempCollisionShape;
+    internal ConcavePolygonShape3D? TempCollisionShape;
 
     private SurfaceTool _st = new();
 
@@ -42,8 +42,8 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     public GdPluginHexTerrainChunk(Vector2I chunkIndex,
         Vector2I dimension,
         Func<Vector2I, HexagonalTerrainChunk> neighboringChunkDataHandle,
-        float[][] dataSource = null,
-        float[][] dataSource2 = null)
+        float[][]? dataSource = null,
+        float[][]? dataSource2 = null)
     {
         Underlying = new HexagonalTerrainChunk(
             chunkIndex,
@@ -81,7 +81,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             Mesh.SurfaceSetMaterial(0, terrain.TerrainSettings.ShaderMaterial);
         }
 
-        _tempCollisionShape = CreateAndGetCollision();
+        TempCollisionShape = CreateAndGetCollision();
         ProcessCollisionShape();
         if (!Engine.IsEditorHint() && false) // No runtime baking atm.
         {
@@ -100,7 +100,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         }
 
         GenerateSurfaces(forceFullRebuild);
-        _tempCollisionShape = CreateAndGetCollision();
+        TempCollisionShape = CreateAndGetCollision();
         ProcessCollisionShape();
     }
 
@@ -114,7 +114,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             }
         }
 
-        ConcavePolygonShape3D shape = null;
+        ConcavePolygonShape3D? shape = null;
         CreateTrimeshCollision();
         foreach (var child in GetChildren())
         {
@@ -122,12 +122,17 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             {
                 foreach (var grandChild in child.GetChildren())
                 {
-                    if (grandChild is CollisionShape3D collisionShape)
+                    if (grandChild is CollisionShape3D { Shape: ConcavePolygonShape3D childShape })
                     {
-                        shape = collisionShape.Shape as ConcavePolygonShape3D;
+                        shape = childShape ;
                     }
                 }
             }
+        }
+
+        if (shape == null)
+        {
+            throw new Exception("Could not find the terrain's collision shape");
         }
 
         return shape;
@@ -150,7 +155,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
                 return;
             }
 
-            if (_tempCollisionShape == null)
+            if (TempCollisionShape == null)
             {
                 GD.PushError(string.Format("Chunk {0} has no pending shape. Aborting collision shape creation.",
                     Underlying.Coordinates));
@@ -176,7 +181,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
             var colShape = new CollisionShape3D();
             colShape.Name = "CollisionShape3D";
-            colShape.Shape = _tempCollisionShape;
+            colShape.Shape = TempCollisionShape;
             colShape.Visible = false;
             body.AddChild(colShape);
             AddChild(body);

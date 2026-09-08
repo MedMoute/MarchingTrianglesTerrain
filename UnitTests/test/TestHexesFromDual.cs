@@ -21,7 +21,7 @@ public class TestHexesFromDual
         var src2 = new float[dimension][];
         var doubleTriangles = TriangleGrid.BuildFrom(src1, src2, TerrainSettings.OrientationSystem);
         var hexagons = HexagonGrid.BuildFromDual(doubleTriangles,Vector2I.One*dimension,
-            v=>v is { X: 0, Y: 0 } ? doubleTriangles :null,
+            v=>(v is { X: 0, Y: 0 } ? doubleTriangles :null) ?? throw new InvalidOperationException(),
             v=>v is { X: 0, Y: 0 });
 
 

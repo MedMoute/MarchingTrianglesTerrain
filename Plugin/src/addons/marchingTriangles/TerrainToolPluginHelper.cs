@@ -91,7 +91,7 @@ public class TerrainToolPluginHelper
         TerrainToolMode terrainToolMode,
         bool drawAreaHovered,
         Vector3? drawPosition,
-        EditorUndoRedoManager? redoManager)
+        EditorUndoRedoManager redoManager)
     {
         if (inputEvent.IsPressed())
         {
@@ -111,7 +111,7 @@ public class TerrainToolPluginHelper
                     terrain.Chunks.TryGetValue(CurrentHoveredChunk, out var selectedChunk);
                     if (selectedChunk != null) // Left-click on an already existing chunk => removal
                     {
-                        redoManager?.CreateAction("Remove Chunk");
+                        redoManager.CreateAction("Remove Chunk");
                         redoManager.AddDoMethod(terrain, MarchingTrianglesTerrain.MethodName.RemoveChunkFromTree,
                             CurrentHoveredChunk, _parent);
                         redoManager.AddUndoMethod(terrain, MarchingTrianglesTerrain.MethodName.AddChunk,
@@ -120,7 +120,7 @@ public class TerrainToolPluginHelper
                     }
                     else if (terrain.CanAddEmptyChunk(CurrentHoveredChunk))
                     {
-                        redoManager?.CreateAction("Add chunk");
+                        redoManager.CreateAction("Add chunk");
                         redoManager.AddDoMethod(terrain, MarchingTrianglesTerrain.MethodName.AddNewChunk,
                             CurrentHoveredChunk, _parent);
                         redoManager.AddUndoMethod(terrain, MarchingTrianglesTerrain.MethodName.RemoveChunk,
@@ -170,14 +170,14 @@ public class TerrainToolPluginHelper
                 else if (Input.IsKeyPressed(Key.Shift))
                 {
                     Drawing = true;
-                    BrushPosition = drawPosition.Value;
+                    BrushPosition = drawPosition!.Value;
                 }
                 else
                 {
                     HeightDragging = true;
                     if (!_toolAttributes.Flatten)
                     {
-                        DrawHeight = drawPosition.Value.Y;
+                        DrawHeight = drawPosition!.Value.Y;
                     }
                 }
             }

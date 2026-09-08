@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
@@ -46,7 +47,7 @@ public partial class MarchingTrianglesGizmoPlugin : EditorNode3DGizmoPlugin
             }
         }
 
-        return null;
+        throw new Exception("Unable to create Gizmo");
     }
 
     public void TriggerRedraw(Node node)

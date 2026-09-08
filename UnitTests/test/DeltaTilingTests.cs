@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
@@ -182,14 +183,14 @@ public class DeltaTilingTests
         var b0 = b_mid.Rotate(Angle.FromDegrees(-30));
         var b1 = b_mid.Rotate(Angle.FromDegrees(30));
         // Compute the inverse
-        var denom = 1/(b0.X*b1.Y-b1.X*b0.Y);
+        var denom = 1 / (b0.X * b1.Y - b1.X * b0.Y);
 
         var ib0 = denom * new Vector2D(b1.Y, -b0.Y);
         var ib1 = denom * new Vector2D(-b1.X, b0.X);
 
-        u_expected = vec => (int)Math.Floor( ib0.X * (vec-origin).X + ib1.X * (vec-origin).Y);
+        u_expected = vec => (int)Math.Floor(ib0.X * (vec - origin).X + ib1.X * (vec - origin).Y);
 
-        v_expected = vec => (int)Math.Floor( ib0.Y * (vec-origin).X + ib1.Y * (vec-origin).Y);
+        v_expected = vec => (int)Math.Floor(ib0.Y * (vec - origin).X + ib1.Y * (vec - origin).Y);
 
         for (int i = 0; i < 50; i++)
         {
@@ -253,6 +254,7 @@ public class DeltaTilingTests
             ).ToArray()
             , Is.EqualTo(Matrix<double>.Build.DenseDiagonal(2, 1).ToArray()).AsCollection.Within(1e-5));
     }
+
     [Test]
     public void TestCartesianToLocalToCartesianIsIdentity()
     {
@@ -272,14 +274,14 @@ public class DeltaTilingTests
                 var x = rand.NextDouble();
                 var y = rand.NextDouble();
                 var vec = new Vector2D(x, y);
-                
+
                 Assert.That(
-                    ()=>tilingSystem.LocalToCartesian(tilingSystem.CartesianToLocal(vec)),
-                    Is.EqualTo(vec).Using<Vector2D,Vector2D>((v1, v2)=>(v1-v2).Length<1e-5));
+                    () => tilingSystem.LocalToCartesian(tilingSystem.CartesianToLocal(vec)),
+                    Is.EqualTo(vec).Using<Vector2D, Vector2D>((v1, v2) => (v1 - v2).Length < 1e-5));
             }
         }
     }
-    
+
     [Test]
     public void TestLocalToCartesianToLocalIsIdentity()
     {
@@ -299,14 +301,14 @@ public class DeltaTilingTests
                 var x = rand.NextDouble();
                 var y = rand.NextDouble();
                 var vec = new Vector2D(x, y);
-                
+
                 Assert.That(
-                    ()=>tilingSystem.CartesianToLocal(tilingSystem.LocalToCartesian(vec)),
-                    Is.EqualTo(vec).Using<Vector2D,Vector2D>((v1, v2)=>(v1-v2).Length<1e-5));
+                    () => tilingSystem.CartesianToLocal(tilingSystem.LocalToCartesian(vec)),
+                    Is.EqualTo(vec).Using<Vector2D, Vector2D>((v1, v2) => (v1 - v2).Length < 1e-5));
             }
         }
     }
-    
+
     [Test]
     public void TestOffsetFrame()
     {
@@ -325,14 +327,14 @@ public class DeltaTilingTests
         Assert.That(() => offset.Transform.Column(2).ToArray(),
             Is.EqualTo((Vector2D.OfVector(tilingSystem.Transform.Column(2)) + off).ToVector().ToArray())
                 .AsCollection.Within(1E-5));
-        
+
         //Random offsets
         var rand = new Random();
         for (int i = 0; i < 10; i++)
         {
             var ox = rand.NextDouble();
             var oy = rand.NextDouble();
-            off = new Vector2D(ox, oy); 
+            off = new Vector2D(ox, oy);
             offset = tilingSystem.OffsetBy(off);
             // Check that the square submatrix is unchanged
             Assert.That(() => tilingSystem.Transform.SubMatrix(0, 2, 0, 2).ToArray(),
@@ -350,8 +352,11 @@ public class DeltaTilingTests
         RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0));
-        Assert.That(() => (tilingSystem.Clone() as DoubleDeltaTileOrientationSystem).Transform.ToArray(),
-            Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
+        var ddt = tilingSystem.Clone() as DoubleDeltaTileOrientationSystem ;
+        Debug.Assert(ddt != null, nameof(ddt) + " != null");
+        var transform = tilingSystem.Transform.ToArray();
+        Assert.That(() => ddt.Transform.ToArray(),
+            Is.EqualTo(transform).AsCollection.Within(1E-5));
 
         //Random clones : 
         //Test with random tilings
@@ -365,7 +370,9 @@ public class DeltaTilingTests
             var o = new Vector2D(ox, oy);
             var v = new Vector2D(vx, vy);
             tilingSystem = new DoubleDeltaTileOrientationSystem(o, v);
-            Assert.That(() => (tilingSystem.Clone() as DoubleDeltaTileOrientationSystem).Transform.ToArray(),
+            ddt = tilingSystem.Clone() as DoubleDeltaTileOrientationSystem ;
+            Debug.Assert(ddt != null, nameof(ddt) + " != null");
+            Assert.That(() =>ddt.Transform.ToArray(),
                 Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
         }
     }
@@ -383,7 +390,5 @@ public class DeltaTilingTests
 
         Assert.That(() => dualOfOffset.Transform.ToArray(),
             Is.EqualTo(offsetOfDual.Transform.ToArray()).AsCollection.Within(1E-5));
-
     }
-    
 }

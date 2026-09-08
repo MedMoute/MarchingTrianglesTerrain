@@ -1,6 +1,7 @@
 #pragma warning disable NUnit2021
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles;
@@ -303,7 +304,10 @@ public class HexTileTests
         RegularUniformFrame tilingSystem = new HexTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0));
-        Assert.That(() => (tilingSystem.Clone() as HexTileOrientationSystem).Transform.ToArray(),
+        
+        var ht = tilingSystem.Clone() as HexTileOrientationSystem ;
+        Debug.Assert(ht != null, nameof(ht) + " != null");
+        Assert.That(() => ht.Transform.ToArray(),
             Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
 
         //Random clones : 
@@ -318,7 +322,9 @@ public class HexTileTests
             var o = new Vector2D(ox, oy);
             var v = new Vector2D(vx, vy);
             tilingSystem = new HexTileOrientationSystem(o, v);
-            Assert.That(() => (tilingSystem.Clone() as HexTileOrientationSystem).Transform.ToArray(),
+            ht = tilingSystem.Clone() as HexTileOrientationSystem ;
+            Debug.Assert(ht != null, nameof(ht) + " != null");
+            Assert.That(() => ht.Transform.ToArray(),
                 Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
         }
     }

@@ -110,8 +110,8 @@ public class HexagonalTerrainChunk
     public HexagonalTerrainChunk(Vector2I chunkCoordinates,
         Vector2I dimension,
         Func<Vector2I, HexagonalTerrainChunk> neighboringChunkDataHandle,
-        float[][] dataSource = null,
-        float[][] dataSource2 = null)
+        float[][]? dataSource = null,
+        float[][]? dataSource2 = null)
     {
         Coordinates = chunkCoordinates;
         Dimensions2D = dimension;

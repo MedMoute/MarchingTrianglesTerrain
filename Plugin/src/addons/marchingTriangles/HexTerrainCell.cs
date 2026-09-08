@@ -83,7 +83,7 @@ public class HexTerrainCell
     internal CellDataArrays TempDataArrays { get; }
 
     // TODO support object[]
-    public Func<int, float> GetVertexData;
+    public Func<int, float>? GetVertexData;
 
     public bool FloorMode { get; private set; }
 
@@ -92,6 +92,13 @@ public class HexTerrainCell
         //TODO save value in cache
         get
         {
+            if (GetVertexData == null)
+            {
+                throw new Exception(
+                    "Cannot get the average heigh value for a cell without" +
+                    " Data-fetching functions. Please call SetDataFetchingFunction() before .");
+            }
+
             float sum = 0;
             for (int i = 0; i < VertexCount; i++)
             {

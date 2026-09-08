@@ -13,7 +13,7 @@ public class TestHexTerrainChunk
     {
         Assert.DoesNotThrow(() =>
         {
-            var hexTerrainChunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(3, 3), _=>null);
+            var hexTerrainChunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(3, 3), _=>null!);
         });
     }
 
@@ -33,7 +33,7 @@ public class TestHexTerrainChunk
                 var dims = new Vector2I(6, 6);
                 var dico = new Dictionary<Vector2I, HexagonalTerrainChunk>();
                 
-                var neighborChunkProvider = MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain.BuildNeighborChunkProvider(dico.GetValueOrDefault);
+                var neighborChunkProvider = MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain.BuildNeighborChunkProvider(dico.GetValueOrDefault!);
 
                 foreach (var i in itemOrder)
                 {

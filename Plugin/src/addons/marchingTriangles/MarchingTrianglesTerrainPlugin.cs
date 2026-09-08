@@ -297,11 +297,11 @@ internal class MarchingTrianglesPhysicsDelegate
     private bool _raycastQueued = false;
     private Vector3 _rayOrigin;
     private Vector3 _rayDir;
-    private Camera3D _rayCamera;
+    private Camera3D? _rayCamera;
 
     public Dictionary QueuedRayResult { get; private set; } = new();
 
-    public void QueueRaycast(Vector3 origin, Vector3 direction, Camera3D rayCamera)
+    public void QueueRaycast(Vector3 origin, Vector3 direction, Camera3D? rayCamera)
     {
         _rayOrigin = origin;
         _rayDir = direction;
@@ -316,7 +316,7 @@ internal class MarchingTrianglesPhysicsDelegate
             return;
         _raycastQueued = false;
 
-        World3D world = _rayCamera.GetWorld3D();
+        World3D world = _rayCamera!.GetWorld3D();
         var spaceState = PhysicsServer3D.SpaceGetDirectState(world.Space);
 
         float rayLength = 10_000f;

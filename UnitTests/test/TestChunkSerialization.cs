@@ -9,7 +9,7 @@ public class TestChunkSerialization
     [Test]
     public void TestCanWriteChunkDataToStructure()
     {
-        var chunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null);
+        var chunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null!);
         var dataStructImpl = new ChunkDataStructImpl();
 
         Assert.DoesNotThrow(() => MttDataHandler.FillDataStructFromChunk(dataStructImpl, chunk));
@@ -18,10 +18,10 @@ public class TestChunkSerialization
     [Test]
     public void TestCanReadChunkDataFromStructure()
     {
-        var chunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null);
+        var chunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null!);
         var dataStructImpl = new ChunkDataStructImpl();
         MttDataHandler.FillDataStructFromChunk(dataStructImpl, chunk);
-        var newChunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null);
+        var newChunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null!);
 
         Assert.DoesNotThrow(() => MttDataHandler.FillChunkFromData(dataStructImpl, newChunk)
         );
@@ -30,12 +30,12 @@ public class TestChunkSerialization
     [Test]
     public void TestRoundTripToStructureEquals()
     {
-        var chunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null);
+        var chunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null!);
         var dataStructImpl = new ChunkDataStructImpl();
 
         MttDataHandler.FillDataStructFromChunk(dataStructImpl, chunk);
 
-        var newChunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null);
+        var newChunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null!);
         MttDataHandler.FillChunkFromData(dataStructImpl, newChunk);
 
         Assert.That(newChunk.Coordinates, Is.EqualTo(chunk.Coordinates));
