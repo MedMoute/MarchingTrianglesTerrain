@@ -344,7 +344,8 @@ public class HexagonalTerrainChunk
         neighbors = neighbors.Where(c => c != null).ToHashSet();
 
         HashSet<Vector2I> chunksFlaggedForRebuild = new HashSet<Vector2I>();
-        Console.WriteLine(Coordinates);
+        // //Debug statement
+        // Console.WriteLine(Coordinates);
         foreach (var neighbor in neighbors)
         {
             var editedChunkStatistics = ProcessNewChunkBorder(neighbor);

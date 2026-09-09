@@ -31,4 +31,9 @@ public class EngineUtils
     {
         node.SetOwner(GetRootNode(node));
     }
+
+    public static int mod(int x, int m)
+    {
+        return (x % m + m) % m;
+    }
 }
