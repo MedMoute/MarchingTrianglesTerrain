@@ -14,7 +14,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
     /// <summary>
     /// Flag for debug print.
     /// </summary>
-    private bool _verbose = false;
+    private bool _verbose;
 
     private readonly List<Vector3> _lines = new();
 
@@ -89,20 +89,24 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         sb.Append("[Gizmo Redraw Debug]");
 
         var terrain = _terrainPlugin.CurTerrainNode;
+        if (terrain == null)
+        {
+            sb.Append("Terrain instance is null. Aborting.");
+            return;
+        }
 
         if (_terrainPlugin.SelectedMode == TerrainToolMode.ChunkManagement)
         {
             ProcessGizmoChunkLines(sb, terrain);
         }
 
-        var pos = ProcessBrushAndPattern(terrain, sb);
+        var pos = ProcessBrushAndPattern(terrain);
 
         //The size of the brush cell mesh is adjusted dynamically before drawing :
-        if (MarchingTrianglesGizmoPlugin.BrushMesh != null && _terrainPlugin.CurTerrainNode != null)
-        {
-            MarchingTrianglesGizmoPlugin.BrushMesh.Size =
-                Vector2.One * _terrainPlugin.CurTerrainNode.TerrainSettings.CellScale / 2;
-        }
+
+        MarchingTrianglesGizmoPlugin.BrushMesh.Size =
+            Vector2.One * terrain.TerrainSettings.CellScale / 2;
+
 
         if (_terrainPlugin.PluginHelper.TerrainHovered)
         {
@@ -211,11 +215,10 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         }
     }
 
-    private Vector3 ProcessBrushAndPattern(MarchingTrianglesTerrain terrain, StringBuilder sb)
+    private Vector3 ProcessBrushAndPattern(MarchingTrianglesTerrain terrain)
     {
         // Brush & brush pattern processing
         Vector3 pos = _terrainPlugin.PluginHelper.BrushPosition;
-        var cursorChunkCoords = new Vector2I();
         var cursorCellCoords = new Vector3I();
 
         if (_terrainPlugin.PluginHelper.HeightDragging && !_terrainPlugin.PluginHelper.HeightSet)
@@ -223,7 +226,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             _terrainPlugin.PluginHelper.HeightSet = true;
 
             var pos2D = new Vector2D(pos.X, pos.Z);
-            cursorChunkCoords = MarchingTrianglesTerrain.GetChunkCoordsFromCartesian(
+            var cursorChunkCoords = MarchingTrianglesTerrain.GetChunkCoordsFromCartesian(
                 pos2D, terrain.TerrainSettings.ChunkDimensions);
 
             var chunkExists = terrain.Chunks.TryGetValue(cursorChunkCoords, out var chunk);

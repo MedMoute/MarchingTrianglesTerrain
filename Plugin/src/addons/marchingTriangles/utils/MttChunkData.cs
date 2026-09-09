@@ -17,10 +17,10 @@ public partial class MttChunkData : Resource
     [Export] public int MergeMode { get; internal set; }
     
     //TODO -> move these out of the metadata file
-    [Export] public Array<byte> GroundTexturesIdx { get; internal set; }
-    [Export] public Array<byte> WallTexturesIdx { get; internal set; }
-    [Export] public Mesh Mesh { get; internal set; }
-    [Export] public Vector3[] CollisionFaces { get; internal set; }
+    [Export] public Array<byte>? GroundTexturesIdx { get; internal set; }
+    [Export] public Array<byte>? WallTexturesIdx { get; internal set; }
+    [Export] public Mesh? Mesh { get; internal set; }
+    [Export] public Vector3[]? CollisionFaces { get; internal set; }
 
     public void SetCollisionFromShape(ConcavePolygonShape3D shape)
     {

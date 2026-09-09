@@ -2,7 +2,7 @@ using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
-namespace UnitTests;
+namespace UnitTests.test;
 
 public class TestChunkSerialization
 {
@@ -50,7 +50,7 @@ public class TestChunkSerialization
         Assert.That(newChunk.DataGrid.Points, Is.EqualTo(chunk.DataGrid.Points));
         Assert.That(newChunk.DataGrid.Size, Is.EqualTo(chunk.DataGrid.Size));
 
-        Assert.That(newChunk.existingNeighbors, Is.EqualTo(chunk.existingNeighbors));
+        Assert.That(newChunk.ExistingNeighbors, Is.EqualTo(chunk.ExistingNeighbors));
 
         // No easy Equals check on TerrainColorMaps as the arrays are not exposed : instead used a looped getter
         foreach (var cellIdx in chunk.DataGrid.Data.Keys)

@@ -148,7 +148,7 @@ public class HexTerrainCell
 
     public void SetDataFetchingFunction(
         Vector2I dimensions2D,
-        Func<Vector2I, TriangleGrid> dataProviderProvider,
+        Func<Vector2I, TriangleGrid?> dataProviderProvider,
         Func<Vector2I, bool> doesNeighboringChunkExist)
     {
         /// TODO Memoize
@@ -162,7 +162,7 @@ public class HexTerrainCell
 
             var scaledOffset = new Vector3I(offset.X * dimensions2D.X, offset.Y * dimensions2D.Y, 0);
 
-            var success = dataProviderProvider(offset).Data.TryGetValue(vertexIdxInDual - scaledOffset, out var value);
+            var success = dataProviderProvider(offset)!.Data.TryGetValue(vertexIdxInDual - scaledOffset, out var value);
             if (success)
             {
                 return value;

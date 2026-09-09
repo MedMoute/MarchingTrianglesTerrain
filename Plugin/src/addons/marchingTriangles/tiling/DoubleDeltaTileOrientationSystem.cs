@@ -13,13 +13,20 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
 
     private readonly double _offSetAngleInRad;
 
-    public Tuple<Vector2D, Vector2D> DualSeeds { get; private set; }
+    private Tuple<Vector2D, Vector2D> _dualSeeds;
+
+    public Tuple<Vector2D, Vector2D> DualSeeds
+    {
+        get => _dualSeeds;
+        set => _dualSeeds = value;
+    }
+
     public Vector2D[] UnscaledOriginCellCentroidPositions { get; }
 
     public Matrix<double> Transform
     {
         get => _transform;
-        private set
+        private init
         {
             _transform = value;
             _transformSquare = _transform.SubMatrix(0, 2, 0, 2);
@@ -99,7 +106,6 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
         }
 
         // Due to barycentric properties of equilateral triangles
-        Vector2D dPos = c2 + j;
         Vector2D cPos = c1 - j;
         // Be E the Intersection point of [C1 C2] with [AB] :
         // E is the middle of [C1 C2]
@@ -205,7 +211,7 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
 
     public RegularUniformFrame OffsetBy(Vector2D cartesianOffset)
     {
-        DoubleDeltaTileOrientationSystem newFrame = Clone() as DoubleDeltaTileOrientationSystem;
+        DoubleDeltaTileOrientationSystem newFrame = Clone() as DoubleDeltaTileOrientationSystem ?? throw new InvalidOperationException();
         var newOrigin = (Vector2D.OfVector(newFrame.TransformOffset) + cartesianOffset).ToVector();
         newFrame.TransformOffset = newOrigin;
         newFrame.DualSeeds =
@@ -240,8 +246,8 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
     {
         return HashCode.Combine(
             _offSetAngleInRad,
-            DualSeeds.Item1,
-            DualSeeds.Item2,
+            _dualSeeds.Item1,
+            _dualSeeds.Item2,
             UnscaledOriginCellCentroidPositions[0],
             UnscaledOriginCellCentroidPositions[1], 
             Transform,

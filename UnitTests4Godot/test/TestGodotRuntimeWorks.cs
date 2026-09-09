@@ -17,6 +17,6 @@ public sealed class TestGodotRuntimeWorks
     [GodotExceptionMonitor]
     public void PluginStartupTest()
     {
-        var plugin = AddNode(new MarchingTrianglesTerrainPlugin());
+        AddNode(new MarchingTrianglesTerrainPlugin());
     }
 }

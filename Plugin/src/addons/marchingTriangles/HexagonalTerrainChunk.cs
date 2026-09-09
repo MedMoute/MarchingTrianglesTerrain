@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
@@ -58,22 +59,22 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// The dual grid used for data representation.
     /// </summary>
-    protected internal HexagonGrid _terrainDualGrid;
+    protected internal HexagonGrid TerrainDualGrid;
 
 
     /// <summary>
     /// Stores the coordinates of the neighboring chunks that exist that 
     /// </summary>
-    public HashSet<Vector2I> existingNeighbors { get; set; } = new();
+    public HashSet<Vector2I> ExistingNeighbors { get; set; } = new();
 
     /// <summary>
     /// Neighbor-only aware chunk provider.
     /// The coordinates to provide are the offset coordinates.  
     /// </summary>
-    private readonly Func<Vector2I, HexagonalTerrainChunk> _neighborChunksProvider;
+    private readonly Func<Vector2I, HexagonalTerrainChunk?> _neighborChunksProvider;
 
     /// Helper for computing/interpolating cell colors.
-    private readonly VertexColorHelper _colorHelper ;
+    private readonly VertexColorHelper _colorHelper;
 
     /// <summary>
     /// Dirtiness (need to reprocess) flag for the chunk.
@@ -90,14 +91,14 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// Data holder for the chunk's color data
     /// </summary>
-    public TerrainColorMaps ColorMaps { get; internal set; }
+    public TerrainColorMaps? ColorMaps { get; private set; }
 
     /// <summary>
     /// Chunk's type of merge operation
     /// </summary>
     public int MergeMode { get; set; } = 1;
 
-    public Dictionary<Vector3I, bool> NeedUpdate { get; } = new();
+    public Dictionary<Vector3I, bool> NeedUpdate { get; }
 
     /// <summary>
     /// Chunk constructor.
@@ -109,13 +110,13 @@ public class HexagonalTerrainChunk
     /// <param name="dataSource2">Starting height data for the 1-triangle cells of the triangular tiling</param>
     public HexagonalTerrainChunk(Vector2I chunkCoordinates,
         Vector2I dimension,
-        Func<Vector2I, HexagonalTerrainChunk> neighboringChunkDataHandle,
+        Func<Vector2I, HexagonalTerrainChunk?> neighboringChunkDataHandle,
         float[][]? dataSource = null,
         float[][]? dataSource2 = null)
     {
         Coordinates = chunkCoordinates;
         Dimensions2D = dimension;
-        existingNeighbors.Add(Vector2I.Zero); // Register the chunk as its own neighbor
+        ExistingNeighbors.Add(Vector2I.Zero); // Register the chunk as its own neighbor
 
         var src1 = dataSource ?? new float[dimension.X][];
         var src2 = dataSource2 ?? new float[dimension.X][];
@@ -124,11 +125,11 @@ public class HexagonalTerrainChunk
         DataGrid = TriangleGrid.BuildFrom(src1, src2, terrainFrame);
 
         _neighborChunksProvider = neighboringChunkDataHandle;
-        _terrainDualGrid = HexagonGrid.BuildFromDual(
+        TerrainDualGrid = HexagonGrid.BuildFromDual(
             DataGrid,
             Dimensions2D,
-            v => neighboringChunkDataHandle(v).DataGrid,
-            v => existingNeighbors.Contains(v));
+            v => neighboringChunkDataHandle(v)?.DataGrid,
+            v => ExistingNeighbors.Contains(v));
         _colorHelper = new VertexColorHelper(_neighborChunksProvider);
         NeedUpdate = new();
     }
@@ -177,8 +178,9 @@ public class HexagonalTerrainChunk
         try
         {
             var offset = HexTerrainCell.GetChunkOffsetForDualCell(_dimension2D, cellCoords);
-            var grid = _neighborChunksProvider(offset).DataGrid;
-
+            var grid = _neighborChunksProvider(offset)?.DataGrid;
+            Debug.Assert(grid != null, nameof(grid) + " != null");
+  
             var scaledOffset = new Vector3I(offset.X * _dimension2D.X, offset.Y * _dimension2D.Y, 0);
             return grid.Data[cellCoords + scaledOffset];
         }
@@ -225,8 +227,6 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// Returns the list of triangle tiles' coordinates of the chunk that are affected by the addition of a border
     /// </summary>
-    /// <param name="neighborChunkIndex">the index of the neighboring chunk</param>
-    /// <returns></returns>
     public List<Vector3I> GetTriCellsTouchingNeighbour(Vector2I offset)
     {
         var offset3D = new Vector3I(offset.X, offset.Y, 0);
@@ -263,10 +263,15 @@ public class HexagonalTerrainChunk
     /// </summary>
     public List<HexTerrainCell> GetHexCells()
     {
-        var result = new List<HexTerrainCell>(_terrainDualGrid.CompleteCells);
-        var pendingCells = _terrainDualGrid.PendingCells.Where(c => c.Value != null);
+        var result = new List<HexTerrainCell>(TerrainDualGrid.CompleteCells);
+        var pendingCells = TerrainDualGrid.PendingCells.Where(c => c.Value != null);
         foreach (var pendingCell in pendingCells)
         {
+            if (pendingCell.Value == null)
+            {
+                continue;
+            }
+
             result.Add(pendingCell.Value);
         }
 
@@ -282,22 +287,22 @@ public class HexagonalTerrainChunk
         var foundCells = 0;
         //
 
-        existingNeighbors.Add(offset);
+        ExistingNeighbors.Add(offset);
 
         var triCells = GetTriCellsTouchingNeighbour(offset);
         foreach (var triCell in triCells)
         {
             // There may not be a corresponding value for every cell if the cell the border is expanding from 
             // has an extra border-related datapoint.
-            if (neighbor.DataGrid.Data.TryGetValue(triCell - offset3D, out var newCellData))
+            if (neighbor.DataGrid.Data.TryGetValue(triCell - offset3D, out _))
             {
                 foundCells++;
-                _terrainDualGrid.AddDeltaTileCellValues(
+                TerrainDualGrid.AddDeltaTileCellValues(
                     triCell,
                     Dimensions2D,
-                    v => _neighborChunksProvider(v).DataGrid,
-                    v => existingNeighbors.Contains(v));
-                NeedUpdate[triCell-offset3D] = true;
+                    v => _neighborChunksProvider(v)?.DataGrid,
+                    v => ExistingNeighbors.Contains(v));
+                NeedUpdate[triCell - offset3D] = true;
             }
         }
 
@@ -355,10 +360,12 @@ public class HexagonalTerrainChunk
                 chunksFlaggedForRebuild.Add(neighbor.Coordinates);
             }
         }
+
         return chunksFlaggedForRebuild;
     }
 
-    public Dictionary<string, Color> BlendColors(GdPluginHexTerrainChunk chunk, HexTerrainCell cell, Vector3 pos, Vector2 uv, bool b)
+    public Dictionary<string, Color> BlendColors(GdPluginHexTerrainChunk chunk, HexTerrainCell cell, Vector3 pos,
+        Vector2 uv, bool b)
     {
         return _colorHelper.BlendColors(chunk, cell, pos, uv, b);
     }

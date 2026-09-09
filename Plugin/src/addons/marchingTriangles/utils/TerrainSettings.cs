@@ -72,7 +72,7 @@ public partial class TerrainSettings(
         }
     }
 
-    private int _blendValue = 0;
+    private int _blendValue;
 
     [Export(PropertyHint.Range, "0,2,1")]
     public int BlendMode
@@ -108,7 +108,7 @@ public partial class TerrainSettings(
         }
     }
 
-    private double _wallThreshold = 0.0;
+    private double _wallThreshold;
 
     [Export]
     public double WallThreshold

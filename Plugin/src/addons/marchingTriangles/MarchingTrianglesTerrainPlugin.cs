@@ -12,9 +12,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     /// <summary>
     /// Singleton plugin instance.
     /// </summary>
-    public static MarchingTrianglesTerrainPlugin Instance { get; set; }
-
-    private BrushPatternCalculator _patternCalculator = new();
+    public static MarchingTrianglesTerrainPlugin Instance { get; private set; }
 
     /// <summary>
     /// Gizmo Plugin instance.
@@ -29,14 +27,14 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     public MarchingTrianglesTerrainUi Ui { get; private set; }
 
     /// <summary>
-    /// Component for computing physics-related information (raycast etc...
+    /// Component for computing physics-related information (raycast etc...)
     /// </summary>
     private readonly MarchingTrianglesPhysicsDelegate _physicsDelegate = new();
 
     /// <summary>
     /// The terrain currently being edited by this plugin.
     /// </summary>
-    public MarchingTrianglesTerrain CurTerrainNode { get; private set; }
+    public MarchingTrianglesTerrain? CurTerrainNode { get; private set; }
 
     /// <summary>
     /// Global plugin initialization flag.
@@ -53,6 +51,14 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     public TerrainToolAttributes ToolAttributes { get; } = new();
 
     public TerrainToolPluginHelper PluginHelper { get; private set; }
+
+    public MarchingTrianglesTerrainPlugin()
+    {
+        Instance = this;
+        Ui = new MarchingTrianglesTerrainUi(Instance);
+        PluginHelper = new TerrainToolPluginHelper(_physicsDelegate, ToolAttributes, GizmoPlugin, Ui, Instance);
+        _initError = "";
+    }
 
     public TerrainToolMode SelectedMode
     {
@@ -76,9 +82,6 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
 
     public override void _EnterTree()
     {
-        Instance = this;
-        Ui = new MarchingTrianglesTerrainUi(Instance);
-        PluginHelper = new TerrainToolPluginHelper(_physicsDelegate, ToolAttributes, GizmoPlugin, Ui, Instance);
         if (CurTerrainNode != null)
         {
             ToolAttributes.TextureUpdated += CurTerrainNode.ForceRebuildTerrain;
@@ -177,7 +180,8 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         if (terrainScript != null && chunkScript != null)
         {
             var terrainIcon =
-                FileUtils.Load("res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Icon.svg") as Texture2D;
+                FileUtils.Load("res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Icon.svg") as
+                    Texture2D;
             var chunkIcon =
                 FileUtils.Load("res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Chunk_Icon.svg") as
                     Texture2D;
@@ -223,20 +227,12 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
 
     public override void _ExitTree()
     {
-        if (Ui != null)
-        {
-            Ui.QueueFree();
-            Ui = null;
-        }
+        Ui.QueueFree();
 
         RemoveCustomType(nameof(MarchingTrianglesTerrain));
         RemoveCustomType(nameof(GdPluginHexTerrainChunk));
-        if (GizmoPlugin != null)
-        {
-            RemoveNode3DGizmoPlugin(GizmoPlugin);
-            GizmoPlugin.Dispose();
-            GizmoPlugin = null;
-        }
+        RemoveNode3DGizmoPlugin(GizmoPlugin);
+        GizmoPlugin.Dispose();
 
         _init = false;
         _initError = "";
@@ -294,7 +290,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
 
 internal class MarchingTrianglesPhysicsDelegate
 {
-    private bool _raycastQueued = false;
+    private bool _raycastQueued;
     private Vector3 _rayOrigin;
     private Vector3 _rayDir;
     private Camera3D? _rayCamera;

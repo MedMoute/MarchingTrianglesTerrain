@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Godot;
 using MathNet.Spatial.Euclidean;
@@ -45,7 +46,7 @@ public class VertexColorHelper
     /// </summary>
     private Func<HexTerrainCell, Func<Vector3I, Color>[]> ColorSourceGetterProvider { get; }
 
-    public VertexColorHelper(Func<Vector2I, HexagonalTerrainChunk> neighborChunksProvider)
+    public VertexColorHelper(Func<Vector2I, HexagonalTerrainChunk?> neighborChunksProvider)
     {
         ColorSourceGetterProvider = cell =>
         [
@@ -53,35 +54,36 @@ public class VertexColorHelper
             {
                 var chunk = ComputeChunkAndOffset(neighborChunksProvider, cell, idx, out var offsetCoords);
                 return !cell.FloorMode
-                    ? chunk.ColorMaps.GetWallColor0(offsetCoords)
-                    : chunk.ColorMaps.GetGroundColor0(offsetCoords);
+                    ? chunk.ColorMaps!.GetWallColor0(offsetCoords)
+                    : chunk.ColorMaps!.GetGroundColor0(offsetCoords);
             },
             idx =>
             {
                 var chunk = ComputeChunkAndOffset(neighborChunksProvider, cell, idx, out var offsetCoords);
                 return !cell.FloorMode
-                    ? chunk.ColorMaps.GetWallColor1(offsetCoords)
-                    : chunk.ColorMaps.GetGroundColor1(offsetCoords);
+                    ? chunk.ColorMaps!.GetWallColor1(offsetCoords)
+                    : chunk.ColorMaps!.GetGroundColor1(offsetCoords);
             },
             idx =>
             {
                 var chunk = ComputeChunkAndOffset(neighborChunksProvider, cell, idx, out var offsetCoords);
-                return chunk.ColorMaps.GetWallColor0(offsetCoords);
+                return chunk.ColorMaps!.GetWallColor0(offsetCoords);
             },
             idx =>
             {
                 var chunk = ComputeChunkAndOffset(neighborChunksProvider, cell, idx, out var offsetCoords);
-                return chunk.ColorMaps.GetWallColor1(offsetCoords);
+                return chunk.ColorMaps!.GetWallColor1(offsetCoords);
             }
         ];
     }
 
     private static HexagonalTerrainChunk ComputeChunkAndOffset(
-        Func<Vector2I, HexagonalTerrainChunk> neighborChunksProvider, HexTerrainCell cell,
+        Func<Vector2I, HexagonalTerrainChunk?> neighborChunksProvider, HexTerrainCell cell,
         Vector3I idx, out Vector3I offsetCoords)
     {
         var offset = cell.Visits[idx];
         var chunk = neighborChunksProvider(offset);
+        Debug.Assert(chunk != null, nameof(chunk) + " != null");
         var offsetCoords2D = offset * chunk.Dimensions2D;
         offsetCoords = idx - new Vector3I(offsetCoords2D.X, offsetCoords2D.Y, 0);
         return chunk;
@@ -101,6 +103,12 @@ public class VertexColorHelper
         float centerHeight = cell.AverageHeight;
         for (int i = 0; i < HexTerrainCell.VertexCount; i++)
         {
+            if (cell.GetVertexData == null)
+            {
+                throw new Exception(
+                    "Cannot get the average heigh value for a cell without" +
+                    " Data-fetching functions. Please call SetDataFetchingFunction() before .");
+            }
             vertexHeights.Add(cell.GetVertexData(i));
         }
 
@@ -288,7 +296,7 @@ public class VertexColorHelper
         {
             return CalcDiagonalColor(chunk, cell, source);
         }
-
+        //TODO
         throw new NotImplementedException();
     }
 

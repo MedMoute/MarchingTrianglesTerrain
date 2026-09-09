@@ -11,7 +11,7 @@ using MathNet.Spatial.Units;
 using NUnit.Framework;
 
 #pragma warning disable NUnit2021
-namespace UnitTests;
+namespace UnitTests.test;
 
 public class DeltaTilingTests
 {
@@ -20,12 +20,14 @@ public class DeltaTilingTests
     {
         Assert.DoesNotThrow(() =>
         {
-            var tilingSystem = new DoubleDeltaTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 0));
+            // ReSharper disable once ObjectCreationAsStatement
+            new DoubleDeltaTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 0));
         });
 
         Assert.Throws<ArgumentException>(() =>
         {
-            var tilingSystem = new DoubleDeltaTileOrientationSystem(new Vector2D(0, 0), new Vector2D(0, 0));
+            // ReSharper disable once ObjectCreationAsStatement
+             new DoubleDeltaTileOrientationSystem(new Vector2D(0, 0), new Vector2D(0, 0));
         });
     }
 
@@ -154,8 +156,8 @@ public class DeltaTilingTests
         //Use the Terrain tiling
         tilingSystem = TerrainSettings.OrientationSystem;
 
-        var u_expected = (Vector2D vec) => (int)Math.Floor(vec.X - vec.Y / Math.Sqrt(3));
-        var v_expected = (Vector2D vec) => (int)Math.Floor(vec.Y / (Math.Sqrt(3) / 2));
+        var uExpected = (Vector2D vec) => (int)Math.Floor(vec.X - vec.Y / Math.Sqrt(3));
+        var vExpected = (Vector2D vec) => (int)Math.Floor(vec.Y / (Math.Sqrt(3) / 2));
 
 
         var rand = new Random();
@@ -164,7 +166,7 @@ public class DeltaTilingTests
             var x = rand.NextDouble() * 1000;
             var y = rand.NextDouble() * 1000;
             var vec = new Vector2D(x, y);
-            Assert.That(() => new Vector2I(u_expected(vec), v_expected(vec)), Is.EqualTo(tilingSystem.GetCell(vec)));
+            Assert.That(() => new Vector2I(uExpected(vec), vExpected(vec)), Is.EqualTo(tilingSystem.GetCell(vec)));
         }
 
         //Test for random tilings
@@ -188,16 +190,16 @@ public class DeltaTilingTests
         var ib0 = denom * new Vector2D(b1.Y, -b0.Y);
         var ib1 = denom * new Vector2D(-b1.X, b0.X);
 
-        u_expected = vec => (int)Math.Floor(ib0.X * (vec - origin).X + ib1.X * (vec - origin).Y);
+        uExpected = vec => (int)Math.Floor(ib0.X * (vec - origin).X + ib1.X * (vec - origin).Y);
 
-        v_expected = vec => (int)Math.Floor(ib0.Y * (vec - origin).X + ib1.Y * (vec - origin).Y);
+        vExpected = vec => (int)Math.Floor(ib0.Y * (vec - origin).X + ib1.Y * (vec - origin).Y);
 
         for (int i = 0; i < 50; i++)
         {
             var x = rand.NextDouble() * 1000;
             var y = rand.NextDouble() * 1000;
             var vec = new Vector2D(x, y);
-            Assert.That(() => new Vector2I(u_expected(vec), v_expected(vec)), Is.EqualTo(tilingSystem.GetCell(vec)));
+            Assert.That(() => new Vector2I(uExpected(vec), vExpected(vec)), Is.EqualTo(tilingSystem.GetCell(vec)));
         }
     }
 

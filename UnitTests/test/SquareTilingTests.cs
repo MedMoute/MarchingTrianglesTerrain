@@ -15,7 +15,8 @@ public class SquareTilingTests
     {
         Assert.DoesNotThrow(() =>
         {
-            var tilingSystem = new SquareTileFrame(new Vector2D(0, 0), new Vector2D(1, 0));
+            // ReSharper disable once ObjectCreationAsStatement
+            new SquareTileFrame(new Vector2D(0, 0), new Vector2D(1, 0));
         });
 
         Assert.Throws<ArgumentException>(() => new SquareTileFrame(new Vector2D(0, 0), new Vector2D(0, 0)));

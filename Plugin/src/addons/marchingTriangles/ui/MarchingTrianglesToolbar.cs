@@ -225,6 +225,10 @@ public class MarchingTrianglesToolbox
 
 public partial class MarchingTrianglesToolAttributeSettings : Resource
 {
+    public MarchingTrianglesToolAttributeSettings()
+    {
+        throw new AccessViolationException("Should not be used. This is not to be instantiated by the editor.");
+    }
     internal MarchingTrianglesToolAttributeSettings(
         bool brushType = false,
         bool size = false,
@@ -260,27 +264,27 @@ public partial class MarchingTrianglesToolAttributeSettings : Resource
     }
 
 // General brush attributes
-    [Export] public bool BrushType = false;
-    [Export] public bool Size = false;
-    [Export] public bool EaseValue = false;
-    [Export] public bool Height = false;
-    [Export] public bool Strength = false;
-    [Export] public bool Flatten = false;
-    [Export] public bool Falloff = false;
+    [Export] public bool BrushType;
+    [Export] public bool Size;
+    [Export] public bool EaseValue;
+    [Export] public bool Height;
+    [Export] public bool Strength;
+    [Export] public bool Flatten;
+    [Export] public bool Falloff;
 
 // Brush specific attributes
-    [Export] public bool MaskMode = false;
-    [Export] public bool Material = false;
-    [Export] public bool TextureName = false;
+    [Export] public bool MaskMode;
+    [Export] public bool Material;
+    [Export] public bool TextureName;
 
 // Vertex painting-related special attributes
-    [Export] public bool TexturePreset = false;
-    [Export] public bool QuickPaintSelection = false;
-    [Export] public bool PaintWalls = false;
+    [Export] public bool TexturePreset;
+    [Export] public bool QuickPaintSelection;
+    [Export] public bool PaintWalls;
 
 // Non-brush attributes
-    [Export] public bool ChunkManagement = false;
-    [Export] public bool TerrainSettings = false;
+    [Export] public bool ChunkManagement;
+    [Export] public bool TerrainSettings;
 
     public List<Tuple<string, bool>> GetPropertiesFlagList()
     {

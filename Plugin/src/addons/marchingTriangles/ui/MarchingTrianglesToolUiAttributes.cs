@@ -18,6 +18,11 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
 public partial class MarchingTrianglesToolUiAttributes
     : ScrollContainer
 {
+    public MarchingTrianglesToolUiAttributes()
+    {
+        throw new AccessViolationException("Should not be used. This is not to be instantiated by the editor.");
+    }
+
     [Signal]
     public delegate void PluginSettingChangedEventHandler(string setting, Variant value);
 
@@ -58,17 +63,17 @@ public partial class MarchingTrianglesToolUiAttributes
     private readonly System.Collections.Generic.Dictionary<string, string> _terrainSettingsData = new()
     {
         { "ChunkDimensions", "Vector2i" },
-        { "CellScale", "EditorSpinSlider" }, 
+        { "CellScale", "EditorSpinSlider" },
         { "BlendMode", "OptionButton" },
-        
+
         //{ "noise_hmap", "EditorResourcePicker" },
         //{ "default_wall_texture", "OptionButton" },
-        
+
         { "CollisionLayer", "OptionButton" },
         // //Special texture settings
         //{ "use_ridge_texture", "CheckBox" },
         //{ "use_ledge_texture", "CheckBox" },
-        
+
         { "RidgeThreshold", "EditorSpinSlider" },
         { "LedgeThreshold", "EditorSpinSlider" }
     };
@@ -168,7 +173,7 @@ public partial class MarchingTrianglesToolUiAttributes
     private void AddToolSetting(Godot.Collections.Dictionary<string, Variant> toolSettingParameters)
     {
         string settingName = (String)toolSettingParameters.GetValueOrDefault("name", "");
-        SettingType.TryParse((string)toolSettingParameters.GetValueOrDefault("type", (int)SettingType.Error),
+        Enum.TryParse((string)toolSettingParameters.GetValueOrDefault("type", (int)SettingType.Error),
             out SettingType settingType);
         string labelText = (String)toolSettingParameters.GetValueOrDefault("label", "");
 
@@ -199,7 +204,6 @@ public partial class MarchingTrianglesToolUiAttributes
             _hboxContainer.AddChild(cCont, true);
         }
 
-        CenterContainer container = null;
         Variant savedSettingValue = GetCurrentPluginAttributeValue(settingName);
         //Process per setting type
         switch (settingType)
@@ -283,7 +287,7 @@ public partial class MarchingTrianglesToolUiAttributes
             }
 
             throw new ConstraintException("Cannot process the UI for the Terrain settings as the "
-                                          + nameof(MarchingTrianglesTerrain)+"."+nameof(TerrainSettings)
+                                          + nameof(MarchingTrianglesTerrain) + "." + nameof(TerrainSettings)
                                           + " class does not expose the following properties : [ " + sb + "]");
         }
 
@@ -460,9 +464,10 @@ public partial class MarchingTrianglesToolUiAttributes
                     Button browseButton = new();
                     browseButton.Text = "...";
                     browseButton.TooltipText = "Browse for folder";
+                    var edit = folderLineEdit;
                     browseButton.Pressed += () =>
                     {
-                        _OpenFolderDialog(editorSetting.Key, folderLineEdit,
+                        _OpenFolderDialog(editorSetting.Key, edit,
                             propertyInSettings.Contains(editorSetting.Key));
                     };
                     break;
@@ -668,7 +673,7 @@ public partial class MarchingTrianglesToolUiAttributes
         OptionButton quickPaint = new();
         quickPaint.AddItem("None");
         quickPaint.SetItemMetadata(0, new Variant());
-        /// 1. Load GLOBAL quick paints from folder (always available)
+        // 1. Load GLOBAL quick paints from folder (always available)
         var dir = DirAccess.Open(_defaultQuickPaintPath);
         if (dir != null)
         {
@@ -681,6 +686,8 @@ public partial class MarchingTrianglesToolUiAttributes
                     // TODO implement => tool_attributes ll.300 -> 350
                     GD.PushError("Found a .(t)res in the quick pain preset, not doing anything with it");
                 }
+
+                fileName = dir.GetNext();
             }
         }
 
@@ -966,7 +973,7 @@ public partial class MarchingTrianglesToolUiAttributes
 
         _settings.Clear();
 
-        if (_terrainPlugin.Ui.Toolbar?.ToolBox == null)
+        if (_terrainPlugin.Ui.Toolbar.ToolBox == null)
         {
             return;
         }

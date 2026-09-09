@@ -103,9 +103,6 @@ public class TriangleGrid
     /// Builds a triangle grid based on the data packed in a grid array. 
     /// </summary>
     /// The size of the data is obtained implicitly by looking at the array sizes
-    /// <param name="data"></param>
-    /// <param name="lowerTri"></param>
-    /// <returns></returns>
     public static TriangleGrid BuildFrom(float[][] dataT1, float[][] dataT2,RegularUniformFrame tilingSystem)
     {
         var grid =new TriangleGrid(tilingSystem);

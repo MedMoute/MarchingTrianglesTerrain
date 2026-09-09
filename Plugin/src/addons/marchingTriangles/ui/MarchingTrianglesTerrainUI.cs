@@ -17,9 +17,9 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
 
     public MarchingTrianglesTerrainPlugin Plugin { get; set; } = plugin;
 
-    private bool _isVisible = false;
+    private bool _isVisible;
 
-    private int _activeTool = 0;
+    private int _activeTool;
 
     public static Dictionary<int, Tuple<Mesh, ShaderMaterial>> BrushData = new()
     {
@@ -191,10 +191,10 @@ public partial class MarchingTrianglesTextureSettings(MarchingTrianglesTerrainPl
 
     public void OnSliderDragEnded(bool ended)
     {
-        foreach (var chunk in plugin.CurTerrainNode.Chunks.Values)
-        {
-            // chunk.GrassPlanter.RegenerateAll();
-        }
+        // foreach (var chunk in plugin.CurTerrainNode.Chunks.Values)
+        // {
+        //     // chunk.GrassPlanter.RegenerateAll();
+        // }
     }
     
 }

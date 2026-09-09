@@ -13,7 +13,8 @@ public class TestHexTerrainChunk
     {
         Assert.DoesNotThrow(() =>
         {
-            var hexTerrainChunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(3, 3), _=>null!);
+            // ReSharper disable once ObjectCreationAsStatement
+            new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(3, 3), _=>null!);
         });
     }
 

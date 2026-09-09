@@ -21,7 +21,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
     private SurfaceTool _st = new();
 
-    public bool SkipSaveOnExit { get; set; } = false; // Set to true when chunk is removed temporarily (undo/redo)
+    public bool SkipSaveOnExit { get; set; } // Set to true when chunk is removed temporarily (undo/redo)
 
     public enum Mode
     {
@@ -41,7 +41,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public GdPluginHexTerrainChunk(Vector2I chunkIndex,
         Vector2I dimension,
-        Func<Vector2I, HexagonalTerrainChunk> neighboringChunkDataHandle,
+        Func<Vector2I, HexagonalTerrainChunk?> neighboringChunkDataHandle,
         float[][]? dataSource = null,
         float[][]? dataSource2 = null)
     {
@@ -51,6 +51,11 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             neighboringChunkDataHandle,
             dataSource,
             dataSource2);
+    }
+
+    public GdPluginHexTerrainChunk()
+    {
+        throw new AccessViolationException("Should not be used. Chunks are not to be instantiated by the editor.");
     }
 
     public void InitializeTerrain(bool regenerateMesh = true)
@@ -74,8 +79,9 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
         if (regenerateMesh)
         {
-            GenerateTerrain(true);
+            GenerateTerrain();
         }
+
         if (Mesh != null && GetParent() is MarchingTrianglesTerrain terrain)
         {
             Mesh.SurfaceSetMaterial(0, terrain.TerrainSettings.ShaderMaterial);
@@ -83,7 +89,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
         TempCollisionShape = CreateAndGetCollision();
         ProcessCollisionShape();
-        if (!Engine.IsEditorHint() && false) // No runtime baking atm.
+        if (!Engine.IsEditorHint()) // No runtime baking atm.
         {
             throw new NotImplementedException();
         }
@@ -124,7 +130,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
                 {
                     if (grandChild is CollisionShape3D { Shape: ConcavePolygonShape3D childShape })
                     {
-                        shape = childShape ;
+                        shape = childShape;
                     }
                 }
             }
@@ -173,9 +179,8 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             var body = new StaticBody3D();
             body.Name = Name + "_col";
             body.CollisionLayer = DefaultCollisionLayer;
-            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain)
+            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain terrain)
             {
-                var terrain = GetParent() as MarchingTrianglesTerrain;
                 body.SetCollisionLayerValue(terrain.TerrainSettings.CollisionLayer, true);
             }
 
@@ -188,11 +193,9 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
             // Owner set for visibility
             var sceneRoot = EngineUtils.GetRootNode(this);
-            if (sceneRoot != null)
-            {
-                body.Owner = sceneRoot;
-                colShape.Owner = sceneRoot;
-            }
+
+            body.Owner = sceneRoot;
+            colShape.Owner = sceneRoot;
 
             foreach (StringName group in GetGroups())
             {
@@ -222,10 +225,9 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             _st.GenerateTangents();
             _st.Index();
             Mesh = _st.Commit();
-            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain)
+            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain terrain)
             {
-                var terrain = GetParent() as MarchingTrianglesTerrain;
-                Mesh.SurfaceSetMaterial(0,terrain.TerrainSettings.ShaderMaterial);
+               Mesh.SurfaceSetMaterial(0, terrain.TerrainSettings.ShaderMaterial);
             }
         }
     }
@@ -235,11 +237,10 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     {
         var tasks = new HashSet<Action>();
         // Only process the complete hexagonal cells.
-        foreach (var hexagonCell in Underlying._terrainDualGrid.CompleteCells)
+        foreach (var hexagonCell in Underlying.TerrainDualGrid.CompleteCells)
         {
-            var reprocessHex = forceRebuild || Underlying.NeedUpdate.Any(
-                kvp => kvp.Value && 
-                       hexagonCell.DualCellsMapping.ContainsValue(kvp.Key));
+            var reprocessHex = forceRebuild || Underlying.NeedUpdate.Any(kvp => kvp.Value &&
+                hexagonCell.DualCellsMapping.ContainsValue(kvp.Key));
 
 
             tasks.Add(reprocessHex ? hexagonCell.PlanCellProcessing(this) : hexagonCell.CopyCellDataToPending(this));
@@ -249,7 +250,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         //Parallel.Invoke(tasks.ToArray());
 
         foreach (var action in tasks)
-        { 
+        {
             action.Invoke();
         }
 
@@ -308,14 +309,13 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         data.Color1.Add(colors["color_1"]);
         data.MatBlend.Add(colors["mat_blend"]);
         data.Floor.Add(cell.FloorMode);
-        
     }
 }
 
 /// <summary>
 /// Terrain blend options to allow for smooth color and height blend influence at transitions and at different heights
 /// </summary>
-record TerrainBlendOptions(float LowerThreshold, float UpperThreshold, float BlendSensitivity)
+record TerrainBlendOptions(float LowerThreshold, float UpperThreshold)
 {
     public float GetBlendBand()
     {

@@ -18,7 +18,7 @@ public class TestLoadResources
         String str = FileAccess.GetFileAsString("res://resources/Chunks/chunk_1_1/"+MttDataHandler.MetadataFilename); 
         Assert.That(str.Length,Is.GreaterThan(0));
         // We're now sure the file exist : Attempt to load as a Resource
-        var dir = DirAccess.Open("res://resources/Chunks/chunk_1_1");
+        DirAccess.Open("res://resources/Chunks/chunk_1_1");
         Resource res = ResourceLoader.Load("res://resources/Chunks/chunk_1_1/"+MttDataHandler.MetadataFilename, "", ResourceLoader.CacheMode.Ignore);
             
         if (res is MttChunkData data)
@@ -42,7 +42,7 @@ public class TestLoadResources
         String str = FileAccess.GetFileAsString("res://resources/Chunks/chunk_1_1/"+MttDataHandler.DataStructFilename); 
         Assert.That(str.Length,Is.GreaterThan(0));
         // We're now sure the file exist : Attempt to load as a Resource
-        var dir = DirAccess.Open("res://resources/Chunks/chunk_1_1");
+        DirAccess.Open("res://resources/Chunks/chunk_1_1");
         Resource res = ResourceLoader.Load("res://resources/Chunks/chunk_1_1/"+MttDataHandler.DataStructFilename, "", ResourceLoader.CacheMode.Ignore);
             
         if (res is DelegatedChunkDataStruct data)

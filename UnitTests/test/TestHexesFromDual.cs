@@ -59,10 +59,6 @@ public class TestHexesFromDual
     {
         RegularUniformFrame frame = new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 1));
         
-        var hexFrame = frame.GetDual();
-
-        var cell = new HexTerrainCell(Vector2I.Zero, hexFrame, frame);
-
         Assert.That(() => frame.GetDual().GetDual().Transform.ToArray(),
             Is.EqualTo(frame.Transform.ToArray()).AsCollection.Within(1E-5));
         
@@ -106,14 +102,8 @@ public class TestHexesFromDual
         Console.WriteLine("Center dual_dual_dual_dual: "
                           + f(ddddFrame.GetCellCentroid(Vector2I.Zero, 0)) +
                           f(ddddFrame.GetCellCentroid(Vector2I.Zero, 1)));
-
-        var cell = new HexTerrainCell(Vector2I.Zero, hexFrame, hexFrame.GetDual());
-        // Console.WriteLine(cell.ToString());
-        // Console.WriteLine(hexFrame.GetVertex(Vector2I.Zero, hexFrame.GetPolygonVertexCount(0)-2, 0));
-        // Console.WriteLine(hexFrame.GetVertex(Vector2I.Zero, hexFrame.GetPolygonVertexCount(0)-1, 0));
-
-
-        // Only assert on the rotation/sheering submatrix 
+        
+        // Only assert on the rotation/shearing submatrix 
         Assert.That(() => frame.GetDual().GetDual().Transform.SubMatrix(0, 2, 0, 2).ToArray(),
             Is.EqualTo(frame.Transform.SubMatrix(0, 2, 0, 2).ToArray()).AsCollection.Within(1E-5));
         

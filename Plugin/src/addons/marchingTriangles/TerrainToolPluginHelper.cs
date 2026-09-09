@@ -14,7 +14,7 @@ public class TerrainToolPluginHelper
 {
     private readonly MarchingTrianglesPhysicsDelegate _physicsDelegate;
 
-    public TerrainToolAttributes _toolAttributes;
+    private readonly TerrainToolAttributes ToolAttributes;
 
     private readonly MarchingTrianglesGizmoPlugin _gizmoPlugin;
 
@@ -31,15 +31,15 @@ public class TerrainToolPluginHelper
 
     public Vector2I CurrentHoveredChunk { get; set; }
 
-    private GdPluginHexTerrainChunk _currentSelectedChunk;
+    private GdPluginHexTerrainChunk? _currentSelectedChunk;
 
-    public GdPluginHexTerrainChunk CurrentSelectedChunk
+    public GdPluginHexTerrainChunk? CurrentSelectedChunk
     {
         get => _currentSelectedChunk;
         set
         {
             _currentSelectedChunk = value;
-            _toolAttributes.SelectedChunk = value.Underlying.Coordinates;
+            ToolAttributes.SelectedChunk = value.Underlying.Coordinates;
         }
     }
 
@@ -75,7 +75,7 @@ public class TerrainToolPluginHelper
         MarchingTrianglesTerrainPlugin parent)
     {
         _physicsDelegate = physicsDelegate;
-        _toolAttributes = attributes;
+        ToolAttributes = attributes;
         _gizmoPlugin = gizmoPlugin;
         _ui = ui;
         _parent = parent;
@@ -136,30 +136,30 @@ public class TerrainToolPluginHelper
                 // Prepare bridge building
                 if (terrainToolMode == TerrainToolMode.Bridge && !BridgeBuilding)
                 {
-                    _toolAttributes.Flatten = false;
+                    ToolAttributes.Flatten = false;
                     BridgeBuilding = true;
-                    _toolAttributes.BridgeStartPos = BrushPosition;
+                    ToolAttributes.BridgeStartPos = BrushPosition;
                 }
 
                 // Forcing Falloff values when needed
-                if (terrainToolMode == TerrainToolMode.Smooth && !_toolAttributes.Falloff)
+                if (terrainToolMode == TerrainToolMode.Smooth && !ToolAttributes.Falloff)
                 {
                     // Force falloff when smoothing
-                    _toolAttributes.Falloff = true;
+                    ToolAttributes.Falloff = true;
                 }
 
-                if (terrainToolMode == TerrainToolMode.DebugBrush && _toolAttributes.Falloff)
+                if (terrainToolMode == TerrainToolMode.DebugBrush && ToolAttributes.Falloff)
                 {
                     // Disable falloff when debugging (Apply to GrassMask as well)
-                    _toolAttributes.Falloff = false;
+                    ToolAttributes.Falloff = false;
                 }
 
                 // Forcing Flatten values when needed
                 if (terrainToolMode is TerrainToolMode.VertexPainting or TerrainToolMode.DebugBrush
-                    && _toolAttributes.Flatten)
+                    && ToolAttributes.Flatten)
                 {
                     // Disable flatten when painting vertices or debugging
-                    _toolAttributes.Flatten = false;
+                    ToolAttributes.Flatten = false;
                 }
 
                 if (terrainToolMode is TerrainToolMode.Level && Input.IsKeyPressed(Key.Ctrl))
@@ -175,7 +175,7 @@ public class TerrainToolPluginHelper
                 else
                 {
                     HeightDragging = true;
-                    if (!_toolAttributes.Flatten)
+                    if (!ToolAttributes.Flatten)
                     {
                         DrawHeight = drawPosition!.Value.Y;
                     }
@@ -232,6 +232,7 @@ public class TerrainToolPluginHelper
         bool drawAreaHovered,
         Vector3? drawPosition)
     {
+        //TODO
         // TerrainPlugin.gd => ll.431 - 447
         throw new NotImplementedException();
     }
@@ -271,7 +272,7 @@ public class TerrainToolPluginHelper
             {
                 var localRayNormal = mouseRayNormal * terrainNode.Transform;
                 Plane setPlane = new Plane(new Vector3(localRayNormal.X, 0, localRayNormal.Z),
-                    _toolAttributes.DragBasePosition);
+                    ToolAttributes.DragBasePosition);
                 Vector3? setPosition = setPlane.IntersectsRay(terrainNode.ToLocal(mouseRayOrigin), localRayNormal);
                 if (setPosition.HasValue)
                 {
@@ -279,7 +280,7 @@ public class TerrainToolPluginHelper
                 }
             }
             // If the pattern is currently not empty and flatten mode ENABLED
-            else if (_toolAttributes.Flatten && CurrentDrawPattern.Count > 0)
+            else if (ToolAttributes.Flatten && CurrentDrawPattern.Count > 0)
             {
                 chunkPlane = new Plane(Vector3.Up, new Vector3(0, DrawHeight, 0));
                 drawPosition = chunkPlane.IntersectsRay(mouseRayOrigin, mouseRayNormal);
@@ -552,12 +553,10 @@ public class TerrainToolPluginHelper
                 throw new NotImplementedException();
             default: // Brush-based mode
                 bool isQuickPaint = _parent.ToolAttributes.CurrentQuickPaint != null;
-                var doPatternVariant =
-                    new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
-                        Godot.Collections.Dictionary<Vector3I, Variant>>>();
-                var undoPatternVariant =
-                    new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
-                        Godot.Collections.Dictionary<Vector3I, Variant>>>();
+                Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
+                    Godot.Collections.Dictionary<Vector3I, Variant>>> doPatternVariant ;
+                Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
+                    Godot.Collections.Dictionary<Vector3I, Variant>>> undoPatternVariant;
 
                 if (isQuickPaint)
                 {
@@ -594,48 +593,6 @@ public class TerrainToolPluginHelper
         }
     }
 
-    /// <summary>
-    /// -- DEPRECATED --
-    /// Duplicates the data already available in the neighbors' entries
-    /// that is bordering the provided chunk to the current chunk's entry.
-    /// If there is no entries, just go on.
-    /// </summary>
-    /// <param name="chunk"></param>
-    /// <param name="pattern"></param>
-    /// <exception cref="NotImplementedException"></exception>
-    private void DuplicateNeighborChunksBorderData(HexagonalTerrainChunk chunk,
-        Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> pattern)
-    {
-        HashSet<Vector2I> neighborsChunks =
-        [
-            chunk.Coordinates + Vector2I.Up,
-            chunk.Coordinates + Vector2I.Up + Vector2I.Left,
-            chunk.Coordinates + Vector2I.Up + Vector2I.Right,
-            chunk.Coordinates + Vector2I.Down,
-            chunk.Coordinates + Vector2I.Down + Vector2I.Left,
-            chunk.Coordinates + Vector2I.Down + Vector2I.Right,
-            chunk.Coordinates + Vector2I.Left,
-            chunk.Coordinates + Vector2I.Right
-        ];
-        foreach (var neighbor in neighborsChunks)
-        {
-            if (pattern.TryGetValue(neighbor, out var neighborDataDic))
-            {
-                var offset = (neighbor - chunk.Coordinates) * _parent.CurTerrainNode.TerrainSettings.ChunkDimensions;
-                var offset3D = new Vector3I(offset.X, offset.Y, 0);
-
-                var triCells = chunk.GetTriCellsTouchingNeighbour(neighbor);
-                foreach (var triCell in triCells)
-                {
-                    if (neighborDataDic.TryGetValue(triCell - offset3D, out var newCellData))
-                    {
-                        pattern[chunk.Coordinates][triCell] = newCellData;
-                    }
-                }
-            }
-        }
-    }
-
     private void ProcessQuickPaintBrushPattern(
         MarchingTrianglesTerrain terrainNode,
         Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> pattern,
@@ -655,6 +612,7 @@ public class TerrainToolPluginHelper
                     Vector3I,
                     Variant>>> undoPattern)
     {
+        //TODO
         throw new NotImplementedException();
     }
 

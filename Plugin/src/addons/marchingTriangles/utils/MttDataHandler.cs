@@ -478,7 +478,7 @@ public abstract class MttDataHandler
         {
             foreach (var child in chunk.GetChildren())
             {
-                if (child is StaticBody3D body)
+                if (child is StaticBody3D)
                 {
                     foreach (var bodyChild in child.GetChildren())
                     {
@@ -569,7 +569,7 @@ public abstract class MttDataHandler
         // // -- Encoded DualGrid (Hexagonal grid)
         // //----------------------------------------
         // // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
-        chunk._terrainDualGrid = HexagonGrid.BuildFromSerialData(
+        chunk.TerrainDualGrid = HexagonGrid.BuildFromSerialData(
             dataStruct.HexFrameSeed1,
             dataStruct.HexFrameSeed2,
             dataStruct.TriFrameSeed1,
@@ -585,12 +585,12 @@ public abstract class MttDataHandler
 
         // Encoded neighbors
         //----------------------
-        chunk.existingNeighbors = new HashSet<Vector2I>();
+        chunk.ExistingNeighbors = new HashSet<Vector2I>();
         for (int i = 0; i < dataStruct.ExistingNeighborsAsV2I.Length / 2; i++)
         {
             var neighbor = new Vector2I(dataStruct.ExistingNeighborsAsV2I[2 * i],
                 dataStruct.ExistingNeighborsAsV2I[2 * i + 1]);
-            chunk.existingNeighbors.Add(neighbor);
+            chunk.ExistingNeighbors.Add(neighbor);
         }
 
         // Encoded Marching Triangles properties
@@ -660,20 +660,20 @@ public abstract class MttDataHandler
         // // -- Encoded DualGrid (Hexagonal grid)
         // //----------------------------------------
         // // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
-        seed1 = chunk._terrainDualGrid.Frame.UnscaledOriginCellCentroidPositions[0];
+        seed1 = chunk.TerrainDualGrid.Frame.UnscaledOriginCellCentroidPositions[0];
         dataStruct.HexFrameSeed1 = [seed1.X, seed1.Y];
-        seed2 = ((HexTileOrientationSystem)chunk._terrainDualGrid.Frame).InitialSeedVector;
+        seed2 = ((HexTileOrientationSystem)chunk.TerrainDualGrid.Frame).InitialSeedVector;
         dataStruct.HexFrameSeed2 = [seed2.X, seed2.Y];
         // // ----> FullCells
         // // -------> Cell indexes
-        dataStruct.FullCellIndicesAsV2I = new int[chunk._terrainDualGrid.CompleteCells.Count * 2];
+        dataStruct.FullCellIndicesAsV2I = new int[chunk.TerrainDualGrid.CompleteCells.Count * 2];
         // // -------> DataIndexesMapping (FullCellIndices.length)
         dataStruct.FullCellMappingsAsV3I = new int[6 * dataStruct.FullCellIndicesAsV2I.Length * 3];
         dataStruct.FullCellVisitsMappingKeyAsV3I = new int[6 * dataStruct.FullCellIndicesAsV2I.Length * 3];
         dataStruct.FullCellVisitsMappingValueAsV2I = new int[6 * dataStruct.FullCellIndicesAsV2I.Length * 3];
 
         int cursor = 0;
-        foreach (var hexTerrainCell in chunk._terrainDualGrid.CompleteCells)
+        foreach (var hexTerrainCell in chunk.TerrainDualGrid.CompleteCells)
         {
             dataStruct.FullCellIndicesAsV2I[2 * cursor] = hexTerrainCell.CellCoordsImplicit.X;
             dataStruct.FullCellIndicesAsV2I[2 * cursor + 1] = hexTerrainCell.CellCoordsImplicit.Y;
@@ -703,12 +703,12 @@ public abstract class MttDataHandler
 
         // // ----> PendingCells
         // // -------> Pending Cell indexes & Mapping
-        dataStruct.PendingCellIndicesAsV2I = new int[2 * chunk._terrainDualGrid.PendingCells.Count];
-        dataStruct.PendingCellsVisitsMappingKeyAsV3I = new int[3 * chunk._terrainDualGrid.PendingCells.Count * 6];
-        dataStruct.PendingCellsVisitsMappingValueAsV2I = new int[2 * chunk._terrainDualGrid.PendingCells.Count * 6];
+        dataStruct.PendingCellIndicesAsV2I = new int[2 * chunk.TerrainDualGrid.PendingCells.Count];
+        dataStruct.PendingCellsVisitsMappingKeyAsV3I = new int[3 * chunk.TerrainDualGrid.PendingCells.Count * 6];
+        dataStruct.PendingCellsVisitsMappingValueAsV2I = new int[2 * chunk.TerrainDualGrid.PendingCells.Count * 6];
 
         cursor = 0;
-        foreach (var kvp in chunk._terrainDualGrid.PendingCells)
+        foreach (var kvp in chunk.TerrainDualGrid.PendingCells)
         {
             var subCursor = 0;
             dataStruct.PendingCellIndicesAsV2I[2 * cursor] = kvp.Key.X;
@@ -741,24 +741,20 @@ public abstract class MttDataHandler
                 }
             }
 
-            subCursor = 0;
-
             cursor++;
         }
 
 
         // Encoded neighbors
         //----------------------
-        dataStruct.ExistingNeighborsAsV2I = new int[2 * chunk.existingNeighbors.Count];
+        dataStruct.ExistingNeighborsAsV2I = new int[2 * chunk.ExistingNeighbors.Count];
         cursor = 0;
-        foreach (var neighbor in chunk.existingNeighbors)
+        foreach (var neighbor in chunk.ExistingNeighbors)
         {
             dataStruct.ExistingNeighborsAsV2I[2 * cursor] = neighbor.X;
             dataStruct.ExistingNeighborsAsV2I[2 * cursor + 1] = neighbor.Y;
             cursor++;
         }
-
-        cursor = 0;
 
         // Encoded Marching Triangles properties
         //----------------------
@@ -899,17 +895,17 @@ public abstract class MttDataHandler
             if (!res) continue;
             
             //Set the data fetching functions for the new chunks' cells
-            foreach (var hexTerrainCell in terrain.Chunks[coords].Underlying._terrainDualGrid.PendingCells.Values)
+            foreach (var hexTerrainCell in terrain.Chunks[coords].Underlying.TerrainDualGrid.PendingCells.Values)
             {
                 hexTerrainCell.SetDataFetchingFunction(terrain.TerrainSettings.ChunkDimensions,
-                    v => terrain._neighborChunkProviderProvider(coords, v).DataGrid,
-                    v => terrain.Chunks[coords].Underlying.existingNeighbors.Contains(v));
+                    v => terrain.NeighborChunkProviderProvider(coords, v).DataGrid,
+                    v => terrain.Chunks[coords].Underlying.ExistingNeighbors.Contains(v));
             }
-            foreach (var hexTerrainCell in terrain.Chunks[coords].Underlying._terrainDualGrid.CompleteCells)
+            foreach (var hexTerrainCell in terrain.Chunks[coords].Underlying.TerrainDualGrid.CompleteCells)
             {
                 hexTerrainCell.SetDataFetchingFunction(terrain.TerrainSettings.ChunkDimensions,
-                    v => terrain._neighborChunkProviderProvider(coords, v).DataGrid,
-                    v => terrain.Chunks[coords].Underlying.existingNeighbors.Contains(v));
+                    v => terrain.NeighborChunkProviderProvider(coords, v).DataGrid,
+                    v => terrain.Chunks[coords].Underlying.ExistingNeighbors.Contains(v));
             }
         }
         

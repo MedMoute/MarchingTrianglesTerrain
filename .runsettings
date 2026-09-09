@@ -57,48 +57,20 @@
             </Logger>
         </Loggers>
     </LoggerRunSettings>
+    
     <!-- Adapter Specific sections -->
 
     <!-- MSTest adapter -->
     <MSTest>
-        <MapInconclusiveToFailed>True</MapInconclusiveToFailed>
-        <CaptureTraceOutput>false</CaptureTraceOutput>
-        <DeleteDeploymentDirectoryAfterTestRunIsComplete>False</DeleteDeploymentDirectoryAfterTestRunIsComplete>
-        <DeploymentEnabled>False</DeploymentEnabled>
-        <!-- Uncomment and update path for assembly resolution  -->
-        <!--  <AssemblyResolution>    
-             <Directory path="D:\myfolder\bin\" includeSubDirectories="false"/>
-   </AssemblyResolution>  -->
     </MSTest>
 
     <!-- NUnit3 adapter, uncomment to set as appropriate, numeric, booleans, enums have their default values below, except RandomSeed -->
     <NUnit>
-        <BasePath>D:\Dev\NUnit\nunit3-vs-adapter\demo\NUnitTestDemo\bin\Release</BasePath>
-        <PrivateBinPath>extras;more.extras</PrivateBinPath>
-        <DefaultTimeout>0</DefaultTimeout>
-        <WorkDirectory>work</WorkDirectory>
-        <InternalTraceLevel>Off</InternalTraceLevel>
-        <NumberOfTestWorkers>-1</NumberOfTestWorkers>
-        <Verbosity>0</Verbosity>
-        <UseVsKeepEngineRunning>false</UseVsKeepEngineRunning>
-        <ShadowCopyFiles>false</ShadowCopyFiles>
-        <DefaultTestNamePattern>{m}{a}</DefaultTestNamePattern>
-        <DomainUsage>Single</DomainUsage>
-        <DumpXmlTestDiscovery>false</DumpXmlTestDiscovery>
-        <DumpXmlTestResults>false</DumpXmlTestResults>
-        <ShowInternalProperties>false</ShowInternalProperties>
     </NUnit>
     <!-- gdUnit4Net specific configuration section -->
     <GdUnit4>
         <!-- Additional Godot runtime parameters. These are passed to the Godot executable when running tests.-->
         <Parameters>-e --headless</Parameters>
-
-        <!-- Controls the display name format of test cases in the test results.
-                 Allowed values:
-                 - SimpleName: Uses only the method name (e.g., "TestMethod")
-                 - FullyQualifiedName: Uses the full path including class and method name (e.g., "MyNamespace.MyClass.TestMethod")
-                 Default: SimpleName
-                 FullyQualifiedName is recommended for larger projects to avoid naming conflicts -->
         <DisplayName>FullyQualifiedName</DisplayName>
         <CaptureStdOut>true</CaptureStdOut>
     </GdUnit4>

@@ -20,6 +20,8 @@ https://github.com/godot-gdunit-labs/gdUnit4NetExamples/blob/master/Examples/Adv
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <!-- Identifies this as a GdUnit4 test project for test discovery -->
         <TestFramework>GdUnit4</TestFramework>
+        <!-- Identifies this as a Tools project for soource generation -->
+        <IsGodotToolsProject>true</IsGodotToolsProject>
     </PropertyGroup>
 
     <ItemGroup>
@@ -39,16 +41,9 @@ https://github.com/godot-gdunit-labs/gdUnit4NetExamples/blob/master/Examples/Adv
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include=".runsettings"/>
         <Content Include="project.godot"/>
         <Content Include="resources\Chunks\chunk_1_1\datastruct.tres" />
         <Content Include="resources\Chunks\chunk_1_1\metadata.tres" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Reference Include="Microsoft.Extensions.Logging">
-        <HintPath>..\..\.nuget\packages\microsoft.extensions.logging\11.0.0-preview.7.26381.103\lib\netstandard2.1\Microsoft.Extensions.Logging.dll</HintPath>
-      </Reference>
     </ItemGroup>
     
     <!--

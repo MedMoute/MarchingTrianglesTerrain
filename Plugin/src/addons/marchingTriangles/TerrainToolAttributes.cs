@@ -47,6 +47,8 @@ public partial class TerrainToolAttributes : Node
 
     private int _vertexColorIndex;
 
+    internal MarchingTrianglesTexturesPreset? CurrentQuickPaint { get; set; }
+
     public int VertexColorIndex
     {
         get => _vertexColorIndex;
@@ -82,7 +84,6 @@ public partial class TerrainToolAttributes : Node
         }
     }
 
-    public MarchingTrianglesTexturesPreset CurrentQuickPaint { get; set; } = null;
 
     private void SetVertexColorIndex(int vertexColorIndex)
     {
@@ -182,10 +183,10 @@ public partial class MarchingTrianglesQuickPaint : Resource
 
     [Export] public String PaintName { get; set; } = "New Paint";
 
-    private int _wallTextureSlot = 0;
-    private int _groundTextureSlot = 0;
+    private int _wallTextureSlot;
+    private int _groundTextureSlot;
 
-    [ExportGroup("Textures")] [Export] public bool HasGrass = false;
+    [ExportGroup("Textures")] [Export] public bool HasGrass;
 
     public override Array<Dictionary> _GetPropertyList()
     {

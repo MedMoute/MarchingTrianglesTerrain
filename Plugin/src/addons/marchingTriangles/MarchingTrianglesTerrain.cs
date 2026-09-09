@@ -24,18 +24,16 @@ public partial class MarchingTrianglesTerrain : Node3D
     private StorageMode _storageType = StorageMode.Baked;
 
     /// <summary>
-    /// Chunk dictionary.
-    /// Stores transient data.
-    /// </summary>
-    private Dictionary<Vector2I, GdPluginHexTerrainChunk> _chunks = [];
-
-    /// <summary>
     /// Provides a neighbor-only aware chunk provider for a given chunk.
     /// The coordinates to give to the generated providers are the offset coordinates.  
     /// </summary>
-    internal readonly Func<Vector2I, Vector2I, HexagonalTerrainChunk> _neighborChunkProviderProvider;
+    internal readonly Func<Vector2I, Vector2I, HexagonalTerrainChunk?> NeighborChunkProviderProvider;
 
-    public Dictionary<Vector2I, GdPluginHexTerrainChunk> Chunks => _chunks;
+    /// <summary>
+    /// Chunk dictionary.
+    /// Stores transient data.
+    /// </summary>
+    public Dictionary<Vector2I, GdPluginHexTerrainChunk> Chunks { get; } = [];
 
     [ExportCategory("Storage Options")]
     [Export]
@@ -47,7 +45,7 @@ public partial class MarchingTrianglesTerrain : Node3D
             if (_storageType == value) return;
             _storageType = value;
             //Mark all chunks dirty to force re-save of data/meshes
-            foreach (var hexTerrainChunk in _chunks)
+            foreach (var hexTerrainChunk in Chunks)
             {
                 hexTerrainChunk.Value.Underlying.Dirty = true;
             }
@@ -60,7 +58,7 @@ public partial class MarchingTrianglesTerrain : Node3D
     /// <summary>
     /// If true, storage will include grass data, ignored if storage_mode = RUNTIME
     /// </summary>
-    private bool _bakeGrass = false;
+    private bool _bakeGrass;
 
     [Export]
     public bool BakeGrass
@@ -70,7 +68,7 @@ public partial class MarchingTrianglesTerrain : Node3D
         {
             _bakeGrass = value;
             //Mark all chunks dirty to force re-save of data/meshes
-            foreach (var hexTerrainChunk in _chunks)
+            foreach (var hexTerrainChunk in Chunks)
             {
                 hexTerrainChunk.Value.Underlying.Dirty = true;
             }
@@ -90,7 +88,7 @@ public partial class MarchingTrianglesTerrain : Node3D
         {
             _bakeCollision = value;
             //Mark all chunks dirty to force re-save of data/meshes
-            foreach (var hexTerrainChunk in _chunks)
+            foreach (var hexTerrainChunk in Chunks)
             {
                 hexTerrainChunk.Value.Underlying.Dirty = true;
             }
@@ -134,7 +132,7 @@ public partial class MarchingTrianglesTerrain : Node3D
     [Export] public short PolygonTextureRes { get; set; } = 16;
 
     // Used for overriding the material of the baked terrain texture.
-    [Export] public Material BakeMaterialOverride { get; set; }
+    [Export] public Material? BakeMaterialOverride { get; set; }
 
     // FIXME : Property Storages => play with class property list 
 
@@ -154,16 +152,15 @@ public partial class MarchingTrianglesTerrain : Node3D
 
     public MarchingTrianglesTerrain()
     {
+        ShaderMaterial shaderMaterial = FileUtils.Load<ShaderMaterial>(
+            "res://addons/marchingTriangles/editor/resources/plugin_materials/mst_terrain_shader.tres");
         TerrainSettings = new TerrainSettings(
-            this,
-            FileUtils.Load<ShaderMaterial>(
-                    "res://addons/marchingTriangles/editor/resources/plugin_materials/mst_terrain_shader.tres")
-                .Duplicate(true) as ShaderMaterial);
+            this, shaderMaterial);
 
         CurrentTexturePreset = new MarchingTrianglesTexturesPreset();
 
-        _neighborChunkProviderProvider =
-            BuildNeighborChunkProvider(i => _chunks.TryGetValue(i, out var chk) ? chk.Underlying : null);
+        NeighborChunkProviderProvider =
+            BuildNeighborChunkProvider(i => (Chunks.TryGetValue(i, out var chk) ? chk.Underlying : null)!);
     }
 
     /// <summary>
@@ -172,7 +169,7 @@ public partial class MarchingTrianglesTerrain : Node3D
     ///  and if || offset ||² is less than 2.
     /// </summary>
     /// <param name="chunkProvider"></param>
-    public static Func<Vector2I, Vector2I, HexagonalTerrainChunk> BuildNeighborChunkProvider(
+    public static Func<Vector2I, Vector2I, HexagonalTerrainChunk?> BuildNeighborChunkProvider(
         Func<Vector2I, HexagonalTerrainChunk> chunkProvider)
     {
         return (chunkCoord, offset) =>
@@ -206,8 +203,6 @@ public partial class MarchingTrianglesTerrain : Node3D
     /// <summary>
     /// Returns the Chunk coordinates on which the provided position belongs
     /// </summary>
-    /// <param name="vector2"></param>
-    /// <returns></returns>
     public static Vector2I GetChunkCoordsFromCartesian(Vector2D vector2, Vector2I chunkDimensions)
     {
         RegularUniformFrame tiling = TerrainSettings.OrientationSystem;
@@ -270,8 +265,8 @@ public partial class MarchingTrianglesTerrain : Node3D
         var newChunk = new GdPluginHexTerrainChunk(
             coords,
             TerrainSettings.ChunkDimensions,
-            v => _neighborChunkProviderProvider(coords, v));
-        _chunks.Add(coords, newChunk);
+            v => NeighborChunkProviderProvider(coords, v));
+        Chunks.Add(coords, newChunk);
         newChunk.Name = "Chunk" + coords;
         return newChunk;
     }
@@ -288,40 +283,41 @@ public partial class MarchingTrianglesTerrain : Node3D
         AddChild(newChunk);
         EngineUtils.SetOwnerAsSceneRoot(newChunk);
         newChunk.InitializeTerrain();
-        if (plugin != null)
+        if (plugin.PluginHelper.CurrentSelectedChunk.Underlying.Coordinates == GetTempChunkCoords())
         {
-            if (plugin.PluginHelper.CurrentSelectedChunk != null &&
-                plugin.PluginHelper.CurrentSelectedChunk.Underlying.Coordinates == GetTempChunkCoords())
-            {
-                plugin.PluginHelper.CurrentSelectedChunk = newChunk;
-            }
-
-            plugin.Ui.UiToolAttributes.ShowToolAttributes((int)TerrainToolMode.ChunkManagement);
-            plugin.GizmoPlugin.TriggerRedraw(this);
+            plugin.PluginHelper.CurrentSelectedChunk = newChunk;
         }
+
+        plugin.Ui.UiToolAttributes.ShowToolAttributes((int)TerrainToolMode.ChunkManagement);
+        plugin.GizmoPlugin.TriggerRedraw(this);
     }
 
-    public void RemoveChunk(Vector2I coords, MarchingTrianglesTerrainPlugin _plugin)
+    public void RemoveChunk(Vector2I coords, MarchingTrianglesTerrainPlugin plugin)
     {
-        var existingChunk = _chunks.GetValueOrDefault(coords, null);
-        _chunks.Remove(coords);
+        if (Chunks == null)
+        {
+            throw new ConstraintException("_chunks field is null");
+        }
+
+        var existingChunk = Chunks.GetValueOrDefault(coords, null);
+        Chunks.Remove(coords);
         // Handle the case where the selected chunk is the deleted one
-        if (_chunks.Count == 0)
+        if (Chunks.Count == 0)
         {
             var tmpChunk = new GdPluginHexTerrainChunk(new Vector2I(int.MaxValue, int.MinValue),
-                TerrainSettings.ChunkDimensions, v => _neighborChunkProviderProvider(coords, v));
+                TerrainSettings.ChunkDimensions, v => NeighborChunkProviderProvider(coords, v));
 
-            _plugin.PluginHelper.CurrentSelectedChunk = tmpChunk;
+            plugin.PluginHelper.CurrentSelectedChunk = tmpChunk;
         }
         else
         {
-            _plugin.PluginHelper.CurrentSelectedChunk = _chunks.First().Value;
+            plugin.PluginHelper.CurrentSelectedChunk = Chunks.First().Value;
         }
 
         RemoveChild(existingChunk);
         if (existingChunk != null) existingChunk.Owner = null;
-        _plugin.Ui.UiToolAttributes.ShowToolAttributes((int)TerrainToolMode.ChunkManagement);
-        _plugin.GizmoPlugin.TriggerRedraw(this);
+        plugin.Ui.UiToolAttributes.ShowToolAttributes((int)TerrainToolMode.ChunkManagement);
+        plugin.GizmoPlugin.TriggerRedraw(this);
     }
 
     /// <summary>
@@ -330,20 +326,20 @@ public partial class MarchingTrianglesTerrain : Node3D
     /// <param name="coords"></param>
     public void RemoveChunkFromTree(Vector2I coords, MarchingTrianglesTerrainPlugin _plugin)
     {
-        var existingChunk = _chunks.GetValueOrDefault(coords, null);
-        _chunks.Remove(coords);
+        var existingChunk = Chunks.GetValueOrDefault(coords, null);
+        Chunks.Remove(coords);
         // Handle the case where the selected chunk is the deleted one
-        if (_chunks.Count == 0)
+        if (Chunks.Count == 0)
         {
             var tmpChunk = new GdPluginHexTerrainChunk(GetTempChunkCoords(),
                 TerrainSettings.ChunkDimensions,
-                v => _neighborChunkProviderProvider(coords, v));
+                v => NeighborChunkProviderProvider(coords, v));
 
             _plugin.PluginHelper.CurrentSelectedChunk = tmpChunk;
         }
         else
         {
-            _plugin.PluginHelper.CurrentSelectedChunk = _chunks.First().Value;
+            _plugin.PluginHelper.CurrentSelectedChunk = Chunks.First().Value;
         }
 
         existingChunk.SkipSaveOnExit = true; // Prevent mesh save during undo/redo

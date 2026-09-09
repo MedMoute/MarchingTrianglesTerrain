@@ -21,12 +21,14 @@ public class HexTileTests
     {
         Assert.DoesNotThrow(() =>
         {
-            var tilingSystem = new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 0));
+            // ReSharper disable once ObjectCreationAsStatement
+            new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 0));
         });
 
         Assert.Throws<ArgumentException>(() =>
         {
-            var tilingSystem = new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(0, 0));
+            // ReSharper disable once ObjectCreationAsStatement
+            new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(0, 0));
         });
     }
 
@@ -175,8 +177,8 @@ public class HexTileTests
         ib0 = denom * new Vector2D(b1.Y, -b0.Y);
         ib1 = denom * new Vector2D(-b1.X, b0.X);
 
-        uvExpected = (Vector2D vec) => HexagonGrid.CubeRound(new Vector2D(ib0.X * (vec - o).X + ib1.X * (vec - o).Y,
-            ib0.Y * (vec - o).X + ib1.Y * (vec - o).Y));
+        uvExpected = (vector2D) => HexagonGrid.CubeRound(new Vector2D(ib0.X * (vector2D - o).X + ib1.X * (vector2D - o).Y,
+            ib0.Y * (vector2D - o).X + ib1.Y * (vector2D - o).Y));
 
 
         for (int i = 0; i < 50; i++)
