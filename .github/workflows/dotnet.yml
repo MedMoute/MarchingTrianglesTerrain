@@ -20,9 +20,32 @@ jobs:
       uses: actions/setup-dotnet@v6
       with:
         dotnet-version: 9.0.x
+        
+    - name: No .NET Telemetry
+      run: echo DOTNET_CLI_TELEMETRY_OPTOUT=1 >> $GITHUB_ENV
+        
     - name: Restore dependencies
       run: dotnet restore
+    - uses: chickensoft-games/setup-godot@v2
+      name: Setup Godot
+      with:
+        # Version must include major, minor, and patch, and be >= 4.0.0
+        # Pre-release label is optional.
+        version: 4.6.2 
+        # Use .NET-enabled version of Godot (the default is also true).
+        use-dotnet: true
+        # Include the Godot Export Templates (the default is false).
+        include-templates: false
+
+    - name: Verify Setup
+      run: |
+        echo GODOT_BIN=$GODOT >> $GITHUB_ENV
+        dotnet --version
+        godot --version
+
     - name: Build
       run: dotnet build --no-restore
     - name: Test
-      run: dotnet test --project ./UnitTests/UnitTests.csproj --no-build --verbosity normal
+      run: dotnet test ./UnitTests/UnitTests.csproj --no-build --verbosity normal
+    - name: Integration Tests
+      run: dotnet test ./UnitTests4Godot/UnitTests4Godot.csproj --no-build --verbosity normal --settings ./UnitTests4Godot/.runsettings

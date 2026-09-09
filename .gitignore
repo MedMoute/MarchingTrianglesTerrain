@@ -1,6 +1,3 @@
-# Created by https://www.toptal.com/developers/gitignore/api/rider,godot,dotnetcore,dotsettings
-# Edit at https://www.toptal.com/developers/gitignore?templates=rider,godot,dotnetcore,dotsettings
-
 ### DotnetCore ###
 # .NET Core build folders
 bin/
@@ -13,7 +10,7 @@ obj/
 ### DotSettings ###
 *.DotSettings
 *.DotSettings.user
-
+*.dotsettings.user
 
 ### Godot ###
 # Godot 4+ specific ignores
