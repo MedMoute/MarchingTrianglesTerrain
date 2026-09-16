@@ -534,7 +534,7 @@ public abstract class MttDataHandler
 
         if (!data.CollisionFaces.IsEmpty())
         {
-            chunk._tempCollisionShape = data.GetCollisionShape();
+            chunk.TempCollisionShape = data.GetCollisionShape();
         }
 
         return FillChunkFromData(((DelegatedChunkDataStruct)dataStruct).GetUnderlying(), chunk.Underlying);

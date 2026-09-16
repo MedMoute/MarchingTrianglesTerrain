@@ -338,5 +338,6 @@ public enum TerrainToolMode
     VertexPainting = 5,
     DebugBrush = 6,
     ChunkManagement = 7,
-    TerrainSettings = 8
+    TerrainSettings = 8,
+    GeometryEdit = 9
 }

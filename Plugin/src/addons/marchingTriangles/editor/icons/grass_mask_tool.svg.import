@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bcsmfh8tiodn"
-path="res://.godot/imported/grass_mask_tool.svg-aa84379cb74887ceeea38e028b68444c.ctex"
+path="res://.godot/imported/grass_mask_tool.svg-1927a9a91e0df8a915cf75e3d8f9863c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://src/addons/marchingTriangles/editor/icons/grass_mask_tool.svg"
-dest_files=["res://.godot/imported/grass_mask_tool.svg-aa84379cb74887ceeea38e028b68444c.ctex"]
+source_file="res://addons/marchingTriangles/editor/icons/grass_mask_tool.svg"
+dest_files=["res://.godot/imported/grass_mask_tool.svg-1927a9a91e0df8a915cf75e3d8f9863c.ctex"]
 
 [params]
 

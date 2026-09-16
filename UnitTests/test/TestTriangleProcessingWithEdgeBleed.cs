@@ -26,7 +26,7 @@ public class TestTriangleProcessingWithEdgeBleed
 
     [Test]
     // TODO Asserts
-    public void TestBasicTriangleProcessing()
+    public void TestBasicTriangleProcessing([Values(1, 2, 3)] int x, [Values("A", "B")] string s)
     {
         HexTerrainCell.a = (float)0.5;
         HexTerrainCell.theta = 0.1;
@@ -42,28 +42,28 @@ public class TestTriangleProcessingWithEdgeBleed
         triangle[1] = B;
         triangle[2] = C;
 
-        var res = HexTerrainCell.ProcessTriangle(triangle, 6);
+        var res = HexTerrainCell.ProcessTriangle(null, triangle, HexTerrainCell.ComputeEdgeGeometryMode(0,6, null));
 
         for (int i = 0; i < res.Count; i++)
         {
             var c = res[i];
-            Console.WriteLine("Triangle {0}:  [{1},{2},{3}]", i, c.Points[0], c.Points[1], c.Points[2]);
-            foreach (var tuple in c.GetBorderEdges())
-            {
-                Console.WriteLine("Edge :  [{0},{1}]", tuple.Item1, tuple.Item2);
-            }
+            // Console.WriteLine("Triangle {0}:  [{1},{2},{3}]", i, c.Points[0], c.Points[1], c.Points[2]);
+            // foreach (var tuple in c.GetBorderEdges())
+            // {
+            //     Console.WriteLine("Edge :  [{0},{1}]", tuple.Item1, tuple.Item2);
+            // }
         }
 
-        Console.WriteLine();
-        foreach (var tuple in res.SelectMany(t => t.GetBorderEdges()))
-        {
-            Console.WriteLine("Edge :  [{0},{1}]", tuple.Item1, tuple.Item2);
-        }
+        // Console.WriteLine();
+        // foreach (var tuple in res.SelectMany(t => t.GetBorderEdges()))
+        // {
+        //     Console.WriteLine("Edge :  [{0},{1}]", tuple.Item1, tuple.Item2);
+        // }
 
         // Test "is manifold" :  
         // Map all the Edges and get their count : should be 2 except for edges in that are in GetBorderEdges,
         // in chich case there should be 2
-        TestTriangleProcessingNoEdgeBleed.AssertIsTriangleManifold(res);
+        TestTriangleProcessingNoEdgeBleed.AssertIsTriangleListManifold(res);
     }
 
     [Test]
@@ -90,6 +90,9 @@ public class TestTriangleProcessingWithEdgeBleed
             v => v is { X: 0, Y: 0 });
 
         HexTerrainCell cell = terrainDualGrid.CompleteCells.First();
+        // TODO : PARAMETER
+        cell.GeometryModesOverride = new Tuple<GeometryMode, GeometryMode>(
+            GeometryMode.FlatHexagons, GeometryMode.FlatHexagons);
         var data = cell.ExtractDataFromCell();
         Func<Dictionary<float[], int>, HashSet<float[]>> countInternalEdges =
             d => d.Where(kvp => kvp.Value == 2).Select(kvp => kvp.Key).ToHashSet();
@@ -108,7 +111,7 @@ public class TestTriangleProcessingWithEdgeBleed
         {
             var trianglesWithWallEdges = TestTriangleProcessingNoEdgeBleed.ProcessTriangleGeometryIntoSplitTriangles(cell, i, data);
             //Ensure each of the triangular output is itself manifold
-            TestTriangleProcessingNoEdgeBleed.AssertIsTriangleManifold(trianglesWithWallEdges);
+            TestTriangleProcessingNoEdgeBleed.AssertIsTriangleListManifold(trianglesWithWallEdges);
             var (
                 tmpDico,
                 tmpBorderEdgesAsSets,
@@ -280,6 +283,9 @@ public class TestTriangleProcessingWithEdgeBleed
             v => v is { X: 0, Y: 0 });
 
         HexTerrainCell cell = terrainDualGrid.CompleteCells.First();
+        cell.GeometryModesOverride = new Tuple<GeometryMode, GeometryMode>(
+            GeometryMode.FlatHexagons, GeometryMode.FlatHexagons);
+
         var data = cell.ExtractDataFromCell();
 
 
@@ -290,7 +296,7 @@ public class TestTriangleProcessingWithEdgeBleed
             var center = cell.CenterPosition;
             var trianglesWithWallEdges = TestTriangleProcessingNoEdgeBleed.ProcessTriangleGeometryIntoSplitTriangles(cell, i, data);
             //Ensure each triangle's output is manifold
-            TestTriangleProcessingNoEdgeBleed.AssertIsTriangleManifold(trianglesWithWallEdges);
+            TestTriangleProcessingNoEdgeBleed.AssertIsTriangleListManifold(trianglesWithWallEdges);
 
             outTriangleData.Add(i, trianglesWithWallEdges);
         }

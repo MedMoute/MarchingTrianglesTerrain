@@ -26,7 +26,17 @@ public class TestTriangleProcessingNoEdgeBleed
 
     [Test]
     // TODO Asserts
-    public void TestBasicTriangleProcessing()
+    public void TestBasicTriangleProcessing(
+        [Values(GeometryMode.FlatHexagons,
+            GeometryMode
+                .FlatTriangles ,GeometryMode.SmoothLinear/*,GeometryMode.Foothill,GeometryMode.Plateau,GeometryMode.BendingEdge*/)]
+        GeometryMode geometryMode,
+        [Values(GeometryMode.FlatHexagons,
+            GeometryMode
+                .FlatTriangles /*,GeometryMode.SmoothLinear,GeometryMode.Foothill,GeometryMode.Plateau,GeometryMode.BendingEdge*/)]
+        GeometryMode geometryModeFallback,
+        [Values(0, 1, 2, 3, 4, 5, 6, 7)] int mask)
+
     {
         HexTerrainCell.a = (float)0.5;
         HexTerrainCell.theta = 0;
@@ -42,28 +52,16 @@ public class TestTriangleProcessingNoEdgeBleed
         triangle[1] = B;
         triangle[2] = C;
 
-        var res = HexTerrainCell.ProcessTriangle(triangle, 6);
-
-        for (int i = 0; i < res.Count; i++)
-        {
-            var c = res[i];
-            Console.WriteLine("Triangle {0}:  [{1},{2},{3}]", i, c.Points[0], c.Points[1], c.Points[2]);
-            foreach (var tuple in c.GetBorderEdges())
-            {
-                Console.WriteLine("Edge :  [{0},{1}]", tuple.Item1, tuple.Item2);
-            }
-        }
-
-        Console.WriteLine();
-        foreach (var tuple in res.SelectMany(t => t.GetBorderEdges()))
-        {
-            Console.WriteLine("Edge :  [{0},{1}]", tuple.Item1, tuple.Item2);
-        }
+        var res = HexTerrainCell.ProcessTriangle(
+            null,
+            triangle,
+            HexTerrainCell.ComputeEdgeGeometryMode(0, mask,
+                new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryModeFallback)));
 
         // Test "is manifold" :  
         // Map all the Edges and get their count : should be 2 except for edges in that are in GetBorderEdges,
         // in chich case there should be 2
-        AssertIsTriangleManifold(res);
+        AssertIsTriangleListManifold(res);
     }
 
     [Test]
@@ -90,6 +88,10 @@ public class TestTriangleProcessingNoEdgeBleed
             v => v is { X: 0, Y: 0 });
 
         HexTerrainCell cell = terrainDualGrid.CompleteCells.First();
+
+        cell.GeometryModesOverride = new Tuple<GeometryMode, GeometryMode>(
+            GeometryMode.FlatHexagons, GeometryMode.FlatHexagons);
+
         var data = cell.ExtractDataFromCell();
         Func<Dictionary<float[], int>, HashSet<float[]>> countInternalEdges =
             d => d.Where(kvp => kvp.Value == 2).Select(kvp => kvp.Key).ToHashSet();
@@ -108,7 +110,7 @@ public class TestTriangleProcessingNoEdgeBleed
         {
             var trianglesWithWallEdges = ProcessTriangleGeometryIntoSplitTriangles(cell, i, data);
             //Ensure each of the triangular output is itself manifold
-            AssertIsTriangleManifold(trianglesWithWallEdges);
+            AssertIsTriangleListManifold(trianglesWithWallEdges);
             var (
                 tmpDico,
                 tmpBorderEdgesAsSets,
@@ -158,9 +160,9 @@ public class TestTriangleProcessingNoEdgeBleed
         Vector3 seamEdgeStart = new Vector3(seamEdge[0], seamEdge[1], seamEdge[2]);
         Vector3 seamEdgeEnd = new Vector3(seamEdge[3], seamEdge[4], seamEdge[5]);
 
-        Console.WriteLine();
-        Console.WriteLine("Base triangles' seaming Edge : ");
-        Console.WriteLine("[" + seamEdgeStart + "," + seamEdgeEnd + "]");
+        // Console.WriteLine();
+        // Console.WriteLine("Base triangles' seaming Edge : ");
+        // Console.WriteLine("[" + seamEdgeStart + "," + seamEdgeEnd + "]");
 
 
         //Bruteforce find the closest border edge by sampling an edge and estimating the
@@ -248,9 +250,9 @@ public class TestTriangleProcessingNoEdgeBleed
                 i,
                 closestNonEqual[i],
                 estHaussdorf[i]);
-            Console.WriteLine(edges[i]);
-            Console.WriteLine(edges[closestNonEqual[i]]);
-            Console.WriteLine();
+            // Console.WriteLine(edges[i]);
+            // Console.WriteLine(edges[closestNonEqual[i]]);
+            // Console.WriteLine();
         }
 
         Assert.That(manifoldBorderEdgesAsSets.Count, Is.GreaterThanOrEqualTo(8).And.LessThanOrEqualTo(12));
@@ -278,6 +280,10 @@ public class TestTriangleProcessingNoEdgeBleed
             v => v is { X: 0, Y: 0 });
 
         HexTerrainCell cell = terrainDualGrid.CompleteCells.First();
+
+        // TODO : PARAMETER
+        cell.GeometryModesOverride = new Tuple<GeometryMode, GeometryMode>(
+            GeometryMode.FlatHexagons, GeometryMode.FlatHexagons);
         var data = cell.ExtractDataFromCell();
 
 
@@ -288,7 +294,7 @@ public class TestTriangleProcessingNoEdgeBleed
             var center = cell.CenterPosition;
             var trianglesWithWallEdges = ProcessTriangleGeometryIntoSplitTriangles(cell, i, data);
             //Ensure each triangle's output is manifold
-            AssertIsTriangleManifold(trianglesWithWallEdges);
+            AssertIsTriangleListManifold(trianglesWithWallEdges);
 
             outTriangleData.Add(i, trianglesWithWallEdges);
         }
@@ -317,7 +323,11 @@ public class TestTriangleProcessingNoEdgeBleed
                    (Math.Abs(B.Y - C.Y) > 0.5 ? 1 : 0) * 2 +
                    (Math.Abs(A.Y - B.Y) > 0.5 ? 1 : 0) * 1;
 
-        List<HexTerrainCell.TriangleInfo> trianglesWithWallEdges = HexTerrainCell.ProcessTriangle(tri, Mask);
+        List<HexTerrainCell.TriangleInfo> trianglesWithWallEdges =
+            HexTerrainCell.ProcessTriangle(
+                cell,
+                tri,
+                HexTerrainCell.ComputeEdgeGeometryMode(i, Mask, cell.GeometryModesOverride));
         return trianglesWithWallEdges;
     }
 
@@ -342,7 +352,7 @@ public class TestTriangleProcessingNoEdgeBleed
         manifoldBorderEdgesAsSets) ReprocessEdgeGeometry(List<HexTerrainCell.TriangleInfo> res)
     {
         var dico = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
-        var borderEdgesAsSets = new List<float[]>();
+        var borderEdgesAsSets = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
         var manifoldBordersAsSets = new List<float[]>();
 
         var z = 0;
@@ -367,18 +377,70 @@ public class TestTriangleProcessingNoEdgeBleed
 
         foreach (var edge in res.SelectMany(t => t.GetBorderEdges()))
         {
-            var set = new SortedSet<Vector3>(new V3Comp());
-            set.Add(edge.Item1);
-            set.Add(edge.Item2);
-            borderEdgesAsSets.Add(set.SelectMany(v => Array.AsReadOnly([v.X, v.Y, v.Z])).ToArray());
+            var set = new SortedSet<Vector3>(new V3Comp())
+            {
+                edge.Item1,
+                edge.Item2
+            };
+            var edgeArray = set.SelectMany(v => Array.AsReadOnly([v.X, v.Y, v.Z])).ToArray();
+
+            Console.WriteLine("Added ? " + borderEdgesAsSets.TryAdd(edgeArray, 0) + " " + edgeArray.Stringify());
         }
 
-        manifoldBordersAsSets = dico.Where(pair => pair.Value == 1).Select(pair => pair.Key).ToList();
 
-        return (dico, borderEdgesAsSets, manifoldBordersAsSets);
+        manifoldBordersAsSets = dico.Where(pair => pair.Value == 1).Select(pair => pair.Key).ToList();
+        
+        Console.WriteLine("Expected : ");
+        foreach (var set in manifoldBordersAsSets)
+        {
+            Console.WriteLine(set.Stringify());
+        }
+        
+        // Checks on border edges sets : 
+        // On the manifold border set
+        AssertIsClosedManifoldBorder(manifoldBordersAsSets);
+
+        // On the rebuilt border edge set
+        var borderEdgesFromRebuilt = borderEdgesAsSets.Keys.ToList();
+        AssertIsClosedManifoldBorder(borderEdgesFromRebuilt);
+
+        return (dico, borderEdgesFromRebuilt, manifoldBordersAsSets);
     }
 
-    internal static void AssertIsTriangleManifold(List<HexTerrainCell.TriangleInfo> res)
+    private static void AssertIsClosedManifoldBorder(List<float[]> manifoldBordersAsSets)
+    {
+        var borderVerticesEnumerable = manifoldBordersAsSets.SelectMany(e =>
+        {
+            var set = new HashSet<Vector3>();
+            set.Add(new Vector3(e[0], e[1], e[2]));
+            set.Add(new Vector3(e[3], e[4], e[5]));
+            return set;
+        });
+
+        //Check that there is as many vertices as there are edges
+        var borderVertices = borderVerticesEnumerable.ToHashSet();
+        if (borderVertices.Count != manifoldBordersAsSets.Count)
+        {
+            throw new Exception(
+                "The provided data does not define closed manifold border because" +
+                " the count of edges is not equal to the count of vertices");
+        }
+
+        //Check that there every vertex is present twice
+        var vertexList = borderVerticesEnumerable.ToList();
+        foreach (var v in borderVertices)
+        {
+            var vertexOccurenceCount = vertexList.FindAll(vec => vec.IsEqualApprox(v)).Count;
+            if (vertexOccurenceCount != 2)
+            {
+                throw new Exception(
+                    "The provided data does not define closed manifold border because" +
+                    " not all vertices have two occurrences ");
+            }
+        }
+    }
+
+    internal static void AssertIsTriangleListManifold(List<HexTerrainCell.TriangleInfo> res)
     {
         var (
             dico,
@@ -395,7 +457,9 @@ public class TestTriangleProcessingNoEdgeBleed
         foreach (var kvp in dico)
         {
             Assert.That(
-                kvp.Value == 2 || kvp.Value == 1 && borderEdgesAsSets.Any(o => o.SequenceEqual(kvp.Key)), Is.True);
+                kvp.Value == 2 //inner edge
+                || kvp.Value == 1 && borderEdgesAsSets.Contains(kvp.Key, new FloatArrayComparer(1e-5)) //border edge
+                , Is.True);
         }
     }
 }
@@ -406,7 +470,9 @@ public class FloatArrayComparer : IEqualityComparer<float[]>
     {
         this.epsilon = epsilon;
     }
+
     private double epsilon;
+
     public bool Equals(float[]? x, float[]? y)
     {
         if (x?.Length != y?.Length)
@@ -415,9 +481,8 @@ public class FloatArrayComparer : IEqualityComparer<float[]>
         {
             if (Math.Abs(x[i] - y[i]) > epsilon)
             {
-                Console.WriteLine(Math.Abs(x[i] - y[i]));
+                // Console.WriteLine(Math.Abs(x[i] - y[i]));
                 return false;
-
             }
         }
 
@@ -430,7 +495,7 @@ public class FloatArrayComparer : IEqualityComparer<float[]>
         for (int i = 0; i < obj.Length; i++)
         {
             // Proximity of hashcode so that buckets are similar for similar points 
-            v = v * 31 * (int)(100*(obj[i])) + 7;
+            v = v * 31 * (int)(100 * (obj[i])) + 7;
         }
 
         return v;

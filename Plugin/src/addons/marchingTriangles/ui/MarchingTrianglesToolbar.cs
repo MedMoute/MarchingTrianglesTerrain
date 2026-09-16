@@ -4,7 +4,10 @@ using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
-
+/// <summary>
+/// The plugin toolbar.
+/// This component is the main UI component of the plugin, and renders 
+/// </summary>
 [Tool]
 public partial class MarchingTrianglesToolbar : VFlowContainer
 {
@@ -16,12 +19,11 @@ public partial class MarchingTrianglesToolbar : VFlowContainer
     [Signal]
     public delegate void ToolChangedEventHandler(int toolIndex);
 
+    /// <summary>
+    /// The plugin toolbox, i.e. the underlying tools of the toolbar
+    /// </summary>
     public MarchingTrianglesToolbox ToolBox = new();
-
-    private readonly ButtonGroup _toolboxButtonGroup = new();
-
-    public Dictionary<int, Button> ToolboxButtons { get; } = new();
-
+    
     /// <summary>
     /// Position of the horizontal separators in the toolbar.
     /// </summary>
@@ -31,7 +33,7 @@ public partial class MarchingTrianglesToolbar : VFlowContainer
 
     public override void _Ready()
     {
-        _toolboxButtonGroup.Pressed += OnToolSelected;
+        ToolBox.ButtonGroup.Pressed += OnToolSelected;
         AddTools();
     }
 
@@ -70,13 +72,13 @@ public partial class MarchingTrianglesToolbar : VFlowContainer
             float scale = EditorInterface.Singleton.GetEditorScale();
             button.CustomMinimumSize = new Vector2(30f, 30f) * scale;
             button.ExpandIcon = true;
-            button.SetButtonGroup(_toolboxButtonGroup);
+            button.SetButtonGroup(ToolBox.ButtonGroup);
 
             var centeringContainer = new CenterContainer();
             centeringContainer.CustomMinimumSize = new Vector2(35, 35);
             centeringContainer.AddChild(button, true);
             AddChild(centeringContainer);
-            ToolboxButtons[i] = button;
+            ToolBox.Buttons[i] = button;
         }
 
         AddChild(new HSeparator());
@@ -85,9 +87,31 @@ public partial class MarchingTrianglesToolbar : VFlowContainer
 
 public class MarchingTrianglesToolbox
 {
+    
+    /// <summary>
+    /// Static instance of the tools used by the plugin, as well as their ordering. 
+    /// </summary>
+    public static MarchingTrianglesTool[] Tools =>
+    [
+        BrushTool,
+        LevelTool,
+        SmoothTool,
+        BridgeTool,
+        GrassMaskTool,
+        VertexPaintTool,
+        DebugBrushTool,
+        ChunkManagerTool,
+        TerrainSettingsTool,
+        GeometryEditorTool
+    ];
+    
+    public Dictionary<int, Button> Buttons { get; } = new();
+
+    internal readonly ButtonGroup ButtonGroup = new();
+
     //Landscaping tools
     private static readonly MarchingTrianglesTool BrushTool =
-        new(FileUtils.Load<Texture2D>("res://addons/marchingTriangles/editor/icons/brush_tool.svg"),
+        new("res://addons/marchingTriangles/editor/icons/brush_tool.svg",
             "Brush",
             "Brush Tool\n" +
             "\n" +
@@ -99,29 +123,37 @@ public class MarchingTrianglesToolbox
             "• Alt/RMB/Esc: Reset the current draw selection.\n" +
             "These shortcuts apply to all brush related tools.",
             new MarchingTrianglesToolAttributeSettings(
-                brushType: true, size: true, flatten: true, falloff: true,quickPaintSelection: true));
+                brushType: true,
+                size: true,
+                flatten: true,
+                falloff: true,
+                quickPaintSelection: true));
 
     private static readonly MarchingTrianglesTool LevelTool =
-        new(FileUtils.Load<Texture2D>("res://addons/marchingTriangles/editor/icons/level_tool.svg"),
-            "Level", 
+        new("res://addons/marchingTriangles/editor/icons/level_tool.svg",
+            "Level",
             "Level Tool\n" +
-                 "\n" +
-                 "Used to level terrain to a certain height.\n" +
-                 "\n" +
-                 "[SHORTCUTS]\n" +
-                 "• Ctrl+LMB: Set the terrain level height to the hovered cell's Y value.",
+            "\n" +
+            "Used to level terrain to a certain height.\n" +
+            "\n" +
+            "[SHORTCUTS]\n" +
+            "• Ctrl+LMB: Set the terrain level height to the hovered cell's Y value.",
             new MarchingTrianglesToolAttributeSettings(
-                brushType: true, size: true, height: true, falloff: true,quickPaintSelection: true));
+                brushType: true,
+                size: true,
+                height: true,
+                falloff: true,
+                quickPaintSelection: true));
 
     private static readonly MarchingTrianglesTool SmoothTool =
-        new(FileUtils.Load<Texture2D>("res://addons/marchingTriangles/editor/icons/smooth_tool.svg"),
+        new("res://addons/marchingTriangles/editor/icons/smooth_tool.svg",
             "Smooth", "Smooth Tool\n" +
                       "\n" +
                       "Used to smooth neighbouring terrain to their average height.",
             new MarchingTrianglesToolAttributeSettings());
 
     private static readonly MarchingTrianglesTool BridgeTool =
-        new(FileUtils.Load<Texture2D>("res://addons/marchingTriangles/editor/icons/bridge_tool.svg"),
+        new("res://addons/marchingTriangles/editor/icons/bridge_tool.svg",
             "2", "Bridge Tool\n" +
                  "\n" +
                  "Used to create a bridge between two points.\n" +
@@ -129,22 +161,23 @@ public class MarchingTrianglesToolbox
                  "[INFO]\n" +
                  "The bridge curve falloff can be set via the \"ease value\" attribute. \n" +
                  "For reference see the ease value cheatsheet in the documentation+ folder.",
-            new MarchingTrianglesToolAttributeSettings(brushType:true,size:true,easeValue:true,quickPaintSelection:true)
-            );
+            new MarchingTrianglesToolAttributeSettings(brushType: true, size: true, easeValue: true,
+                quickPaintSelection: true)
+        );
 
     //Terrain visuals tools
     private static readonly MarchingTrianglesTool GrassMaskTool =
-        new(FileUtils.Load<Texture2D>("res://addons/marchingTriangles/editor/icons/grass_mask_tool.svg"),
+        new("res://addons/marchingTriangles/editor/icons/grass_mask_tool.svg",
             "Grass Mask", "[INACTIVE]\n" +
                           "Grass Mask Tool\n" +
                           "\n" +
-                          "Used to control where grass gets placed.", 
+                          "Used to control where grass gets placed.",
             new MarchingTrianglesToolAttributeSettings()
             //new MarchingTrianglesToolAttributeSettings(brushType:true,size:true,maskMode:true)
-            );
+        );
 
     private static readonly MarchingTrianglesTool VertexPaintTool =
-        new(FileUtils.Load<Texture2D>("res://addons/marchingTriangles/editor/icons/vertex_paint_tool.svg"),
+        new("res://addons/marchingTriangles/editor/icons/vertex_paint_tool.svg",
             "Vector Paining", "[INACTIVE]\n" +
                               "Vertex Paint Tool\n" +
                               "\n" +
@@ -161,12 +194,13 @@ public class MarchingTrianglesToolbox
                               "        • → Create a MarchingTriangleQuickPaint resource in their dedicated folders in the parent plugin folder.",
             // new MarchingTrianglesToolAttributeSettings(brushType:true,size:true,material:true,textureName:true,texturePreset:true,paintWalls:true)
             new MarchingTrianglesToolAttributeSettings()
-            );
+        );
 
     // General tools
     private static readonly MarchingTrianglesTool DebugBrushTool =
-        new(FileUtils.Load<Texture2D>("res://addons/marchingTriangles/editor/icons/toolicon.svg"),
-            "Debug", "Debug Brush Tool\n" +
+        new("res://addons/marchingTriangles/editor/icons/toolicon.svg",
+            "Debug",
+            "Debug Brush Tool\n" +
                      "\n" +
                      "Used to print data about selected cells.\n" +
                      "\n" +
@@ -174,11 +208,12 @@ public class MarchingTrianglesToolbox
                      "• Global position\n" +
                      "• Color ID values (two Vector4's)\n" +
                      "• Normal",
-            new MarchingTrianglesToolAttributeSettings(brushType:true,size:true));
+            new MarchingTrianglesToolAttributeSettings(brushType: true, size: true));
 
     private static readonly MarchingTrianglesTool ChunkManagerTool =
-        new(FileUtils.Load<Texture2D>("res://addons/marchingTriangles/editor/icons/chunk_manager_tool.svg"),
-            "2", "Chunk Management Tool\n" +
+        new("res://addons/marchingTriangles/editor/icons/chunk_manager_tool.svg",
+            "Chunk Management Tool",
+            "Chunk Management Tool\n" +
                  "\n" +
                  "Used to create, delete and change chunk settings.\n" +
                  "\n" +
@@ -192,11 +227,12 @@ public class MarchingTrianglesToolbox
                  "\n" +
                  "[SHORTCUTS]\n" +
                  "• CTRL+LMB: Change the currently selected chunk to the hovered chunk.",
-            new MarchingTrianglesToolAttributeSettings(chunkManagement:true));
+            new MarchingTrianglesToolAttributeSettings(chunkManagement: true));
 
     private static readonly MarchingTrianglesTool TerrainSettingsTool =
-        new(FileUtils.Load<Texture2D>("res://addons/marchingTriangles/editor/icons/terrain_settings_tool.png"),
-            "2", "Terrain Settings Tool\n" +
+        new("res://addons/marchingTriangles/editor/icons/terrain_settings_tool.png",
+            "Terrain Settings Tool", 
+            "Terrain Settings Tool\n" +
                  "\n" +
                  "Used to tweak global terrain settings.\n" +
                  "\n" +
@@ -207,99 +243,16 @@ public class MarchingTrianglesToolbox
                  "   • Keeping it at 0 gives the grass a smooth wind based effect.\n" +
                  "• \"Ridge Threshold\" controls how close grass sprites get spawned to lowering terrain (cliffs).\n" +
                  "• \"Ledge Threshold\" controls how close grass sprites get spawned to elevating terrain (walls).",
-            new MarchingTrianglesToolAttributeSettings(terrainSettings:true));
+            new MarchingTrianglesToolAttributeSettings(terrainSettings: true));
 
-    public static MarchingTrianglesTool[] Tools =>
-    [
-        BrushTool,
-        LevelTool,
-        SmoothTool,
-        BridgeTool, 
-        GrassMaskTool,
-        VertexPaintTool,
-        DebugBrushTool,
-        ChunkManagerTool,
-        TerrainSettingsTool
-    ];
-}
-
-public partial class MarchingTrianglesToolAttributeSettings : Resource
-{
-    internal MarchingTrianglesToolAttributeSettings(
-        bool brushType = false,
-        bool size = false,
-        bool easeValue = false,
-        bool height = false,
-        bool strength = false,
-        bool flatten = false,
-        bool falloff = false,
-        bool maskMode = false,
-        bool material = false,
-        bool textureName = false,
-        bool texturePreset = false,
-        bool quickPaintSelection = false,
-        bool paintWalls = false,
-        bool chunkManagement = false,
-        bool terrainSettings = false)
-    {
-        BrushType = brushType;
-        Size = size;
-        EaseValue = easeValue;
-        Height = height;
-        Strength = strength;
-        Flatten = flatten;
-        Falloff = falloff;
-        MaskMode = maskMode;
-        Material = material;
-        TextureName = textureName;
-        TexturePreset = texturePreset;
-        QuickPaintSelection = quickPaintSelection;
-        PaintWalls = paintWalls;
-        ChunkManagement = chunkManagement;
-        TerrainSettings = terrainSettings;
-    }
-
-// General brush attributes
-    [Export] public bool BrushType = false;
-    [Export] public bool Size = false;
-    [Export] public bool EaseValue = false;
-    [Export] public bool Height = false;
-    [Export] public bool Strength = false;
-    [Export] public bool Flatten = false;
-    [Export] public bool Falloff = false;
-
-// Brush specific attributes
-    [Export] public bool MaskMode = false;
-    [Export] public bool Material = false;
-    [Export] public bool TextureName = false;
-
-// Vertex painting-related special attributes
-    [Export] public bool TexturePreset = false;
-    [Export] public bool QuickPaintSelection = false;
-    [Export] public bool PaintWalls = false;
-
-// Non-brush attributes
-    [Export] public bool ChunkManagement = false;
-    [Export] public bool TerrainSettings = false;
-
-    public List<Tuple<string, bool>> GetPropertiesFlagList()
-    {
-        var res = new List<Tuple<string, bool>>();
-        res.Add(new Tuple<string, bool>("BrushType", BrushType));
-        res.Add(new Tuple<string, bool>("Size", Size));
-        res.Add(new Tuple<string, bool>("EaseValue", EaseValue));
-        res.Add(new Tuple<string, bool>("Height", Height));
-        res.Add(new Tuple<string, bool>("Strength", Strength));
-        res.Add(new Tuple<string, bool>("Flatten", Flatten));
-        res.Add(new Tuple<string, bool>("Falloff", Falloff));
-        res.Add(new Tuple<string, bool>("MaskMode", MaskMode));
-        res.Add(new Tuple<string, bool>("Material", Material));
-        res.Add(new Tuple<string, bool>("TextureName", TextureName));
-        res.Add(new Tuple<string, bool>("TexturePreset", TexturePreset));
-        res.Add(new Tuple<string, bool>("QuickPaintSelection", QuickPaintSelection));
-        res.Add(new Tuple<string, bool>("PaintWalls", PaintWalls));
-        res.Add(new Tuple<string, bool>("ChunkManagement", ChunkManagement));
-        res.Add(new Tuple<string, bool>("TerrainSettings", TerrainSettings));
-        return res;
-    }
+    private static readonly MarchingTrianglesTool GeometryEditorTool =
+        new("res://addons/marchingTriangles/editor/icons/geometry_editor_tool.svg",
+            "Geometry Editor Tool", "Geometry Edition Tool\n" +
+                 "\n" +
+                 "Used to tweak the terrain geometry's behavior when facing height changes.\n" +
+                 "\n" +
+                 "[INFO]\n" +
+                 "• Todo (cf. Issue in github)\n",
+            //TODO : fill the tooltip
+            new MarchingTrianglesToolAttributeSettings(size: true));
 }

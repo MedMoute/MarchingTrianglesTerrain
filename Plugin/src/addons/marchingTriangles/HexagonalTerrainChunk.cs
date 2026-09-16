@@ -87,6 +87,10 @@ public class HexagonalTerrainChunk
     /// </summary>
     public float MergeThreshold { get; set; }
 
+    public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes = new(GeometryMode.SmoothLinear,GeometryMode.SmoothLinear);
+    public float DefaultGeometryParam0;
+    public float DefaultGeometryParam1;
+
     /// <summary>
     /// Data holder for the chunk's color data
     /// </summary>
@@ -364,3 +368,15 @@ public class HexagonalTerrainChunk
         return _colorHelper.BlendColors(chunk, cell, pos, uv, b);
     }
 }
+
+public enum GeometryMode
+{
+    FlatHexagons = 1,
+    FlatTriangles = 2,
+    SmoothLinear = 3,
+    Foothill = 4,
+    Plateau = 5,
+    BendingEdge = 6
+}
+
+
