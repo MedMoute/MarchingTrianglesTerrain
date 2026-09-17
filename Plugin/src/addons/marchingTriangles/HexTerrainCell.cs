@@ -350,15 +350,9 @@ public class HexTerrainCell
         for (var i = 0; i <= 2; i++)
         {
             ProcessTriangleEdge(
-                cell,
                 i,
-                cellGeometryBehaviour.Invoke(i),
-                triangles.sourceTriangle,
-                triangle,
-                out var collectedActions);
-            actions.AddRange(collectedActions);
-            //TODO apply all at once ?
-            collectedActions.ForEach(action => { action.Apply(triangles); });
+                triangles,
+                cellGeometryBehaviour.Invoke(i));
         }
         var tInfos = triangles.ToTriangleInfoList();
         return tInfos;
@@ -369,229 +363,73 @@ public class HexTerrainCell
     /// Edits the geometry of an edge of the cell's sub-triangle following a transformation defined by the provided algorithm
     /// </summary>
     private static void ProcessTriangleEdge(
-        HexTerrainCell cell,
         int edgeIdx,
-        GeometryMode algorithm,
-        ImmutableArray<Vector3> triangleSource,
-        Vector3[] triangle, // TODO : warn that content may have been mutated
-        out List<TriangulationEditAction> collectedActions)
+        Triangulation triangles,
+        GeometryMode algorithm)
     {
         Console.WriteLine("Processing Edge "+edgeIdx  + " : "+algorithm);
         switch (algorithm)
         {
             case GeometryMode.FlatHexagons:
-                ProcessFlatHexagonEdge(triangleSource, triangle, edgeIdx, out collectedActions);
+                ProcessFlatHexagonEdge(edgeIdx, triangles);
                 return;
             case GeometryMode.FlatTriangles:
-                ProcessFlatTriangleEdge(triangleSource, cell, triangle, edgeIdx, out collectedActions);
+                ProcessFlatTriangleEdge( edgeIdx, triangles);
                 return;
             case GeometryMode.SmoothLinear:
-                ProcessLinearEdge(triangleSource, triangle, edgeIdx, out collectedActions);
+                ProcessLinearEdge( edgeIdx, triangles);
                 return;
             case GeometryMode.Plateau:
-                ProcessPlateauEdge(triangleSource, triangle, edgeIdx, out collectedActions);
+                ProcessPlateauEdge(edgeIdx, triangles);
                 return;
             case GeometryMode.Foothill:
-                ProcessFoothillEdge(triangleSource, triangle, edgeIdx, out collectedActions);
+                ProcessFoothillEdge(edgeIdx, triangles);
                 return;
             case GeometryMode.BendingEdge:
-                ProcessBendingEdge(triangleSource, triangle, edgeIdx, out collectedActions);
+                ProcessBendingEdge(edgeIdx, triangles);
                 return;
             default:
                 throw new NotSupportedException();
         }
     }
+    
+    private static void ProcessFlatHexagonEdge(int edgeIdx, Triangulation triangles)
+    {
+    }
 
-    private static void ProcessBendingEdge(ImmutableArray<Vector3> triangleSource, Vector3[] triangle,
-        int edgeIdx,
-        out List<TriangulationEditAction> collectedActions)
+
+    private static void ProcessFlatTriangleEdge(int edgeIdx, Triangulation triangles)
+    {
+    }
+    
+    
+    private static void ProcessLinearEdge(int edgeIdx, Triangulation triangles)
+    {
+        var subEdges = triangles.Edges[edgeIdx];
+        if (subEdges.Count == 1)
+        {
+            var action = new SplitEdgeAction(edgeIdx, mod(edgeIdx+1,3), 1f / 2);
+            action.Apply(triangles);
+        }
+    }
+    
+    private static void ProcessPlateauEdge(int edgeIdx, Triangulation triangles)
     {
         throw new NotImplementedException();
     }
 
-    private static void ProcessFoothillEdge(ImmutableArray<Vector3> triangleSource, Vector3[] triangle,
-        int edgeIdx,
-        out List<TriangulationEditAction> collectedActions)
+    private static void ProcessFoothillEdge(int edgeIdx, Triangulation triangles)                          
     {
         throw new NotImplementedException();
     }
 
-    private static void ProcessPlateauEdge(
-        ImmutableArray<Vector3> triangleSource,
-        Vector3[] triangle,
-        int edgeIdx,
-        out List<TriangulationEditAction> collectedActions)
+    private static void ProcessBendingEdge(int edgeIdx, Triangulation triangles)
     {
         throw new NotImplementedException();
     }
 
-    private static void ProcessLinearEdge(
-        ImmutableArray<Vector3> triangleSource,
-        Vector3[] triangle,
-        int edgeIdx,
-        out List<TriangulationEditAction> collectedActions)
-    {
-        collectedActions = [];
-        Vector3 start = triangle[edgeIdx];
-        Vector3 end = triangle[mod(edgeIdx + 1, 3)];
-        collectedActions.Add(new SplitEdgeAction(start, end, 1f / 2));
-    }
-
-    private static void ProcessFlatHexagonEdge(
-        ImmutableArray<Vector3> triangleSource,
-        Vector3[] triangle,
-        int edgeIdx,
-        out List<TriangulationEditAction> collectedActions)
-    {
-        collectedActions = [];
 
 
-        if (edgeIdx != 1) // Not on exterior edge, for flat hexagons, there is no geometry to consider for other
-            // edges since the triangles of the same cell will all have the same height value. 
-        {
-            return;
-        }
-
-        Vector3 start = triangle[edgeIdx];
-        Vector3 end = triangle[mod(edgeIdx + 1, 3)];
-        Vector3 opposite = triangle[mod(edgeIdx + 2, 3)];
-
-        // the triangle is built in a way that the first point is the center of the Hexagonal cell.
-        float heightValue = triangleSource[0].Y;
-
-        if (Math.Abs(start.Y - end.Y) < 1e-5 && Math.Abs(start.Y - heightValue) < 1e-5)
-        {
-            //Fast branch exit nothing to do.
-            return;
-        }
-
-        if (start.Y > heightValue && end.Y > heightValue || start.Y < heightValue && end.Y < heightValue)
-        {
-            
-            
-            // Both points are higher (or lower) than the triangle height value : we add a span of two triangles
-            collectedActions.Add(new MovePointAlongYAxisAction(start, heightValue, triangle));
-            collectedActions.Add(new MovePointAlongYAxisAction(end, heightValue, triangle));
-            Vector3 newStartPos = new Vector3(start.X, heightValue, start.Z);
-            Vector3 newEndPos = new Vector3(end.X, heightValue, end.Z);
-            collectedActions.Add(new AddTriangleFan(opposite, newStartPos, start));
-            collectedActions.Add(new AddTriangleFan(opposite, newEndPos, end));
-        }
-        else if (Math.Abs(start.Y - heightValue) < 1e-5)
-        {
-            //Start point is on the height value, we only add one triangle
-            collectedActions.Add(new MovePointAlongYAxisAction(end, heightValue, triangle));
-            Vector3 newEndPos = new Vector3(end.X, heightValue, end.Z);
-            collectedActions.Add(new AddTriangleFan(start, newEndPos, end));
-        }
-        else if (Math.Abs(end.Y - heightValue) < 1e-5)
-        {
-            //End point is on the height value, we only add one triangle
-
-            collectedActions.Add(new MovePointAlongYAxisAction(start, heightValue, triangle));
-            Vector3 newStartPos = new Vector3(start.X, heightValue, start.Z);
-            collectedActions.Add(new AddTriangleFan(start, newStartPos, end));
-        }
-        else
-        {
-            // One point is over the value, one is below
-            CollectActionsForFlatExteriorEdge(triangle, collectedActions, end, heightValue, start);
-        }
-    }
-
-    private static void CollectActionsForFlatExteriorEdge(Vector3[] triangle,
-        List<TriangulationEditAction> collectedActions, Vector3 end,
-        float heightValue, Vector3 start)
-    {
-        float delta_end = Math.Abs(end.Y - heightValue);
-        float delta_start = Math.Abs(start.Y - heightValue);
-        collectedActions.Add(new MovePointAlongYAxisAction(start, heightValue, triangle));
-        collectedActions.Add(new MovePointAlongYAxisAction(end, heightValue, triangle));
-        Vector3 newStartPos = new Vector3(start.X, heightValue, start.Z);
-        Vector3 newEndPos = new Vector3(end.X, heightValue, end.Z);
-
-        collectedActions.Add(new SplitEdgeAction(newStartPos, newEndPos,
-            delta_start / (delta_end + delta_start)));
-
-        Vector3 c = newStartPos.Lerp(newEndPos, delta_start / (delta_end + delta_start));
-
-        collectedActions.Add(new AddTriangleFan(c, newStartPos, start));
-        collectedActions.Add(new AddTriangleFan(c, newEndPos, end));
-    }
-
-    private static void ProcessFlatTriangleEdge(
-        ImmutableArray<Vector3> triangleSource,
-        HexTerrainCell cell,
-        Vector3[] triangle,
-        int edgeIdx,
-        out List<TriangulationEditAction> collectedActions)
-    {
-        collectedActions = [];
-
-
-        float previousTriangleVertexHeight;
-        if (cell == null)
-        {
-            // Test only
-            previousTriangleVertexHeight = 0;
-        }
-        else
-        {
-            previousTriangleVertexHeight = cell._tempDataHintForFlatTriangleCase;
-        }
-
-        Vector3 start = triangleSource[edgeIdx];
-        Vector3 end = triangleSource[mod(edgeIdx + 1, 3)];
-        Vector3 opposite = triangleSource[mod(edgeIdx + 2, 3)];
-
-        // the triangle is built in a way that the first point is the center of the Hexagonal cell.
-        float heightValue = (start.Y + end.Y) / 2f;
-
-        if (Math.Abs(start.Y - end.Y) < 1e-5 && Math.Abs(start.Y - heightValue) < 1e-5)
-        {
-            //Fast exit
-            return;
-        }
-
-        Vector3 c = start.Lerp(end, 1f / 2);
-        if (c.Y - heightValue > 1e-5)
-        {
-            throw new Exception("Error in the algorithm");
-        }
-
-        //For a flattened triangle, the geometry to generate will be :
-        // - On the "sides" of the triangle : the fans between each newly flattened triangles.
-        // We have access to the cell's previous value thanks to the cell _tempDataHintForFlatTriangleCase field :
-        // we can generate the fans without worrying about creating mesh singularities
-        // Each triangle only generates one of its two sides fan so that we do not have duplicated geometry
-        //
-        // -On the "exterior" side of the triangle the behaviour corresponds to ProcessFlatHexagonEdge's case except
-        // we already know that one point is over the value, one is below since it's the average
-        if (edgeIdx == 0)
-        {
-            var previousEdgeAvgHeightValue = (previousTriangleVertexHeight + start.Y) / 2f;
-            collectedActions.Add(new MovePointAlongYAxisAction(start, heightValue, triangle));
-            collectedActions.Add(new MovePointAlongYAxisAction(end, heightValue, triangle));
-            if (previousEdgeAvgHeightValue.AlmostEqual(heightValue)) // Both triangles have almost the same height
-                // no need to create the triangle fans
-            {
-                return;
-            }
-
-            var editStart = new Vector3(start.X, heightValue, start.Z);
-            var editStartPrevTri = new Vector3(start.X, previousEdgeAvgHeightValue, start.Z);
-
-            var editEnd = new Vector3(editStart.X, heightValue, end.Z);
-            var editEndPrevTri = new Vector3(editStart.X, previousEdgeAvgHeightValue, end.Z);
-
-            collectedActions.Add(new AddTriangleFan(editStart, editStartPrevTri, editEnd));
-            collectedActions.Add(new AddTriangleFan(editStartPrevTri, editEndPrevTri, editEnd));
-        }
-        else if (edgeIdx == 1)
-        {
-            CollectActionsForFlatExteriorEdge(triangle, collectedActions, end, heightValue, start);
-        }
-    }
 
     /// <summary>
     /// Returns the sub triangles created by applying the marching triangles' algorithm on triangles that have
@@ -852,36 +690,10 @@ public class HexTerrainCell
         var z = Vector3.Up.Dot((tri[1] - tri[0]).Cross(tri[2] - tri[0])) / 2;
         return z;
     }
-
-    // TODO : buffer recycling
-    /// <summary>
-    /// Splits a triangle into 4 sub-triangles that will have the same area.
-    /// We assume the triangle is already ordered
-    /// </summary>
-    /// <param name="tri"></param>
-    private List<Vector3[]> SplitTriangle(Vector3[] tri)
-    {
-        var A = tri[0];
-        var B = tri[1];
-        var C = tri[2];
-
-        var ABMiddle = (A + B) / 2;
-        var ACMiddle = (A + C) / 2;
-        var BCMiddle = (B + C) / 2;
-
-        return
-        [
-            [A, ABMiddle, ACMiddle],
-            [B, BCMiddle, ABMiddle],
-            [C, ACMiddle, BCMiddle],
-            [ABMiddle, BCMiddle, ACMiddle]
-        ];
-    }
-
+    
     /// <summary>
     /// Processes the temporary data of the cell to generate the expected surface mesh.
     /// </summary>
-    /// <param name="surfaceTool"></param>
     public Action CopyCellDataToPending(GdPluginHexTerrainChunk chunk)
     {
         // TODO actually copy the data => cf. chunk.gd ll. 314 -> 335 (dont forget the lock)

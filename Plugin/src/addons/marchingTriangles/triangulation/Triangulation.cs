@@ -51,11 +51,17 @@ public class Triangulation
     /// <summary>
     /// Position of the initial triangle's vertices.
     /// </summary>
-    internal ImmutableArray<Vector3> sourceTriangle;
+    internal ImmutableArray<Vector3> SourceTriangle;
+
+    private Dictionary<string, object>? _additionalHints;
+
+    private bool _verbose;
     
-    public Triangulation(Vector3[] triangle)
+    public Triangulation(Vector3[] triangle, bool verbose=true,Dictionary<string,object>?additionalHints = null)
     {
-        sourceTriangle = [.. triangle];
+        SourceTriangle = [.. triangle];
+        _additionalHints = additionalHints;
+        _verbose = verbose;
         for (int i = 0; i < 3; i++)
         {
             Vertices.Add(i, triangle[i]);
@@ -103,6 +109,10 @@ public class Triangulation
 
     public void Debug(string title = "")
     {
+        if (!_verbose)
+        {
+            return;
+        }
         Console.WriteLine(">> Debug Triangulation "+title);
         Console.WriteLine("Triangles : " + TrianglesByVertices.Count);
 
