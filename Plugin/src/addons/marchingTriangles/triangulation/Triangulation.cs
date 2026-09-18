@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using static MarchingTrianglesTerrain.addons.marchingTriangles.utils.EngineUtils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
@@ -39,14 +40,14 @@ public class Triangulation
     /// This representation relies on the sub-Edges.
     /// </summary>
     /// We will always have 3 edges since the represented manifold is a triangle.
-    internal List<int>[] Edges = new List<int>[3];
+    internal readonly LinkedList<int>[] Edges = new LinkedList<int>[3];
 
     /// <summary>
     /// Sub-edges dictionary.
     /// The index can be obtained via the IndexOf((int,int)) method
     /// The value is the amount of times the sub edge is used in the triangulation.
     /// </summary>
-    internal OrderedDictionary<(int, int), int> SubEdges = new(UnorderedTupleComparer.Instance);
+    internal readonly OrderedDictionary<(int, int), int> SubEdges = new(UnorderedTupleComparer.Instance);
 
     /// <summary>
     /// Position of the initial triangle's vertices.
@@ -55,23 +56,39 @@ public class Triangulation
 
     private Dictionary<string, object>? _additionalHints;
 
-    private bool _verbose;
+    private readonly bool _verbose;
+    private readonly bool _extensiveVerification;
+
     
-    public Triangulation(Vector3[] triangle, bool verbose=true,Dictionary<string,object>?additionalHints = null)
+    public Triangulation(Vector3[] triangle, bool verbose=false, bool extensiveVerification=false,Dictionary<string,object>?additionalHints = null)
     {
+        if (triangle.Length != 3)
+        {
+            throw new ArgumentException("Wrong array size, expected 3, got " + triangle.Length, nameof(triangle));
+        }
+
+        if (HexTerrainCell.GetSignedArea(triangle) == 0)
+        {
+            throw new ArgumentException("The projection of the input triangle on the xOz plane is a degenerated triangle." +
+                                        " This is not supported" , nameof(triangle));
+
+        }
         SourceTriangle = [.. triangle];
         _additionalHints = additionalHints;
         _verbose = verbose;
+        _extensiveVerification = extensiveVerification;
         for (int i = 0; i < 3; i++)
         {
             Vertices.Add(i, triangle[i]);
             ReverseVertices.Add(triangle[i], i);
             (int, int) implicitEdge = (i, mod(i + 1, 3));
             SubEdges.TryAdd(implicitEdge, 1);
-            Edges[i] = [SubEdges.IndexOf(implicitEdge)];
+            Edges[i] = new LinkedList<int>();
+            Edges[i].AddFirst(SubEdges.IndexOf(implicitEdge));
         }
 
         TrianglesByVertices.Add(0, [0, 1, 2]);
+        EnsureIntegrity(true);
     }
 
     public List<HexTerrainCell.TriangleInfo> ToTriangleInfoList()
@@ -156,5 +173,61 @@ public class Triangulation
             Console.WriteLine("Edge[" + SubEdges.IndexOf(edge.Key) + "] " + edge.Key + " used "+edge.Value + " times." );
         }
 
+    }
+
+    public void EnsureIntegrity(bool forceChecks = false)
+    {
+        if (forceChecks || _extensiveVerification)
+        { DoExtensiveChecksOnTriangulation(); }
+    }
+
+    private void DoExtensiveChecksOnTriangulation()
+    {
+        //Ensure the convex hull wasn't affected
+        var area = HexTerrainCell.GetSignedArea([.. SourceTriangle]);
+        var sumOfTrianglesArea  =  TrianglesByVertices.Sum(
+            kvp => HexTerrainCell.GetSignedArea([.. kvp.Value.Select(i => Vertices[i])]));
+        if (Math.Abs(area - sumOfTrianglesArea) > 1e-5)
+        {
+            throw new Exception("The last action affected the convex hull area !!");
+        }
+        //Check edge continuity
+        for (int i = 0; i < 3; i++)
+        {
+            var firstSubEdge = Edges[i].First!.Value;
+            var lastSubEdgeOfPrevEdge = Edges[mod(i - 1, 3)].Last!.Value;
+
+            if (SubEdges.ElementAt(firstSubEdge).Key.Item1 != SubEdges.ElementAt(lastSubEdgeOfPrevEdge).Key.Item2) 
+                throw new Exception(string.Format("Continuity Error between border edges {0} and {1}",mod(i - 1, 3),i));
+
+            //Check sub edge border continuity
+            var enumerator = Edges[i].GetEnumerator();
+            enumerator.MoveNext();
+            for (int j = 0; j < Edges.Length; j++)
+            {
+                var subEdge = enumerator.Current;
+                if (enumerator.MoveNext())
+                {
+                    var nextSubEdge = enumerator.Current;
+                    if (SubEdges.ElementAt(subEdge).Key.Item2 != SubEdges.ElementAt(nextSubEdge).Key.Item1)
+                    {
+                        throw new Exception(string.Format("Continuity Error between border sub edges {0} and {1}",subEdge,nextSubEdge));
+                    }
+                }
+            }
+        }
+        // Check vertex dictionaries
+        if (Vertices.Count != ReverseVertices.Count)
+        {
+            throw new Exception("Vertex dictionaries have inconsistent sizes.");
+        }
+
+        foreach (var kvp in Vertices)
+        {
+            if (ReverseVertices[kvp.Value] != kvp.Key)
+            {
+                throw new Exception("Vertex dictionaries have inconsistent data.");
+            }
+        }
     }
 }

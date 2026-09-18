@@ -395,6 +395,7 @@ public class HexTerrainCell
     
     private static void ProcessFlatHexagonEdge(int edgeIdx, Triangulation triangles)
     {
+        
     }
 
 
@@ -408,8 +409,7 @@ public class HexTerrainCell
         var subEdges = triangles.Edges[edgeIdx];
         if (subEdges.Count == 1)
         {
-            var action = new SplitEdgeAction(edgeIdx, mod(edgeIdx+1,3), 1f / 2);
-            action.Apply(triangles);
+
         }
     }
     
@@ -686,7 +686,7 @@ public class HexTerrainCell
     public static double GetSignedArea(Vector3[] tri)
     {
         if (tri.Length != 3)
-            throw new Exception("Illegal Argument");
+            throw new ArgumentException("Illegal Argument");
         var z = Vector3.Up.Dot((tri[1] - tri[0]).Cross(tri[2] - tri[0])) / 2;
         return z;
     }
