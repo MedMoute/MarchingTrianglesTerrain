@@ -9,7 +9,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 /// Action that appends a triangle on an edge of the triangulation.
 /// This action may imply the creation of multiple sub-triangles if the edge is already split.
 /// </summary>
-public class AddTriangleOnBorderEdge(int edgeIdx, Vector3 p) : DelegatedTriangulationEditAction
+public class AddTriangleOnBorderEdge(int edgeIdx, Vector3 p) : DelegatedTriangulationEditAction<HashSet<int>>
 {
     /// <summary>
     /// Ensure the provided point is 
@@ -46,16 +46,19 @@ public class AddTriangleOnBorderEdge(int edgeIdx, Vector3 p) : DelegatedTriangul
         }
     }
 
-    protected override void DoApply(Triangulation t)
+    protected override HashSet<int> DoApply(Triangulation t)
     {
         // fetch the sub-edges
         var affectedEdges = t.Edges[edgeIdx];
+        HashSet<int> createdIndexes = new();
         foreach (var affectedEdge in affectedEdges)
         {
             var edge = t.SubEdges.GetAt(affectedEdge).Key;
             //build a triangle fan from the sub edge
             var action = new AddTriangleFan(edge, p);
-            action.Apply(t);
+            createdIndexes.Add(action.Apply(t));
         }
+
+        return createdIndexes;
     }
 }

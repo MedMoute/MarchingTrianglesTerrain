@@ -15,9 +15,9 @@ public class DisplaceEdgeAlongYAxis(
     int edgeIdx,
     float startPos,
     float endPos,
-    SnapMode forceSnap = SnapMode.WeightedMove) : DelegatedTriangulationEditAction
+    SnapMode forceSnap = SnapMode.WeightedMove) : DelegatedTriangulationEditAction<int>
 {
-    protected override void DoApply(Triangulation t)
+    protected override int DoApply(Triangulation t)
     {
         //Find the affected vertices
         LinkedList<int> affectedVertices = []; 
@@ -51,6 +51,8 @@ public class DisplaceEdgeAlongYAxis(
             var action = new MovePointAlongYAxisAction(affectedVertex,yDisplacement);
             action.Apply(t);
         }
+
+        return edgeIdx;
     }
 
     private float ComputeDisplacement(Triangulation triangulation,

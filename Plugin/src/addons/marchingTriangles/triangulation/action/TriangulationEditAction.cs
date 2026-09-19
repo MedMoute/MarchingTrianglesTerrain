@@ -3,14 +3,14 @@ using System.Linq;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
-public interface TriangulationEditAction
+public interface TriangulationEditAction<out T>
 {
-    public void Apply(Triangulation triangulation);
+    public T Apply(Triangulation triangulation);
 }
 
-public abstract class DelegatedTriangulationEditAction : TriangulationEditAction
+public abstract class DelegatedTriangulationEditAction<T> : TriangulationEditAction<T>
 {
-    protected abstract void DoApply(Triangulation t);
+    protected abstract T DoApply(Triangulation t);
 
     protected virtual void ValidateBefore(Triangulation t){}
 
@@ -20,10 +20,11 @@ public abstract class DelegatedTriangulationEditAction : TriangulationEditAction
         
         t.Debug(ToString());
     }
-    public void Apply(Triangulation triangulation)
+    public T Apply(Triangulation triangulation)
     {
         ValidateBefore(triangulation);
-        DoApply(triangulation);
+        T output = DoApply(triangulation);
         ValidateAfter(triangulation);
+        return output;
     }
 }

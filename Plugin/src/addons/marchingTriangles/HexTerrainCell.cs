@@ -345,7 +345,7 @@ public class HexTerrainCell
         // We create a Triangulation instance based on the triangle
         // that will receive all the transformations from the algorithms
         var triangles = new Triangulation(triangle);
-        List<TriangulationEditAction> actions = [];
+        List<TriangulationEditAction<object>> actions = [];
         
         for (var i = 0; i <= 2; i++)
         {

@@ -3,11 +3,20 @@ using Godot;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
-public class MovePointAlongYAxisAction : DelegatedTriangulationEditAction
+/// <summary>
+/// Action that Displaces a triangulation's vertex along the Y axis to a provided .
+/// </summary>
+public class MovePointAlongYAxisAction : DelegatedTriangulationEditAction<int>
 {
     private readonly int _editedVertexI;
     private readonly float _heightValue;
     
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="editedPoint">the edited vertex index</param>
+    /// <param name="heightValue">the set height</param>
+    /// <exception cref="ArgumentException">If the provided index is strictly negative</exception>
     public MovePointAlongYAxisAction(int editedPoint, float heightValue)
     {
         _editedVertexI = editedPoint;
@@ -20,7 +29,7 @@ public class MovePointAlongYAxisAction : DelegatedTriangulationEditAction
         _heightValue = heightValue;
     }
 
-    protected override void DoApply(Triangulation t)
+    protected override int DoApply(Triangulation t)
     {
         var found = t.Vertices.TryGetValue(_editedVertexI, out var pos);
         if (!found)
@@ -33,7 +42,6 @@ public class MovePointAlongYAxisAction : DelegatedTriangulationEditAction
         var newVertex = new Vector3(pos.X, _heightValue, pos.Z);
         t.Vertices.Add(_editedVertexI, newVertex);
         t.ReverseVertices.Add(newVertex, _editedVertexI);
+        return _editedVertexI;
     }
-
-    //Find indexes
 }
