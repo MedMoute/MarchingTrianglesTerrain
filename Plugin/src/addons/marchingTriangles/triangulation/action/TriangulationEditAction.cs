@@ -17,7 +17,6 @@ public abstract class DelegatedTriangulationEditAction<T> : TriangulationEditAct
     protected virtual void ValidateAfter(Triangulation t)
     {
         t.EnsureIntegrity();
-        
         t.Debug(ToString());
     }
     public T Apply(Triangulation triangulation)

@@ -11,21 +11,37 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 /// edges should
 /// </summary>
 /// <param name="forceSnap"></param>
-public class DisplaceEdgeAlongYAxis(
-    int edgeIdx,
-    float startPos,
-    float endPos,
-    SnapMode forceSnap = SnapMode.WeightedMove) : DelegatedTriangulationEditAction<int>
+public class DisplaceEdgeAlongYAxis : DelegatedTriangulationEditAction<int>
 {
+    private readonly int _edgeIdx;
+    private readonly float _startPos;
+    private readonly float _endPos;
+    private readonly SnapMode _snap;
+
+    public DisplaceEdgeAlongYAxis(int edgeIdx,
+        float startPos,
+        float endPos,
+        SnapMode snap = SnapMode.SnapOnEdge)
+    {
+        _edgeIdx = edgeIdx;
+        _startPos = startPos;
+        _endPos = endPos;
+        _snap = snap;
+        if (edgeIdx < 0 || edgeIdx >= 3)
+        {
+            throw new ArgumentOutOfRangeException(nameof(edgeIdx));
+        }
+    }
+
     protected override int DoApply(Triangulation t)
     {
         //Find the affected vertices
-        LinkedList<int> affectedVertices = []; 
+        LinkedList<int> affectedVertices = [];
         // Fetch first SubEdge's first vertex  and  last SubEdge's second vertex :
-        var start = t.SubEdges.GetAt(t.Edges[edgeIdx].First!.Value).Key.Item1;
-        var end = t.SubEdges.GetAt(t.Edges[edgeIdx].Last!.Value).Key.Item2;
+        var start = t.SubEdges.GetAt(t.Edges[_edgeIdx].First!.Value).Key.Item1;
+        var end = t.SubEdges.GetAt(t.Edges[_edgeIdx].Last!.Value).Key.Item2;
 
-        if (forceSnap == SnapMode.IgnoreActionOnSubEdges)
+        if (_snap == SnapMode.IgnoreSubEdges)
         {
             affectedVertices.AddFirst(start);
             affectedVertices.AddLast(end);
@@ -33,7 +49,7 @@ public class DisplaceEdgeAlongYAxis(
         else
         {
             // fetch all the sub-edges
-            var affectedEdges = t.Edges[edgeIdx];
+            var affectedEdges = t.Edges[_edgeIdx];
 
             foreach (var affectedEdge in affectedEdges)
             {
@@ -46,13 +62,13 @@ public class DisplaceEdgeAlongYAxis(
         foreach (var affectedVertex in affectedVertices)
         {
             // Compute the displacement for each vertex
-            float yDisplacement = ComputeDisplacement(t,affectedVertex,start,end,startPos,endPos,forceSnap);
+            float yDisplacement = ComputeDisplacement(t, affectedVertex, start, end, _startPos, _endPos, _snap);
             // Move the vertex accordingly 
-            var action = new MovePointAlongYAxisAction(affectedVertex,yDisplacement);
+            var action = new MovePointAlongYAxisAction(affectedVertex, yDisplacement);
             action.Apply(t);
         }
 
-        return edgeIdx;
+        return _edgeIdx;
     }
 
     private float ComputeDisplacement(Triangulation triangulation,
@@ -69,18 +85,26 @@ public class DisplaceEdgeAlongYAxis(
         var posE = triangulation.Vertices[end];
         var pVec = new Vector2(posP.X - posS.X, posP.Z - posS.Z);
         var edge = new Vector2(posE.X - posS.X, posE.Z - posS.Z);
-        var w = pVec.Length()/edge.Length();
-
+        var w = pVec.Length() / edge.Length();
+        bool isBorderVtx = w == 0f || Math.Abs(w - 1f) < 1e-5;
+        var initDiff = posP.Y - (posE.Y - posS.Y) * w;
         float height;
-        if (snapMode is SnapMode.IgnoreActionOnSubEdges or SnapMode.SnapOnEdge)
+        if (snapMode == SnapMode.SnapOnEdge)
         {
-            height  = startPos + (endPos - startPos) * w; 
+            height = startPos + (endPos - startPos) * w;
+        }
+        else if (snapMode == SnapMode.IgnoreSubEdges)
+        {
+            height = isBorderVtx ? startPos + (endPos - startPos) * w : posP.Y;
+        }
+        else if (snapMode == SnapMode.PreserveSubVertexDistances)
+        {
+            height = startPos + (endPos - startPos) * w + (isBorderVtx ? 0 : initDiff);
         }
         else
         {
-            height = posP.Y + (endPos - startPos) * w;
+            throw new InvalidOperationException();
         }
-
         return height;
     }
 }
@@ -93,17 +117,18 @@ public enum SnapMode
     /// <summary>
     /// The edge displacement is only applied on the first and last vertices of the Edge.
     /// </summary>
-    IgnoreActionOnSubEdges,
+    IgnoreSubEdges,
+
     /// <summary>
     /// The displacement is applied on all sub vertices of the Edge.
     /// For intermediary vertices, the displacement height is "snapped" to the height of the segment
     /// created by the displaced extrema vertices .
     /// </summary>
     SnapOnEdge,
+
     /// <summary>
     /// The displacement is applied on all sub vertices of the Edge.
-    /// For intermediary vertices, the displacement height is weighted by the barycentric coordinates of the
-    /// vertex in the segment created by the displaced extrema vertices.
+    /// For intermediary vertices, the distance to the edge is preserved.
     /// </summary>
-    WeightedMove
+    PreserveSubVertexDistances
 }

@@ -52,14 +52,18 @@ public class AddTriangleFan : DelegatedTriangulationEditAction<int>
                 eIdx));
         }
 
-        //Register a new point
-        int newIdx = t.Vertices.Count;
-        t.Vertices.Add(newIdx, _pos);
-        t.ReverseVertices.Add(_pos, newIdx);
+        if (!t.ReverseVertices.TryGetValue(_pos, out var newIdx))
+        {
+            //Register a new point
+             newIdx = t.Vertices.Count;
+            t.Vertices.Add(newIdx, _pos);
+            t.ReverseVertices.Add(_pos, newIdx);
+        }
+
 
         //Register the new edges
-        t.SubEdges.Add((sIdx, newIdx), 1);
-        t.SubEdges.Add((newIdx, eIdx), 1);
+        t.SubEdges.TryAdd((sIdx, newIdx), 1);
+        t.SubEdges.TryAdd((newIdx, eIdx), 1);
         //Update the edge counter of the initial edge
         t.SubEdges[(sIdx, eIdx)]++;
 

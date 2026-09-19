@@ -42,9 +42,9 @@ public class SplitEdgeAction : DelegatedTriangulationEditAction<int>
         _endIdx = endIdx;
         _weight = weight;
 
-        if (_weight is < 0 or > 1)
+        if (_weight is <= 0 or >= 1)
         {
-            throw new ArgumentException("Weight must be between 0 and 1 (included).");
+            throw new ArgumentException("Weight must strictly be between 0 and 1.");
         }
 
         if (_edgeIdx is < 0 or > 2)
@@ -78,7 +78,13 @@ public class SplitEdgeAction : DelegatedTriangulationEditAction<int>
         
         if (subEdgeIdx == -1)
         {
-            throw new Exception("The edge to split does not exist.");
+            throw new InvalidOperationException("The sub edge to split does not exist.");
+        }
+
+        if (!t.Edges[_edgeIdx].Contains(subEdgeIdx))
+        {
+            throw new InvalidOperationException(String.Format("The split SubEdge {0} does not belong to the split Edge {1}.",subEdgeIdx,_edgeIdx));
+
         }
 
         //Find affected triangles list 
@@ -130,17 +136,18 @@ public class SplitEdgeAction : DelegatedTriangulationEditAction<int>
                 }
                 else
                 {
-                    //register the edge removal and the indexes. We do not remove them in the loop to preserve the
-                    // SubEdges indexing
-                    editedSubEdges.Add(removedEdge, new Tuple<int, int?>(t.SubEdges.IndexOf(removedEdge), null));
+                    //register the edge removal and the indexes.
+                    //We actually "remove" the SubEdges now by setting it to -1, this is done to preserve indexing order
+                    // in the SubEdges dictionary.
+                    var removedIdx = t.SubEdges.IndexOf(removedEdge);
+                    editedSubEdges.Add(removedEdge, new Tuple<int, int?>(removedIdx, null));
+                    t.SubEdges.SetAt(removedIdx,-1);
+
                 }
             }
 
-            //We actually remove the SubEdges now
-            foreach (var removedSubEdge in editedSubEdges)
-            {
-                t.SubEdges.Remove(removedSubEdge.Key);
-            }
+            //We actually "remove" the SubEdges now by setting it to -1, this is done to preserve indexing
+
 
             // Add the new point defined by the barycentric weight
             Vector3 newVertex = t.Vertices[_startIdx].Lerp(t.Vertices[_endIdx], _weight);
@@ -202,22 +209,22 @@ public class SplitEdgeAction : DelegatedTriangulationEditAction<int>
             }
 
 
-            //We edit the Edges list for the edge that was split 
-            var subEdgeList = t.Edges[_edgeIdx];
-            var firstSubEdge = t.SubEdges.IndexOf((startIdx: _startIdx, idx));
-            var secondSubEdge = t.SubEdges.IndexOf((idx, endIdx: _endIdx));
-            if (firstSubEdge == -1 || secondSubEdge == -1)
-            {
-                throw new Exception("Bad state");
-            }
 
-            var node = subEdgeList.Find(subEdgeIdx);
-
-            subEdgeList.AddAfter(node ?? throw new InvalidOperationException(), secondSubEdge);
-            subEdgeList.AddAfter(node, firstSubEdge);
-            subEdgeList.Remove(node);
+        }
+        //We edit the Edges list for the edge that was split 
+        var subEdgeList = t.Edges[_edgeIdx];
+        var firstSubEdge = t.SubEdges.IndexOf((startIdx: _startIdx, idx));
+        var secondSubEdge = t.SubEdges.IndexOf((idx, endIdx: _endIdx));
+        if (firstSubEdge == -1 || secondSubEdge == -1)
+        {
+            throw new Exception("Bad state");
         }
 
+        var node = subEdgeList.Find(subEdgeIdx);
+
+        subEdgeList.AddAfter(node ?? throw new InvalidOperationException(), secondSubEdge);
+        subEdgeList.AddAfter(node, firstSubEdge);
+        subEdgeList.Remove(node);
         return idx;
     }
 }

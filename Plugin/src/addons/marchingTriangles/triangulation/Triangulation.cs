@@ -24,7 +24,7 @@ public class Triangulation
     /// Vertex dictionary.
     /// </summary>
     internal readonly Dictionary<int, Vector3> Vertices = new();
-    
+
     /// <summary>
     /// Vertex reverse lookup dictionary.
     /// </summary>
@@ -34,7 +34,7 @@ public class Triangulation
     /// (Vertex)index based representation of the triangulation. 
     /// </summary>
     internal readonly Dictionary<int, List<int>> TrianglesByVertices = new();
-    
+
     /// <summary>
     /// Array representing each of the edges of the manifold.
     /// This representation relies on the sub-Edges.
@@ -59,8 +59,9 @@ public class Triangulation
     private readonly bool _verbose;
     private readonly bool _extensiveVerification;
 
-    
-    public Triangulation(Vector3[] triangle, bool verbose=false, bool extensiveVerification=false,Dictionary<string,object>?additionalHints = null)
+
+    public Triangulation(Vector3[] triangle, bool verbose = false, bool extensiveVerification = false,
+        Dictionary<string, object>? additionalHints = null)
     {
         if (triangle.Length != 3)
         {
@@ -69,10 +70,11 @@ public class Triangulation
 
         if (HexTerrainCell.GetSignedArea(triangle) == 0)
         {
-            throw new ArgumentException("The projection of the input triangle on the xOz plane is a degenerated triangle." +
-                                        " This is not supported" , nameof(triangle));
-
+            throw new ArgumentException(
+                "The projection of the input triangle on the xOz plane is a degenerated triangle." +
+                " This is not supported", nameof(triangle));
         }
+
         SourceTriangle = [.. triangle];
         _additionalHints = additionalHints;
         _verbose = verbose;
@@ -130,7 +132,8 @@ public class Triangulation
         {
             return;
         }
-        Console.WriteLine(">> Debug Triangulation "+title);
+
+        Console.WriteLine(">> Debug Triangulation " + title);
         Console.WriteLine("Triangles : " + TrianglesByVertices.Count);
 
         foreach (var triAsVertList in TrianglesByVertices)
@@ -138,7 +141,8 @@ public class Triangulation
             var triEdges = triAsVertList.Value.Select(key => SubEdges.IndexOf((
                 key,
                 triAsVertList.Value[(triAsVertList.Value.IndexOf(key) + 1) % 3]))).ToList();
-            Console.WriteLine("T[" + triAsVertList.Key + "] " + "Points : " + String.Join(",", triAsVertList.Value)+ " | Implicitly defined Edges : " + String.Join(",", triEdges));
+            Console.WriteLine("T[" + triAsVertList.Key + "] " + "Points : " + String.Join(",", triAsVertList.Value) +
+                              " | Implicitly defined Edges : " + String.Join(",", triEdges));
         }
 
         var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedTupleComparer.Instance);
@@ -157,48 +161,63 @@ public class Triangulation
 
         for (var i = 0; i < TrianglesByVertices.Count; i++)
         {
-            
             var edgeBorderFlags = TrianglesByVertices[i].Select(key => (
                     key,
                     TrianglesByVertices[i][(TrianglesByVertices[i].IndexOf(key) + 1) % 3]))
                 .Select(e => edgeDico[e] != 2)
                 .ToArray();
-            Console.WriteLine("T[" + i + "] " + "IsEdgeBorder : " + string.Join(",",edgeBorderFlags));
-
+            Console.WriteLine("T[" + i + "] " + "IsEdgeBorder : " + string.Join(",", edgeBorderFlags));
         }
-        
-        Console.WriteLine("Edges : " + SubEdges.Count);
+
+        Console.WriteLine("SubEdges : " + SubEdges.Count);
         foreach (var edge in SubEdges)
         {
-            Console.WriteLine("Edge[" + SubEdges.IndexOf(edge.Key) + "] " + edge.Key + " used "+edge.Value + " times." );
+            Console.WriteLine("SubEdge[" + SubEdges.IndexOf(edge.Key) + "] " + edge.Key + " used " + edge.Value +
+                              " times.");
         }
 
+        for (int i = 0; i < 3; i++)
+        {
+            Console.WriteLine("Edge " + i + "  : [" + String.Join(",", Edges[i])+ "]");
+        }
     }
 
     public void EnsureIntegrity(bool forceChecks = false)
     {
         if (forceChecks || _extensiveVerification)
-        { DoExtensiveChecksOnTriangulation(); }
+        {
+            try
+            {
+                DoExtensiveChecksOnTriangulation();
+            }
+            catch (Exception e)
+            {
+                Debug("Exception Caught : " + e.Message);
+                throw;
+            }
+        }
     }
 
     private void DoExtensiveChecksOnTriangulation()
     {
         //Ensure the convex hull wasn't affected
         var area = HexTerrainCell.GetSignedArea([.. SourceTriangle]);
-        var sumOfTrianglesArea  =  TrianglesByVertices.Sum(
-            kvp => HexTerrainCell.GetSignedArea([.. kvp.Value.Select(i => Vertices[i])]));
+        var sumOfTrianglesArea =
+            TrianglesByVertices.Sum(kvp => HexTerrainCell.GetSignedArea([.. kvp.Value.Select(i => Vertices[i])]));
         if (Math.Abs(area - sumOfTrianglesArea) > 1e-5)
         {
             throw new Exception("The last action affected the convex hull area !!");
         }
+
         //Check edge continuity
         for (int i = 0; i < 3; i++)
         {
             var firstSubEdge = Edges[i].First!.Value;
             var lastSubEdgeOfPrevEdge = Edges[mod(i - 1, 3)].Last!.Value;
 
-            if (SubEdges.ElementAt(firstSubEdge).Key.Item1 != SubEdges.ElementAt(lastSubEdgeOfPrevEdge).Key.Item2) 
-                throw new Exception(string.Format("Continuity Error between border edges {0} and {1}",mod(i - 1, 3),i));
+            if (SubEdges.ElementAt(firstSubEdge).Key.Item1 != SubEdges.ElementAt(lastSubEdgeOfPrevEdge).Key.Item2)
+                throw new Exception(
+                    string.Format("Continuity Error between border edges {0} and {1}", mod(i - 1, 3), i));
 
             //Check sub edge border continuity
             var enumerator = Edges[i].GetEnumerator();
@@ -211,11 +230,13 @@ public class Triangulation
                     var nextSubEdge = enumerator.Current;
                     if (SubEdges.ElementAt(subEdge).Key.Item2 != SubEdges.ElementAt(nextSubEdge).Key.Item1)
                     {
-                        throw new Exception(string.Format("Continuity Error between border sub edges {0} and {1}",subEdge,nextSubEdge));
+                        throw new Exception(string.Format("Continuity Error between border sub edges {0} and {1}",
+                            subEdge, nextSubEdge));
                     }
                 }
             }
         }
+
         // Check vertex dictionaries
         if (Vertices.Count != ReverseVertices.Count)
         {
