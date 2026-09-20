@@ -4,7 +4,7 @@ using Godot;
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
 /// <summary>
-/// Action that Displaces a triangulation's vertex along the Y axis to a provided .
+/// Action that Displaces a triangulation's vertex along the Y axis to a provided height.
 /// </summary>
 public class MovePointAlongYAxisAction : DelegatedTriangulationEditAction<int>
 {

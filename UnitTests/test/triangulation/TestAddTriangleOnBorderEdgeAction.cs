@@ -23,12 +23,12 @@ public class TestAddTriangleOnBorderEdgeAction
     {
         Assert.DoesNotThrow(() =>
         {
-            var action = new AddTriangleOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
+            var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
         });
 
         var e = Assert.Throws<ArgumentOutOfRangeException>(() =>
         {
-            var action = new AddTriangleOnBorderEdge(-1, new Vector3(A.X, A.Y + 10, A.Z));
+            var action = new AddTrianglesOnBorderEdge(-1, new Vector3(A.X, A.Y + 10, A.Z));
         });
         Assert.That(e, Has.Message.Contains("Should have a value between 0 and 2"));
     }
@@ -40,7 +40,7 @@ public class TestAddTriangleOnBorderEdgeAction
 
         Assert.DoesNotThrow(() =>
         {
-            var action = new AddTriangleOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
+            var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
             action.Apply(t);
         });
 
@@ -49,7 +49,7 @@ public class TestAddTriangleOnBorderEdgeAction
         //Invalid edge
         var e = Assert.Throws<ArgumentOutOfRangeException>(() =>
         {
-            var action = new AddTriangleOnBorderEdge(-1, new Vector3(A.X, A.Y + 10, A.Z));
+            var action = new AddTrianglesOnBorderEdge(-1, new Vector3(A.X, A.Y + 10, A.Z));
         });
         Assert.That(e, Has.Message.Contains("Should have a value between 0 and 2"));
     }
@@ -62,7 +62,7 @@ public class TestAddTriangleOnBorderEdgeAction
         Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(2));
         Assert.DoesNotThrow(() =>
         {
-            var action = new AddTriangleOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
+            var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
             action.Apply(t);
         });
         Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(4));
@@ -75,22 +75,39 @@ public class TestAddTriangleOnBorderEdgeAction
         {
             for (int i = 0; i < 3; i++)
             {
-                var action = new AddTriangleOnBorderEdge(i, new Vector3(tri[i].X, tri[i].Y + 10, tri[i].Z));
+                var action = new AddTrianglesOnBorderEdge(i, new Vector3(tri[i].X, tri[i].Y + 10, tri[i].Z));
                 action.Apply(t);
             }
         });
+        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(4));
+
     }
 
     [Test]
-    public void TestCannotApplyAddTriangleActionTwice()
+    public void TestCannotApplyAddSameTriangleActionTwice()
     {
         var e = Assert.Throws<InvalidOperationException>(() =>
         {
-            var action = new AddTriangleOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
+            var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
             action.Apply(t);
-            action = new AddTriangleOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
+            action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
             action.Apply(t);
         });
         Assert.That(e, Has.Message.Contains("The triangulation already contains this point"));
+    }
+    [Test]
+    public void TestCanApplyAddDiffTriangleActionTwice()
+    {
+        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
+
+        Assert.DoesNotThrow(() =>
+        {
+            var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
+            action.Apply(t);
+            action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 20, A.Z));
+            action.Apply(t);
+        });
+        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(4));
+
     }
 }

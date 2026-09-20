@@ -127,7 +127,7 @@ public class TestSplitEdge
     [Test]
     public void TestCanApplySplitEdgeOnTriangleWithFan()
     {
-        var action = new AddTriangleOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
+        var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
         action.Apply(t);
 
         Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(2));
