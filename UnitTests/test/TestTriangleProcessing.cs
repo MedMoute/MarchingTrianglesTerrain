@@ -92,10 +92,13 @@ public class TestTriangleProcessing
         [Values(
             GeometryMode.FlatHexagons,
             GeometryMode.FlatTriangles,
-            GeometryMode.SmoothLinear, GeometryMode.Foothill, GeometryMode.Plateau, GeometryMode.BendingEdge)]
+            GeometryMode.SmoothLinear,
+            GeometryMode.Foothill,
+            GeometryMode.Plateau,
+            GeometryMode.BendingEdge)]
         GeometryMode geometryModeFallback,
-        //Mask values are 0,2,5,7 because we always have equal side mask values inside a cell
-        [Values(0, 7)] int mask)
+        //Mask values are 0,1,2,7 because we always have equal side mask values inside a cell
+        [Values(0,1,2,3,4,5,6,7)] int mask)
     {
         //SETUP
         // 
@@ -289,7 +292,24 @@ public class TestTriangleProcessing
     }
 
     [Test]
-    public void TestProcessingOfSingleCell()
+    public void TestProcessingOfSingleCell([Values(
+            GeometryMode.FlatHexagons,
+            GeometryMode.FlatTriangles,
+            GeometryMode.SmoothLinear,
+            GeometryMode.Foothill,
+            GeometryMode.Plateau,
+            GeometryMode.BendingEdge)]
+        GeometryMode geometryMode,
+        [Values(
+            GeometryMode.FlatHexagons,
+            GeometryMode.FlatTriangles,
+            GeometryMode.SmoothLinear,
+            GeometryMode.Foothill,
+            GeometryMode.Plateau,
+            GeometryMode.BendingEdge)]
+        GeometryMode geometryModeFallback,
+        //Mask values are 0,2,5,7 because we always have equal side mask values inside a cell
+        [Values(0, 2,5,7)] int mask)
     {
         HexTerrainCell.A = (float)0.5;
         HexTerrainCell.Theta = 0;
@@ -313,7 +333,7 @@ public class TestTriangleProcessing
 
         // TODO : PARAMETER
         cell.GeometryModesOverride = new Tuple<GeometryMode, GeometryMode>(
-            GeometryMode.FlatHexagons, GeometryMode.FlatHexagons);
+            geometryMode, geometryModeFallback);
         var data = cell.ExtractDataFromCell();
 
 
@@ -373,7 +393,7 @@ public class TestTriangleProcessing
             HexTerrainCell.ProcessTriangle(
                 cell,
                 tri,
-                HexTerrainCell.ComputeEdgeGeometryMode(i, mask.Value, cell.GeometryModesOverride), hints);
+                HexTerrainCell.ComputeEdgeGeometryMode(mask.Value, cell.GeometryModesOverride), hints);
         return trianglesWithWallEdges;
     }
 
@@ -568,12 +588,19 @@ public class TestTriangleProcessing
             borderEdgesAsSets,
             manifoldBorderEdgesAsSets) = ReprocessEdgeGeometry(res);
 
-
-
+        // This check ensures the border is bounded
         foreach (var kvp in dico)
         {
             Assert.That(
-                kvp.Value == 2 //inner edge
+                EngineUtils.mod(kvp.Value,2)==0 //inner edges 
+                || kvp.Value == 1 && borderEdgesAsSets.Contains(kvp.Key, new FloatArrayComparer(1e-5)) //border edge
+                , Is.True);
+        }
+        // This check ensures the surface is a 2 manifold
+        foreach (var kvp in dico)
+        {
+            Assert.That(
+                kvp.Value==2 //inner edges are used once
                 || kvp.Value == 1 && borderEdgesAsSets.Contains(kvp.Key, new FloatArrayComparer(1e-5)) //border edge
                 , Is.True);
         }

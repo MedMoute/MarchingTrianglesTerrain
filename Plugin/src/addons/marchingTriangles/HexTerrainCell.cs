@@ -240,7 +240,7 @@ public class HexTerrainCell
             TerrainToolPluginHelper.FormatVector2(CenterPosition));
     }
 
-    private void DoMarchingTrianglesV2(List<TriangleInfo> processedTriangles, GdPluginHexTerrainChunk chunk)
+    private void UpdateChunkMesh(List<TriangleInfo> processedTriangles, GdPluginHexTerrainChunk chunk)
     {
         ProcessTrianglesIntoPoints(processedTriangles, chunk);
         chunk.ProcessPointsIntoMeshTriangles(this);
@@ -283,7 +283,7 @@ public class HexTerrainCell
         }
     }
 
-    private List<TriangleInfo> ProcessCellGeometry(
+    public List<TriangleInfo> ProcessCellGeometry(
         Dictionary<Vector2D, float> dataArray,
         HexagonalTerrainChunk chunk)
     {
@@ -294,7 +294,7 @@ public class HexTerrainCell
         for (var i = 0; i < 6; i++)
         {
             var (tri, mask) = ComputeTriangleAndMask(i, dataArray, chunk);
-            Func<int, GeometryMode> computeGeometryMode = ComputeEdgeGeometryMode(i, mask, effectiveGeometryMode);
+            Func<int, GeometryMode> computeGeometryMode = ComputeEdgeGeometryMode(mask, effectiveGeometryMode);
             Dictionary<string, object> hints = new()
             {
                 [AverageHeightHint] = AverageHeight,
@@ -304,17 +304,15 @@ public class HexTerrainCell
                     GetVertexData!(mod(i + 1, VertexCount)),
                     (float)VertexPositionsInPlane[mod(i + 1, VertexCount)].Y)
             };
-
-            triangles.AddRange(ProcessTriangle(this, tri, computeGeometryMode, hints));
+            var output = ProcessTriangle(this, tri, computeGeometryMode, hints);
+            triangles.AddRange(output);
         }
 
         return triangles;
     }
 
-    public static Func<int, GeometryMode> ComputeEdgeGeometryMode(
-        int triangleIdx,
-        int mask,
-        Tuple<GeometryMode, GeometryMode> cellGeometryBehaviour)
+    public static Func<int, GeometryMode> ComputeEdgeGeometryMode(int mask,
+        Tuple<GeometryMode, GeometryMode>? cellGeometryBehaviour)
     {
         if (cellGeometryBehaviour == null)
         {
@@ -350,7 +348,7 @@ public class HexTerrainCell
         for (var i = 0; i <= 2; i++)
         {
             var algo = cellGeometryBehaviour.Invoke(i);
-
+            Console.WriteLine($"Processing Edge {i} : Algorithm {algo}");
             triangulation.TriangleEdgeActions.ProcessTriangleEdge(i,
                 triangles,
                 algo);
@@ -440,7 +438,8 @@ public class HexTerrainCell
         return tempHexagonData;
     }
 
-    private void DoMarchingTrianglesOnFullCell(Dictionary<Vector2D, float> tempHexagonData,
+    private void DoMarchingTrianglesOnFullCell(
+        Dictionary<Vector2D, float> tempHexagonData,
         GdPluginHexTerrainChunk chunk)
     {
         if (tempHexagonData.Count != 6)
@@ -450,7 +449,7 @@ public class HexTerrainCell
         }
 
         List<TriangleInfo> triangles = ProcessCellGeometry(tempHexagonData, chunk.Underlying);
-        DoMarchingTrianglesV2(triangles, chunk);
+        UpdateChunkMesh(triangles, chunk);
     }
 }
 

@@ -49,23 +49,38 @@ internal static class TriangleEdgeActions
             // If right inner edge (edgeIdx =2) add fans to the level of the next triangle , hinted in the dictionary
             case 2:
             {
+                //Vertex 2 at nextTriLevel
                 var pos1 = new Vector3(
                     triangles.SourceTriangle[edgeIdx].X,
                     nextTriLevel,
                     triangles.SourceTriangle[edgeIdx].Z);
-                
+                //Vertex 0 at nextTriLevel
                 var pos2 = new Vector3(
-                    triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, (int)3)].X,
+                    triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)].X,
                     nextTriLevel,
-                    triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, (int)3)].Z);
+                    triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)].Z);
 
                 var newPoint = new AddTrianglesOnBorderEdge(edgeIdx, pos1).Apply(triangles);
                 new AddTrianglesOnBorderEdge(edgeIdx, pos2).Apply(triangles);
-                var hstart = Math.Abs(triangles.SourceTriangle[edgeIdx].Y - nextTriLevel);
-                var hend = Math.Abs(nextTriVertex.Y - nextTriLevel);
+                
+                //split the edge at the h=nexTriLevel junction to make a sure the mesh is conformal
+                if (Math.Abs(setLevel - nextTriLevel) > 1e-5) //  No height changes => skip 
+                {
+                    //TODO handle the different cases(h_v<nh<h ; h_v<h<nh ; h<h_v<nh )
+                    var pos1Idx = triangles.ReverseVertices[pos1];
+                    //Vertex 2 at setLevel
+                    var pos3 = new Vector3(
+                        triangles.SourceTriangle[edgeIdx].X,
+                        setLevel,
+                        triangles.SourceTriangle[edgeIdx].Z);
+                    var pos3Idx = triangles.ReverseVertices[pos3];
+                    //The penultimate vertex of edge#1
+                    int pos4Idx=triangles.Edges[EngineUtils.mod(edgeIdx-1,3)].Last.Previous.Value;
+                    var pos4 = triangles.Vertices[pos4Idx];
+                    new AddTriangleFan((pos1Idx, pos3Idx), pos4).Apply(triangles);
+                    new AddTriangleFan((pos1Idx, pos3Idx), pos4).Apply(triangles);
 
-                var pos3 = triangles.SourceTriangle[edgeIdx].Lerp(nextTriVertex, hstart / (hstart + hend));
-                new AddTriangleFan((edgeIdx, newPoint), pos3).Apply(triangles);
+                }
             }
                 break;
         }
@@ -84,8 +99,16 @@ internal static class TriangleEdgeActions
             setLevel >= triangles.SourceTriangle[edgeIdx].Y &&
             setLevel >= triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)].Y)
         {
-            new AddTrianglesOnBorderEdge(edgeIdx, triangles.SourceTriangle[edgeIdx]).Apply(triangles);
-            new AddTrianglesOnBorderEdge(edgeIdx, triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)]).Apply(triangles);
+            if (Math.Abs(triangles.SourceTriangle[edgeIdx].Y - setLevel) > 1e-5)
+            {
+                new AddTrianglesOnBorderEdge(edgeIdx, triangles.SourceTriangle[edgeIdx]).Apply(triangles);
+            }
+
+            if (Math.Abs(triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)].Y - setLevel) > 1e-5)
+            {
+                new AddTrianglesOnBorderEdge(edgeIdx, triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)])
+                    .Apply(triangles);
+            }
         }
         else
         {

@@ -58,7 +58,7 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// The dual grid used for data representation.
     /// </summary>
-    protected internal HexagonGrid _terrainDualGrid;
+    public HexagonGrid _terrainDualGrid;
 
 
     /// <summary>
@@ -87,7 +87,7 @@ public class HexagonalTerrainChunk
     /// </summary>
     public float MergeThreshold { get; set; }
 
-    public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes = new(GeometryMode.SmoothLinear,GeometryMode.SmoothLinear);
+    public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes = new(GeometryMode.FlatHexagons,GeometryMode.FlatHexagons);
     public float DefaultGeometryParam0;
     public float DefaultGeometryParam1;
 
@@ -114,8 +114,8 @@ public class HexagonalTerrainChunk
     public HexagonalTerrainChunk(Vector2I chunkCoordinates,
         Vector2I dimension,
         Func<Vector2I, HexagonalTerrainChunk> neighboringChunkDataHandle,
-        float[][] dataSource = null,
-        float[][] dataSource2 = null)
+        float[][]? dataSource = null,
+        float[][]? dataSource2 = null)
     {
         Coordinates = chunkCoordinates;
         Dimensions2D = dimension;
