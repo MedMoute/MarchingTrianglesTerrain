@@ -1,5 +1,6 @@
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
 using NUnit.Framework.Internal;
 

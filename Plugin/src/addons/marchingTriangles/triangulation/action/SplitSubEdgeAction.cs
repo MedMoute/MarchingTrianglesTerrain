@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using Godot;
 using Godot.Collections;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;

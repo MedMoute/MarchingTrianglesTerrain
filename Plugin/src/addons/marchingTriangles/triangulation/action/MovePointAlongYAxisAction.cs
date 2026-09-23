@@ -1,5 +1,6 @@
 using System;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
