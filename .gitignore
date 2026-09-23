@@ -15,6 +15,8 @@ obj/
 ### Godot ###
 # Godot 4+ specific ignores
 .godot/
+# CS source files impor ids
+*.cs.uid
 
 # Godot-specific ignores
 .import/
