@@ -84,16 +84,19 @@ public class TestAddTriangleOnBorderEdgeAction
     }
 
     [Test]
-    public void TestCannotApplyAddSameTriangleActionTwice()
+    public void TestCanApplyAddSameTriangleActionTwiceAsNoop()
     {
-        var e = Assert.Throws<InvalidOperationException>(() =>
+        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
+
+       Assert.DoesNotThrow(() =>
         {
             var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
             action.Apply(t);
             action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
             action.Apply(t);
         });
-        Assert.That(e, Has.Message.Contains("The triangulation already contains this point"));
+        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(2));
+
     }
     [Test]
     public void TestCanApplyAddDiffTriangleActionTwice()
@@ -107,7 +110,7 @@ public class TestAddTriangleOnBorderEdgeAction
             action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 20, A.Z));
             action.Apply(t);
         });
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(4));
+        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(3));
 
     }
 }

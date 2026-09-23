@@ -60,7 +60,7 @@ public class TestMovePointAction
         // No new triangle
         Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
         Assert.That(t.ToTriangleInfoList()[0].Points[eIdx].Y, Is.EqualTo(100));
-        Assert.That(t.ToTriangleInfoList()[0].edgeBorderFlags, Has.All.True);
+        Assert.That(t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.All.True);
     }
 
     [Test]
@@ -79,7 +79,7 @@ public class TestMovePointAction
         // No new triangle
         Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
         Assert.That(t.ToTriangleInfoList()[0].Points[eIdx].Y, Is.EqualTo(200));
-        Assert.That(t.ToTriangleInfoList()[0].edgeBorderFlags, Has.All.True);
+        Assert.That(t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.All.True);
     }
 
     [Test]
@@ -96,7 +96,7 @@ public class TestMovePointAction
             Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
             Assert.That(t.ToTriangleInfoList()[0].Points[eIdx],
                 Is.EqualTo(new Vector3(tri[eIdx].X, eIdx * 10, tri[eIdx].Z)));
-            Assert.That(t.ToTriangleInfoList()[0].edgeBorderFlags, Has.All.True);
+            Assert.That(t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.All.True);
         }
     }
 }

@@ -54,13 +54,16 @@ public class Triangulation
     /// </summary>
     internal ImmutableArray<Vector3> SourceTriangle;
 
-    private Dictionary<string, object>? _additionalHints;
+    internal Dictionary<string, object>? _additionalHints;
 
     private readonly bool _verbose;
     private readonly bool _extensiveVerification;
 
 
-    public Triangulation(Vector3[] triangle, bool verbose = false, bool extensiveVerification = false,
+    public Triangulation(
+        Vector3[] triangle,
+        bool verbose = false,
+        bool extensiveVerification = false,
         Dictionary<string, object>? additionalHints = null)
     {
         if (triangle.Length != 3)
@@ -96,8 +99,9 @@ public class Triangulation
     public List<HexTerrainCell.TriangleInfo> ToTriangleInfoList()
     {
         var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedTupleComparer.Instance);
-        for (int j = 0; j < TrianglesByVertices.Count; j++)
+        foreach (var valueTuple in TrianglesByVertices.Index())
         {
+            var j = valueTuple.Item.Key;
             for (int k = 0; k < 3; k++)
             {
                 edgeDico.TryAdd(
@@ -110,12 +114,13 @@ public class Triangulation
         }
 
         List<HexTerrainCell.TriangleInfo> result = [];
-        for (int i = 0; i < TrianglesByVertices.Count; i++)
+        foreach (var valueTuple in TrianglesByVertices.Index())
         {
+            var i = valueTuple.Item.Key;
             var x = new HexTerrainCell.TriangleInfo
             {
                 Points = [.. TrianglesByVertices[i].Select(key => Vertices[key])],
-                edgeBorderFlags = TrianglesByVertices[i].Select(key => (
+                EdgeBorderFlags = TrianglesByVertices[i].Select(key => (
                         key,
                         TrianglesByVertices[i][(TrianglesByVertices[i].IndexOf(key) + 1) % 3]))
                     .Select(e => edgeDico[e] != 2).ToArray()
@@ -126,9 +131,9 @@ public class Triangulation
         return result;
     }
 
-    public void Debug(string title = "")
+    public void Debug(string title = "",bool forcePrint = false) 
     {
-        if (!_verbose)
+        if (!forcePrint && !_verbose)
         {
             return;
         }
@@ -146,8 +151,9 @@ public class Triangulation
         }
 
         var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedTupleComparer.Instance);
-        for (var j = 0; j < TrianglesByVertices.Count; j++)
+        foreach (var valueTuple in TrianglesByVertices.Index())
         {
+            var j = valueTuple.Item.Key;
             for (var k = 0; k < 3; k++)
             {
                 edgeDico.TryAdd(
@@ -159,8 +165,9 @@ public class Triangulation
             }
         }
 
-        for (var i = 0; i < TrianglesByVertices.Count; i++)
+        foreach (var valueTuple in TrianglesByVertices.Index())
         {
+            var i = valueTuple.Item.Key;
             var edgeBorderFlags = TrianglesByVertices[i].Select(key => (
                     key,
                     TrianglesByVertices[i][(TrianglesByVertices[i].IndexOf(key) + 1) % 3]))
@@ -180,21 +187,27 @@ public class Triangulation
         {
             Console.WriteLine("Edge " + i + "  : [" + String.Join(",", Edges[i])+ "]");
         }
+        Console.WriteLine("Triangles : " + TrianglesByVertices.Count);
+
+        foreach (var kvp in Vertices)
+        {
+            Console.WriteLine("Vertex " + kvp.Key + "  : "+kvp.Value);
+        }
     }
 
     public void EnsureIntegrity(bool forceChecks = false)
     {
         if (forceChecks || _extensiveVerification)
         {
-            try
-            {
+            // try
+            // {
                 DoExtensiveChecksOnTriangulation();
-            }
-            catch (Exception e)
-            {
-                Debug("Exception Caught : " + e.Message);
-                throw;
-            }
+            // }
+            // catch (Exception e)
+            // {
+            //     Debug("Exception Caught during Integrity checks : " + e.Message);
+            //     throw;
+            // }
         }
     }
 
@@ -222,13 +235,25 @@ public class Triangulation
             //Check sub edge border continuity
             var enumerator = Edges[i].GetEnumerator();
             enumerator.MoveNext();
+            bool flippedOrdering=false;
             for (int j = 0; j < Edges.Length; j++)
             {
                 var subEdge = enumerator.Current;
                 if (enumerator.MoveNext())
                 {
                     var nextSubEdge = enumerator.Current;
-                    if (SubEdges.ElementAt(subEdge).Key.Item2 != SubEdges.ElementAt(nextSubEdge).Key.Item1)
+                    if ((flippedOrdering 
+                            ? SubEdges.ElementAt(subEdge).Key.Item1 :
+                            SubEdges.ElementAt(subEdge).Key.Item2) == SubEdges.ElementAt(nextSubEdge).Key.Item1)
+                    {
+                        flippedOrdering = false;
+                    } else if ((flippedOrdering
+                                   ? SubEdges.ElementAt(subEdge).Key.Item1
+                                   : SubEdges.ElementAt(subEdge).Key.Item2) ==
+                               SubEdges.ElementAt(nextSubEdge).Key.Item2)
+                    {
+                        flippedOrdering = true;
+                    } else
                     {
                         throw new Exception(string.Format("Continuity Error between border sub edges {0} and {1}",
                             subEdge, nextSubEdge));

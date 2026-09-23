@@ -95,8 +95,8 @@ public class TestSplitEdge
         Assert.That(t.ToTriangleInfoList()[0].Points, Has.One.EqualTo(expectedSplitPoint));
         Assert.That(t.ToTriangleInfoList()[1].Points, Has.One.EqualTo(expectedSplitPoint));
 
-        Assert.That(t.ToTriangleInfoList()[0].edgeBorderFlags, Has.Exactly(2).True);
-        Assert.That(t.ToTriangleInfoList()[1].edgeBorderFlags, Has.Exactly(2).True);
+        Assert.That(t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.Exactly(2).True);
+        Assert.That(t.ToTriangleInfoList()[1].EdgeBorderFlags, Has.Exactly(2).True);
     }
 
     [Test]
@@ -119,9 +119,9 @@ public class TestSplitEdge
         Assert.That(t.ToTriangleInfoList()[1].Points, Has.One.EqualTo(expectedSplitPoint_1));
         Assert.That(t.ToTriangleInfoList()[2].Points, Has.One.EqualTo(expectedSplitPoint_1));
 
-        Assert.That(t.ToTriangleInfoList()[0].edgeBorderFlags, Has.Exactly(2).True);
-        Assert.That(t.ToTriangleInfoList()[1].edgeBorderFlags, Has.One.True);
-        Assert.That(t.ToTriangleInfoList()[2].edgeBorderFlags, Has.Exactly(2).True);
+        Assert.That(t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.Exactly(2).True);
+        Assert.That(t.ToTriangleInfoList()[1].EdgeBorderFlags, Has.One.True);
+        Assert.That(t.ToTriangleInfoList()[2].EdgeBorderFlags, Has.Exactly(2).True);
     }
     
     [Test]

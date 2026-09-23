@@ -69,6 +69,7 @@ public class SplitEdgeAction : DelegatedTriangulationEditAction<int>
 
     protected override int DoApply(Triangulation t)
     {
+        Console.WriteLine($"Split {_startIdx} => {_endIdx} @{_weight}");
         var subEdgeIdx = t.SubEdges.IndexOf((startIdx: _startIdx, endIdx: _endIdx));
         //Register a dictionary of the edited edges with their initial positions and their edited positions
         var editedSubEdges =
@@ -137,11 +138,11 @@ public class SplitEdgeAction : DelegatedTriangulationEditAction<int>
                 else
                 {
                     //register the edge removal and the indexes.
-                    //We actually "remove" the SubEdges now by setting it to -1, this is done to preserve indexing order
+                    //We actually "remove" the SubEdges now by setting their usages to 0, this is done to preserve indexing order
                     // in the SubEdges dictionary.
                     var removedIdx = t.SubEdges.IndexOf(removedEdge);
                     editedSubEdges.Add(removedEdge, new Tuple<int, int?>(removedIdx, null));
-                    t.SubEdges.SetAt(removedIdx,-1);
+                    t.SubEdges.SetAt(removedIdx,0);
 
                 }
             }

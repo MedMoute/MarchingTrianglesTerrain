@@ -21,8 +21,27 @@ public abstract class DelegatedTriangulationEditAction<T> : TriangulationEditAct
     }
     public T Apply(Triangulation triangulation)
     {
-        ValidateBefore(triangulation);
-        T output = DoApply(triangulation);
+        T output;
+        try
+        {
+            ValidateBefore(triangulation);
+        }
+        catch (Exception e)
+        {
+            triangulation.Debug("Exception Caught during pre Action Validation: " + e.Message, true);
+            throw;
+        }
+
+        try
+        {
+            output = DoApply(triangulation);
+        }
+        catch (Exception e)
+        {
+            triangulation.Debug("Exception Caught during doApply: " + e.Message,true);
+            throw;
+        }
+
         ValidateAfter(triangulation);
         return output;
     }

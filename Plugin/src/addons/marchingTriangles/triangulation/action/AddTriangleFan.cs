@@ -1,5 +1,7 @@
 using System;
+using System.Linq;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
 
@@ -46,7 +48,6 @@ public class AddTriangleFan : DelegatedTriangulationEditAction<int>
         var eIdx = _subEdge.Item2;
         if (edge == -1)
         {
-            t.Debug();
             throw new Exception(String.Format(
                 "Unexpected state : the edge ({0}, {1}) is supposed to already exist but was not found.", sIdx,
                 eIdx));
@@ -60,6 +61,12 @@ public class AddTriangleFan : DelegatedTriangulationEditAction<int>
             t.ReverseVertices.Add(_pos, newIdx);
         }
 
+        if (newIdx == eIdx || newIdx == sIdx)
+        {
+            //NOOP
+            return newIdx;
+        }
+
 
         //Register the new edges
         t.SubEdges.TryAdd((sIdx, newIdx), 1);
@@ -67,7 +74,7 @@ public class AddTriangleFan : DelegatedTriangulationEditAction<int>
         //Update the edge counter of the initial edge
         t.SubEdges[(sIdx, eIdx)]++;
 
-        t.TrianglesByVertices.Add(t.TrianglesByVertices.Count, [sIdx, newIdx, eIdx]);
+        t.TrianglesByVertices.Add(t.TrianglesByVertices.Keys.Max()+1, [sIdx, newIdx, eIdx]);
         return newIdx;
     }
 }

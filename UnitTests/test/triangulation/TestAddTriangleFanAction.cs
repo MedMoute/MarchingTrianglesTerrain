@@ -63,7 +63,7 @@ public class TestAddTriangleFanAction
         var edit = B + Vector3.Up;
 
         Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
-        Assert.That(t.ToTriangleInfoList()[0].edgeBorderFlags, Has.Exactly(3).EqualTo(true));
+        Assert.That(t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.Exactly(3).EqualTo(true));
         Assert.DoesNotThrow(() =>
         {
             var action = new AddTriangleFan((0, 1), edit);
@@ -74,8 +74,8 @@ public class TestAddTriangleFanAction
         Assert.That(t.ToTriangleInfoList()[0].Points, Has.No.EqualTo(edit));
         Assert.That(t.ToTriangleInfoList()[1].Points, Has.Exactly(1).EqualTo(edit));
 
-        Assert.That(t.ToTriangleInfoList()[0].edgeBorderFlags, Has.Exactly(2).EqualTo(true));
-        Assert.That(t.ToTriangleInfoList()[1].edgeBorderFlags, Has.Exactly(2).EqualTo(true));
+        Assert.That(t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.Exactly(2).EqualTo(true));
+        Assert.That(t.ToTriangleInfoList()[1].EdgeBorderFlags, Has.Exactly(2).EqualTo(true));
     }
 
     [Test]
@@ -106,7 +106,7 @@ public class TestAddTriangleFanAction
         var edit = B + Vector3.Up;
 
         Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
-        Assert.That(t.ToTriangleInfoList()[0].edgeBorderFlags, Has.Exactly(3).EqualTo(true));
+        Assert.That(t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.Exactly(3).EqualTo(true));
         Assert.DoesNotThrow(() =>
         {
             var action = new AddTriangleFan((0, 1), edit);
@@ -117,8 +117,8 @@ public class TestAddTriangleFanAction
         Assert.That(t.ToTriangleInfoList()[0].Points, Has.No.EqualTo(edit));
         Assert.That(t.ToTriangleInfoList()[1].Points, Has.Exactly(1).EqualTo(edit));
 
-        Assert.That(t.ToTriangleInfoList()[0].edgeBorderFlags, Has.Exactly(2).EqualTo(true));
-        Assert.That(t.ToTriangleInfoList()[1].edgeBorderFlags, Has.Exactly(2).EqualTo(true));
+        Assert.That(t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.Exactly(2).EqualTo(true));
+        Assert.That(t.ToTriangleInfoList()[1].EdgeBorderFlags, Has.Exactly(2).EqualTo(true));
 
         Assert.DoesNotThrow(() =>
         {
@@ -132,10 +132,24 @@ public class TestAddTriangleFanAction
         Assert.That(t.ToTriangleInfoList()[2].Points, Has.Exactly(1).EqualTo(edit));
         Assert.That(t.ToTriangleInfoList()[2].Points, Has.Exactly(1).EqualTo(edit+Vector3.Up));
 
-        Assert.That(t.ToTriangleInfoList()[0].edgeBorderFlags, Has.Exactly(2).EqualTo(true));
-        Assert.That(t.ToTriangleInfoList()[1].edgeBorderFlags, Has.Exactly(1).EqualTo(true));
-        Assert.That(t.ToTriangleInfoList()[2].edgeBorderFlags, Has.Exactly(2).EqualTo(true));
+        Assert.That(t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.Exactly(2).EqualTo(true));
+        Assert.That(t.ToTriangleInfoList()[1].EdgeBorderFlags, Has.Exactly(1).EqualTo(true));
+        Assert.That(t.ToTriangleInfoList()[2].EdgeBorderFlags, Has.Exactly(2).EqualTo(true));
+        
+    }
+    
+    [Test]
+    public void TestCanApplyAddTriangleFanActionOnExistingPointAsNoop()
+    {
+        var edit = B;  
+        
+        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
+        Assert.DoesNotThrow(() =>
+        {
+            var action = new AddTriangleFan((0, 1), edit);
+            action.Apply(t);
+        });
 
-
+        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
     }
 }

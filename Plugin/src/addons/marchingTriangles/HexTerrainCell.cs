@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Collections.Specialized;
+using System.Linq;
 using System.Text;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
-using MathNet.Numerics;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
 using MathNet.Spatial.Euclidean;
 using static MarchingTrianglesTerrain.addons.marchingTriangles.utils.EngineUtils;
 
@@ -14,16 +13,13 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 public class HexTerrainCell
 {
     public Tuple<GeometryMode, GeometryMode>? GeometryModesOverride;
-    public float DefaultGeometryParam0;
-
-    public float DefaultGeometryParam1;
 
     // TODO : Cell based ?
-    // Temp constants
-    public static double a = 0.5f;
-    public static double theta = 0.1d;
+    public static double A = 0.5f;
+    public static double Theta = 0.1d;
 
-    private float _tempDataHintForFlatTriangleCase;
+    public bool Verbose;
+    public bool RunIntegrityChecks;
 
     /// <summary>
     /// The coordinates of the current cell in the paren chunk's hex frame.
@@ -32,7 +28,7 @@ public class HexTerrainCell
     public Vector2I CellCoordsImplicit
     {
         get => _cellCoordsImplicit;
-        set
+        private init
         {
             _cellCoordsImplicit = value;
             _cellCoords = new Vector3I(value.X, value.Y, 0);
@@ -98,9 +94,17 @@ public class HexTerrainCell
     internal CellDataArrays TempDataArrays { get; }
 
     // TODO support object[]
-    public Func<int, float> GetVertexData;
+    public Func<int, float>? GetVertexData;
 
     public bool FloorMode { get; private set; }
+
+    public const String AverageHeightHint = "AvgHeight";
+
+    public const String NextTriangleEdgeAvgHeight = "EdgeAvgHeight";
+
+    public const String NextTriangleVertexPos = "NextTriPos";
+
+    public Func<int, float>? GetEdgeAvgHeight;
 
     public float AverageHeight
     {
@@ -110,7 +114,7 @@ public class HexTerrainCell
             float sum = 0;
             for (int i = 0; i < VertexCount; i++)
             {
-                sum += GetVertexData(i);
+                if (GetVertexData != null) sum += GetVertexData(i);
             }
 
             return sum / VertexCount;
@@ -126,8 +130,8 @@ public class HexTerrainCell
         CellCoordsImplicit = cellCoordsImpl;
         _orientationSystem = orientationSystem;
         TempDataArrays = new CellDataArrays(cellCoordsImpl);
-        DualCellsMapping = new();
-        VertexPositionsInPlane = new();
+        DualCellsMapping = new Dictionary<int, Vector3I>();
+        VertexPositionsInPlane = [];
         CenterPosition = _orientationSystem.GetCellCentroid(CellCoords);
 
 
@@ -147,9 +151,8 @@ public class HexTerrainCell
 
         if (DualCellsMapping.Count != 6)
         {
-            throw new Exception(String.Format(
-                "Something is wrong, a hexagonal cell should always be affected by 6 dual triangles, got {0}instead ",
-                DualCellsMapping.Count));
+            throw new Exception($"Something is wrong, a hexagonal cell should always" +
+                                $" be affected by 6 dual triangles, got {DualCellsMapping.Count} instead ");
         }
     }
 
@@ -159,7 +162,7 @@ public class HexTerrainCell
         Func<Vector2I, TriangleGrid> dataProviderProvider,
         Func<Vector2I, bool> doesNeighboringChunkExist)
     {
-        /// TODO Memoize
+        // TODO Memoize
         GetVertexData = i =>
         {
             Vector3I vertexIdxInDual = DualCellsMapping[i];
@@ -178,6 +181,12 @@ public class HexTerrainCell
 
             return float.NaN;
         };
+
+        GetEdgeAvgHeight = i =>
+        {
+            if (GetVertexData != null) return (GetVertexData(i) + GetVertexData(mod(i + 1, VertexCount))) / 2f;
+            return float.NaN;
+        };
     }
 
     public static Vector2I GetChunkOffsetForDualCell(Vector2I chunkDimension, Vector3I dualIndex)
@@ -188,15 +197,9 @@ public class HexTerrainCell
         return offset;
     }
 
-    //TODO : use flag ?
     public bool IsReady()
     {
-        if (_visits.Count != VertexCount)
-        {
-            return false;
-        }
-
-        return true;
+        return _visits.Count == VertexCount;
     }
 
 
@@ -244,18 +247,9 @@ public class HexTerrainCell
         TempDataArrays.Clear();
     }
 
-    //private void DoMarchingTriangles(int i,
-    //    Dictionary<Vector2D, float> dataArray, GdPluginHexTerrainChunk chunk)
-    //{
-    //    var (tri, Mask) = ComputeTriangleAndMask(i, dataArray, chunk.Underlying);
-    //
-    //    List<TriangleInfo> trianglesWithWallEdges = ProcessTriangle(tri, Mask);
-    //    ProcessTrianglesIntoPoints(trianglesWithWallEdges, chunk);
-    //    chunk.ProcessPointsIntoMeshTriangles(this);
-    //    TempDataArrays.Clear();
-    //}
-
-    private (Vector3[] tri, int Mask) ComputeTriangleAndMask(int i, Dictionary<Vector2D, float> dataArray,
+    private (Vector3[] tri, int Mask) ComputeTriangleAndMask(
+        int i, Dictionary<Vector2D,
+            float> dataArray,
         HexagonalTerrainChunk chunk)
     {
         var center = CenterPosition;
@@ -263,17 +257,16 @@ public class HexTerrainCell
         int index = (i + 1) % 6;
         var posC = VertexPositionsInPlane[index];
 
-        var A = new Vector3((float)center.X, AverageHeight, (float)center.Y);
-        var B = new Vector3((float)posB.X, dataArray[posB], (float)posB.Y);
-        var C = new Vector3((float)posC.X, dataArray[posC], (float)posC.Y);
+        var a = new Vector3((float)center.X, AverageHeight, (float)center.Y);
+        var b = new Vector3((float)posB.X, dataArray[posB], (float)posB.Y);
+        var c = new Vector3((float)posC.X, dataArray[posC], (float)posC.Y);
 
-        Vector3[] tri = [A, B, C];
-        _tempDataHintForFlatTriangleCase = dataArray[VertexPositionsInPlane[mod(i - 1, 6)]];
+        Vector3[] tri = [a, b, c];
 
-        int Mask = (Math.Abs(A.Y - C.Y) > chunk.MergeThreshold ? 1 : 0) * 4 +
-                   (Math.Abs(B.Y - C.Y) > chunk.MergeThreshold ? 1 : 0) * 2 +
-                   (Math.Abs(A.Y - B.Y) > chunk.MergeThreshold ? 1 : 0) * 1;
-        return (tri, Mask);
+        int mask = (Math.Abs(a.Y - c.Y) > chunk.MergeThreshold ? 1 : 0) * 4 +
+                   (Math.Abs(b.Y - c.Y) > chunk.MergeThreshold ? 1 : 0) * 2 +
+                   (Math.Abs(a.Y - b.Y) > chunk.MergeThreshold ? 1 : 0) * 1;
+        return (tri, mask);
     }
 
     private void ProcessTrianglesIntoPoints(List<TriangleInfo> trianglesWithWallEdges,
@@ -281,14 +274,7 @@ public class HexTerrainCell
     {
         foreach (var trianglesWithWallEdge in trianglesWithWallEdges)
         {
-            if (trianglesWithWallEdge.IsWall)
-            {
-                FloorMode = false;
-            }
-            else
-            {
-                FloorMode = true;
-            }
+            FloorMode = !trianglesWithWallEdge.IsWall;
 
             foreach (var point in trianglesWithWallEdge.Points)
             {
@@ -309,7 +295,17 @@ public class HexTerrainCell
         {
             var (tri, mask) = ComputeTriangleAndMask(i, dataArray, chunk);
             Func<int, GeometryMode> computeGeometryMode = ComputeEdgeGeometryMode(i, mask, effectiveGeometryMode);
-            triangles.AddRange(ProcessTriangle(this, tri, computeGeometryMode));
+            Dictionary<string, object> hints = new()
+            {
+                [AverageHeightHint] = AverageHeight,
+                [NextTriangleEdgeAvgHeight] = GetEdgeAvgHeight!(mod(i + 1, VertexCount)),
+                [NextTriangleVertexPos] = new Vector3(
+                    (float)VertexPositionsInPlane[mod(i + 1, VertexCount)].X,
+                    GetVertexData!(mod(i + 1, VertexCount)),
+                    (float)VertexPositionsInPlane[mod(i + 1, VertexCount)].Y)
+            };
+
+            triangles.AddRange(ProcessTriangle(this, tri, computeGeometryMode, hints));
         }
 
         return triangles;
@@ -340,20 +336,30 @@ public class HexTerrainCell
     public static List<TriangleInfo> ProcessTriangle(
         HexTerrainCell cell,
         Vector3[] triangle,
-        Func<int, GeometryMode> cellGeometryBehaviour)
+        Func<int, GeometryMode> cellGeometryBehaviour,
+        Dictionary<string, object>? additionalHints = null)
     {
         // We create a Triangulation instance based on the triangle
         // that will receive all the transformations from the algorithms
-        var triangles = new Triangulation(triangle);
-        List<TriangulationEditAction<object>> actions = [];
-        
+        var triangles = new Triangulation(
+            triangle,
+            cell.Verbose,
+            cell.RunIntegrityChecks,
+            additionalHints);
+
         for (var i = 0; i <= 2; i++)
         {
-            ProcessTriangleEdge(
-                i,
+            var algo = cellGeometryBehaviour.Invoke(i);
+
+            ProcessTriangleEdge(i,
                 triangles,
-                cellGeometryBehaviour.Invoke(i));
+                algo);
         }
+
+        triangles.Debug("Triangle done", true);
+        Console.WriteLine("Triangle Processing done");
+
+
         var tInfos = triangles.ToTriangleInfoList();
         return tInfos;
     }
@@ -367,17 +373,30 @@ public class HexTerrainCell
         Triangulation triangles,
         GeometryMode algorithm)
     {
-        Console.WriteLine("Processing Edge "+edgeIdx  + " : "+algorithm);
         switch (algorithm)
         {
             case GeometryMode.FlatHexagons:
+                if (triangles._additionalHints == null || !triangles._additionalHints.ContainsKey(AverageHeightHint))
+                {
+                    throw new InvalidOperationException("Missing hints entry for computing the cell average height");
+                }
+
                 ProcessFlatHexagonEdge(edgeIdx, triangles);
                 return;
             case GeometryMode.FlatTriangles:
-                ProcessFlatTriangleEdge( edgeIdx, triangles);
+                if (triangles._additionalHints == null
+                    || !triangles._additionalHints.ContainsKey(AverageHeightHint)
+                    || !triangles._additionalHints.ContainsKey(NextTriangleEdgeAvgHeight))
+                {
+                    throw new InvalidOperationException("Missing hints entry for" +
+                                                        " computing the cell average" +
+                                                        " height or the next triangle height");
+                }
+
+                ProcessFlatTriangleEdge(edgeIdx, triangles);
                 return;
             case GeometryMode.SmoothLinear:
-                ProcessLinearEdge( edgeIdx, triangles);
+                ProcessLinearEdge(edgeIdx, triangles);
                 return;
             case GeometryMode.Plateau:
                 ProcessPlateauEdge(edgeIdx, triangles);
@@ -392,268 +411,172 @@ public class HexTerrainCell
                 throw new NotSupportedException();
         }
     }
-    
+
     private static void ProcessFlatHexagonEdge(int edgeIdx, Triangulation triangles)
     {
-        
+        var setLevel = (float)triangles._additionalHints![AverageHeightHint];
+        //Move the triangle along the edge
+        new DisplaceEdgeAlongYAxis(edgeIdx, setLevel, setLevel).Apply(triangles);
+
+        if (edgeIdx != 1) return;
+        //If outer edge (edgeIdx =1) add fans to match the previous height
+        // The center of the cell is the first point of the triangulation as per
+        // ComputeTriangleAndMask()
+        AddEdgeFans(1, triangles, setLevel);
     }
 
 
     private static void ProcessFlatTriangleEdge(int edgeIdx, Triangulation triangles)
     {
-    }
-    
-    
-    private static void ProcessLinearEdge(int edgeIdx, Triangulation triangles)
-    {
-        var subEdges = triangles.Edges[edgeIdx];
-        if (subEdges.Count == 1)
+        var setLevel = (triangles.SourceTriangle[1].Y + triangles.SourceTriangle[2].Y) / 2;
+        var nextTriLevel = (float)triangles._additionalHints![NextTriangleEdgeAvgHeight];
+        var nextTriVertex = (Vector3)triangles._additionalHints![NextTriangleVertexPos];
+        //Move the triangle along the edge
+        new DisplaceEdgeAlongYAxis(
+            edgeIdx,
+            setLevel,
+            setLevel).Apply(triangles);
+        switch (edgeIdx)
         {
+            // If right inner edge (edgeIdx =0)  :NOOP
+            case 0:
+                break;
+            //If outer edge (edgeIdx =1) add fans to match the previous height
+            // The center of the cell is the first point of the triangulation as per
+            // ComputeTriangleAndMask()
+            case 1:
+                AddEdgeFans(edgeIdx, triangles, setLevel);
+                break;
+            // If right inner edge (edgeIdx =2) add fans to the level of the next triangle , hinted in the dictionary
+            case 2:
+            {
+                var pos1 = new Vector3(
+                    triangles.SourceTriangle[edgeIdx].X,
+                    nextTriLevel,
+                    triangles.SourceTriangle[edgeIdx].Z);
+                
+                var pos2 = new Vector3(
+                    triangles.SourceTriangle[mod(edgeIdx + 1, 3)].X,
+                    nextTriLevel,
+                    triangles.SourceTriangle[mod(edgeIdx + 1, 3)].Z);
 
+                var newPoint = new AddTrianglesOnBorderEdge(edgeIdx, pos1).Apply(triangles);
+                new AddTrianglesOnBorderEdge(edgeIdx, pos2).Apply(triangles);
+                var hstart = Math.Abs(triangles.SourceTriangle[edgeIdx].Y - nextTriLevel);
+                var hend = Math.Abs(nextTriVertex.Y - nextTriLevel);
+
+                var pos3 = triangles.SourceTriangle[edgeIdx].Lerp(nextTriVertex, hstart / (hstart + hend));
+                new AddTriangleFan((edgeIdx, newPoint), pos3).Apply(triangles);
+            }
+                break;
         }
     }
-    
-    private static void ProcessPlateauEdge(int edgeIdx, Triangulation triangles)
+
+    private static void AddEdgeFans(int edgeIdx, Triangulation triangles, float setLevel)
     {
-        throw new NotImplementedException();
+        if (triangles.Edges[edgeIdx].Count > 1)
+        {
+            throw new NotSupportedException("TODO : support Adding fans when the edge itself is already split");
+        }
+
+        //If both initial points are over or under the setLevel create 
+        if (setLevel <= triangles.SourceTriangle[edgeIdx].Y &&
+            setLevel <= triangles.SourceTriangle[mod(edgeIdx + 1, 3)].Y ||
+            setLevel >= triangles.SourceTriangle[edgeIdx].Y &&
+            setLevel >= triangles.SourceTriangle[mod(edgeIdx + 1, 3)].Y)
+        {
+            new AddTrianglesOnBorderEdge(edgeIdx, triangles.SourceTriangle[edgeIdx]).Apply(triangles);
+            new AddTrianglesOnBorderEdge(edgeIdx, triangles.SourceTriangle[mod(edgeIdx + 1, 3)]).Apply(triangles);
+        }
+        else
+        {
+            var subEdge = triangles.SubEdges.ElementAt(triangles.Edges[edgeIdx].First!.Value).Key;
+            var yStart = Math.Abs(triangles.SourceTriangle[edgeIdx].Y - setLevel);
+            var yEnd = Math.Abs(triangles.SourceTriangle[mod(edgeIdx + 1, 3)].Y - setLevel);
+
+            var newPoint =
+                new SplitEdgeAction(
+                    1,
+                    subEdge.Item1,
+                    subEdge.Item2,
+                    yStart / (yStart + yEnd)).Apply(triangles);
+            var pos1 = triangles.SourceTriangle[edgeIdx];
+            var pos2 = triangles.SourceTriangle[mod(edgeIdx + 1, 3)];
+            new AddTriangleFan((subEdge.Item1, newPoint), pos1).Apply(triangles);
+            new AddTriangleFan((subEdge.Item2, newPoint), pos2).Apply(triangles);
+        }
     }
 
-    private static void ProcessFoothillEdge(int edgeIdx, Triangulation triangles)                          
+
+    private static void ProcessLinearEdge(int _0, Triangulation _1)
     {
-        throw new NotImplementedException();
+        //NOOP
+    }
+
+    private static void ProcessPlateauEdge(int edgeIdx, Triangulation triangles)
+    {
+        //TODO
+    }
+
+    private static void ProcessFoothillEdge(int edgeIdx, Triangulation triangles)
+    {
+        //TODO
     }
 
     private static void ProcessBendingEdge(int edgeIdx, Triangulation triangles)
     {
-        throw new NotImplementedException();
+        //TODO
     }
 
 
+    // <summary>
+    // Returns the sub triangles created by applying the marching triangles' algorithm on triangles that have
+    // at least one edge with a height delta superior to the algorithm threshold.
+    // </summary>
+    // <p>
+    // This method is the core function of the spatial transformation
+    // made by the Marching Triangles algorithm.
+    //</p><p>
+    // Since we are aware that at least one edge is to be processed, we can create all the required points.
+    // </p><p>
+    // This method processes a set of 3 non-equal points, therefore forming a triangle, into
+    // a set of non-coplanar subtriangles.
+    // In order to do so, we process each edge of the triangle, in order to determine the
+    // positions of the points of the subtriangles.
+    // </p><p>
+    // For each edge that has a height (Δ=2*δ) over the algorithm threshold, the position of
+    // the newly created points defined by a set of two parameters :
+    //</p>
+    // <ul>
+    // <li> The "Ledge size" α , a real value in ]0,1[ representing how close the new points are
+    // to the middle of the edge</li>
+    // <li> The "Height bleed angle" θ, a real value defined in ]0, (π/2)- atan(α/δ)[</li>
+    //</ul>
+    // The (x,y) coordinates of the newly created points are defined by linear interpolation
+    // between one of the edge vertices and its middle vertex, α being the lerp factor.
+    //
+    // <p>
+    // The z coordinate is computed by adding a value f(α,θ) to the middle vertex z value, where :
+    // </p>
+    // <code>
+    //  f(α,θ) = α * (δ - D * tan(θ))
+    // </code>
+    // and D is the length of the Edge when projected on the [xOz] plane
+    // <p>
+    // If the edge's height is below the threshold, the newly created point for the edge is simply the middle vertex. 
+    // </p>
+    // <p>
+    // Once all the points have been determined, we trivially rebuild a set of triangles using the Triangles Fan
+    // algorithm, since the polygon is convex. (https://en.wikipedia.org/wiki/Fan_triangulation)
+    // </p>
+    // <returns>An enumeration of triangles flagged on whether the triangles represent wall or not</returns>
 
 
-    /// <summary>
-    /// Returns the sub triangles created by applying the marching triangles' algorithm on triangles that have
-    /// at least one edge with a height delta superior to the algorithm threshold.
-    /// </summary>
-    /// <p>
-    /// This method is the core function of the spatial transformation
-    /// made by the Marching Triangles algorithm.
-    ///</p><p>
-    /// Since we are aware that at least one edge is to be processed, we can create all the required points.
-    /// </p><p>
-    /// This method processes a set of 3 non-equal points, therefore forming a triangle, into
-    /// a set of non-coplanar subtriangles.
-    /// In order to do so, we process each edge of the triangle, in order to determine the
-    /// positions of the points of the subtriangles.
-    /// </p><p>
-    /// For each edge that has a height (Δ=2*δ) over the algorithm threshold, the position of
-    /// the newly created points defined by a set of two parameters :
-    ///</p>
-    /// <ul>
-    /// <li> The "Ledge size" α , a real value in ]0,1[ representing how close the new points are
-    /// to the middle of the edge</li>
-    /// <li> The "Height bleed angle" θ, a real value defined in ]0, (π/2)- atan(α/δ)[</li>
-    ///</ul>
-    /// The (x,y) coordinates of the newly created points are defined by linear interpolation
-    /// between one of the edge vertices and its middle vertex, α being the lerp factor.
-    ///
-    /// <p>
-    /// The z coordinate is computed by adding a value f(α,θ) to the middle vertex z value, where :
-    /// </p>
-    /// <code>
-    ///  f(α,θ) = α * (δ - D * tan(θ))
-    /// </code>
-    /// and D is the length of the Edge when projected on the [xOz] plane
-    /// <p>
-    /// If the edge's height is below the threshold, the newly created point for the edge is simply the middle vertex. 
-    /// </p>
-    /// <p>
-    /// Once all the points have been determined, we trivially rebuild a set of triangles using the Triangles Fan
-    /// algorithm, since the polygon is convex. (https://en.wikipedia.org/wiki/Fan_triangulation)
-    /// </p>
-    /// <returns>An enumeration of triangles flagged on whether the triangles represent wall or not</returns>
-    //public static List<TriangleInfo> ProcessTriangle(
-    //    Vector3[] triangle,
-    //    int mask)
-    //{
-    //    // //Debug statement
-    //    // Console.WriteLine("Processing triangle [mask = "+mask+"]");
-    //
-    //    Vector3[] tri = triangle;
-    //    Dictionary<int, Tuple<Vector3, Vector3?>> newPoints = new Dictionary<int, Tuple<Vector3, Vector3?>>();
-    //    List<Vector3> flatNewPoints = new List<Vector3>();
-    //    List<TriangleInfo> res = new List<TriangleInfo>();
-    //    var comparer = new V3Comp();
-    //    // We loop over the edges of the initial triangle.
-    //    // the Edge #i => [P(i),P(i+1)]
-    //    for (int i = 0; i <= 2; i++)
-    //    {
-    //        Vector3 start = tri[i];
-    //        Vector3 end = tri[mod(i + 1, 3)];
-    //        var midpoint = (start + end) / 2;
-    //        if ((mask & (1 << i)) == 0)
-    //        {
-    //            // The edge is not over the threshold, we add the middle point
-    //            newPoints.Add(i, new Tuple<Vector3, Vector3?>(midpoint, null));
-    //            flatNewPoints.Add(midpoint);
-    //        }
-    //        else
-    //        {
-    //            var delta = (start.Y - end.Y) / 2;
-    //            var alpha = a;
-    //            var newPoint = new Vector3(
-    //                start.X + (float)alpha * (midpoint - start).X,
-    //                start.Y + (float)alpha * (midpoint - start).Y,
-    //                start.Z + (float)alpha * (midpoint - start).Z);
-    //            // Recompute Y value according to the formula
-    //            double D = Math.Sqrt((start.X - midpoint.X) * (start.X - midpoint.X) +
-    //                                 (start.Z - midpoint.Z) * (start.Z - midpoint.Z));
-    //            var v = (float)(alpha * (delta - D * comparer.Compare(start, midpoint) * Math.Tan(theta)));
-    //            newPoint.Y += v;
-    //            // //Debug statement
-    //            // Console.WriteLine("Edge#{4} = [{5}] : f({0},{1},{2}) = {3}", delta, alpha, theta, v, i, newPoint);
-    //            // Console.WriteLine("Edge#{4} = [{5}] : f({0},{1},{2}) = {3}", delta, alpha, theta, -v, i, 2 * midpoint - newPoint);
-    //
-    //            newPoints.Add(i, new Tuple<Vector3, Vector3?>(
-    //                newPoint,
-    //                2 * midpoint - newPoint));
-    //            flatNewPoints.Add(newPoint);
-    //            flatNewPoints.Add(2 * midpoint - newPoint);
-    //        }
-    //    }
-    //    // From these new points, and the ordered list of those,
-    //    // It is possible to recreate a list of ordered triangles that we will return
-    //
-    //    // Step 1 :
-    //    // Find the 3 triangles containing one pre-existing vertex :
-    //    // The other points forming the triangle are the computed new points of the previous point,
-    //    // the second if there are two, the first otherwise.
-    //    //
-    //    // TODO : clarify what is the condition for wall = true
-    //    for (int i = 0; i <= 2; i++)
-    //    {
-    //        var tInfo = new TriangleInfo
-    //        {
-    //            IsWall = false,
-    //            Points =
-    //            {
-    //                [0] = newPoints[mod(i - 1, 3)].Item2.HasValue
-    //                    ? newPoints[mod(i - 1, 3)].Item2.Value
-    //                    : newPoints[mod(i - 1, 3)].Item1,
-    //                [1] = tri[i],
-    //                [2] = newPoints[i].Item1
-    //            },
-    //            edgeBorderFlags =
-    //            {
-    //                [0] = true,
-    //                [1] = true,
-    //                [2] = false
-    //            }
-    //        };
-    //        res.Add(tInfo);
-    //    }
-    //
-    //    // Part 2 :
-    //    // Get the other triangles as part of a triangle fan originated for the first
-    //    // new point of the list of new points;
-    //    for (int i = 0; i < flatNewPoints.Count - 2; i++)
-    //    {
-    //        //Debug
-    //        var tInfo = new TriangleInfo
-    //        {
-    //            IsWall = true,
-    //            Points =
-    //            {
-    //                //
-    //                [0] = flatNewPoints[0],
-    //                [1] = flatNewPoints[i + 1],
-    //                [2] = flatNewPoints[i + 2]
-    //            },
-    //        };
-    //        switch (mask, i) // Easier to bruteforce :P
-    //        {
-    //            case (0, 0):
-    //                tInfo.edgeBorderFlags = [false, false, false];
-    //                break;
-    //
-    //            case (1, 0):
-    //                tInfo.edgeBorderFlags = [true, false, false];
-    //                break;
-    //            case (1, 1):
-    //                tInfo.edgeBorderFlags = [false, false, false];
-    //                break;
-    //
-    //            case (2, 0):
-    //                tInfo.edgeBorderFlags = [false, true, false];
-    //                break;
-    //            case (2, 1):
-    //                tInfo.edgeBorderFlags = [false, false, false];
-    //                break;
-    //
-    //            case (3, 0):
-    //                tInfo.edgeBorderFlags = [true, false, false];
-    //                break;
-    //            case (3, 1):
-    //                tInfo.edgeBorderFlags = [false, true, false];
-    //                break;
-    //            case (3, 2):
-    //                tInfo.edgeBorderFlags = [false, false, false];
-    //                break;
-    //
-    //            case (4, 0):
-    //                tInfo.edgeBorderFlags = [false, false, false];
-    //                break;
-    //            case (4, 1):
-    //                tInfo.edgeBorderFlags = [false, true, false];
-    //                break;
-    //
-    //            case (5, 0):
-    //                tInfo.edgeBorderFlags = [true, false, false];
-    //                break;
-    //            case (5, 1):
-    //                tInfo.edgeBorderFlags = [false, false, false];
-    //                break;
-    //            case (5, 2):
-    //                tInfo.edgeBorderFlags = [false, true, false];
-    //                break;
-    //
-    //            case (6, 0):
-    //                tInfo.edgeBorderFlags = [false, true, false];
-    //                break;
-    //            case (6, 1):
-    //                tInfo.edgeBorderFlags = [false, false, false];
-    //                break;
-    //            case (6, 2):
-    //                tInfo.edgeBorderFlags = [false, true, false];
-    //                break;
-    //
-    //            case (7, 0):
-    //                tInfo.edgeBorderFlags = [true, false, false];
-    //                break;
-    //            case (7, 1):
-    //                tInfo.edgeBorderFlags = [false, true, false];
-    //                break;
-    //            case (7, 2):
-    //                tInfo.edgeBorderFlags = [false, false, false];
-    //                break;
-    //            case (7, 3):
-    //                tInfo.edgeBorderFlags = [false, true, false];
-    //                break;
-    //            default:
-    //                throw new Exception("Illegal state");
-    //        }
-    //
-    //        res.Add(tInfo);
-    //    }
-    //
-    //    return res;
-    //}
-    //
     public class TriangleInfo
     {
         public bool IsWall { get; set; } = false;
-        public Vector3[] Points { get; set; } = new Vector3[3];
-        public bool[] edgeBorderFlags { get; set; } = new bool[3];
+        public Vector3[] Points { get; init; } = new Vector3[3];
+        public bool[] EdgeBorderFlags { get; init; } = new bool[3];
 
         public List<Tuple<Vector3, Vector3>> GetBorderEdges()
         {
@@ -661,7 +584,7 @@ public class HexTerrainCell
 
             for (int i = 0; i <= 2; i++)
             {
-                if (edgeBorderFlags[i])
+                if (EdgeBorderFlags[i])
                 {
                     res.Add(new Tuple<Vector3, Vector3>(Points[mod(i, 3)], Points[mod(i + 1, 3)]));
                 }
@@ -690,7 +613,7 @@ public class HexTerrainCell
         var z = Vector3.Up.Dot((tri[1] - tri[0]).Cross(tri[2] - tri[0])) / 2;
         return z;
     }
-    
+
     /// <summary>
     /// Processes the temporary data of the cell to generate the expected surface mesh.
     /// </summary>
@@ -716,7 +639,7 @@ public class HexTerrainCell
         {
             tempHexagonData.Add(
                 _orientationSystem.GetVertex(_cellCoordsImplicit, i, 0),
-                GetVertexData(i));
+                GetVertexData!(i));
         }
 
         return tempHexagonData;
@@ -728,7 +651,7 @@ public class HexTerrainCell
         if (tempHexagonData.Count != 6)
         {
             throw new ArgumentException(
-                "We expect 6 values for this codepath. Aborting.");
+                "We expect 6 values for this code path. Aborting.");
         }
 
         List<TriangleInfo> triangles = ProcessCellGeometry(tempHexagonData, chunk.Underlying);
@@ -748,7 +671,7 @@ internal class CellDataArrays(Vector2I cellCoord)
     public readonly List<Color> MatBlend = new();
     public readonly List<bool> Floor = new();
 
-    public readonly Vector2I cellCoord = cellCoord;
+    public readonly Vector2I CellCoord = cellCoord;
 
     public void EnsureProcessable()
     {
@@ -762,7 +685,7 @@ internal class CellDataArrays(Vector2I cellCoord)
             || Pt.Count != MatBlend.Count
             || Pt.Count != Floor.Count)
         {
-            throw new ArgumentOutOfRangeException("The cell data array is wrongly shaped.");
+            throw new ArgumentException("The cell data array is wrongly shaped.");
         }
     }
 
@@ -774,7 +697,7 @@ internal class CellDataArrays(Vector2I cellCoord)
         Color0.Clear();
         Color1.Clear();
         Custom1Value.Clear();
-
+        Custom3Value.Clear();
         MatBlend.Clear();
         Floor.Clear();
     }
@@ -792,7 +715,7 @@ public class V3Comp : IComparer<Vector3>
     }
 }
 
-class UnorderedTupleComparer : IComparer<(int, int)>, IEqualityComparer<(int, int)>
+public class UnorderedTupleComparer : IComparer<(int, int)>, IEqualityComparer<(int, int)>
 {
     private UnorderedTupleComparer()
     {

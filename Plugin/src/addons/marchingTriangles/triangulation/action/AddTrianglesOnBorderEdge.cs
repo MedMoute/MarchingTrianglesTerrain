@@ -68,39 +68,106 @@ public class AddTrianglesOnBorderEdge : DelegatedTriangulationEditAction<int>
                                         " change its convex hull projection into the XoZ plane" +
                                         " (point not on edge segment)");
         }
-
-        //Check if new point already exists
-        if (t.ReverseVertices.ContainsKey(_p))
-        {
-            throw new InvalidOperationException("The triangulation already contains this point");
-        }
     }
 
     protected override int DoApply(Triangulation t)
     {
         // fetch the sub-edges
         var affectedSubEdges = t.Edges[_edgeIdx];
-        HashSet<int> createdIndexes = new();
+        OrderedDictionary<int, List<int>> createdIndexes = new();
         foreach (var affectedEdge in affectedSubEdges)
         {
             var edge = t.SubEdges.GetAt(affectedEdge).Key;
             //build a triangle fan from the sub edge
             // Walk along the implicit fan to obtain all the triangle fans to create
             List<(int, int)> borderSubEdges = FindBorderFromSubEdge(t, edge);
+            createdIndexes.TryAdd(affectedEdge, new List<int>());
             foreach (var borderEdge in borderSubEdges)
             {
                 var action = new AddTriangleFan(borderEdge, _p);
-                createdIndexes.Add(action.Apply(t));
-
+                createdIndexes[affectedEdge].Add(action.Apply(t));
             }
         }
 
-        if (createdIndexes.Count > 1)
+        //Generate an enumeration of all the subEdges that created a point (indexed by the initiating SubEdge,
+        //with the said creation as value v)
+        //The enumeration is insertion-ordered thanks to the OrderedDictionary
+        //Then we reverse it to get the latest sub edge and change it.
+        var flattenedPointCreations = createdIndexes
+            .SelectMany(e => e.Value.Select(v => (e.Key, v)))
+            .Reverse();
+        // Make sure all sub-actions have created the same vertex
+        if (flattenedPointCreations.DistinctBy(v => v.v).Count() > 1)
         {
             throw new InvalidOperationException("The action created multiple vertices which is not expected");
         }
+        // If there is more than one entry, each of the listed subEdge executed an action that generates a triangle,
+        // We check all the created triangles and we need to make sure that the triangles that intersect with
+        // preexisisting triangles are removed from the triangle list 
+        
+        var otherEdges = flattenedPointCreations.ToList();
+       otherEdges.Remove(flattenedPointCreations.DistinctBy(v => v.v).First());
 
-        return createdIndexes.First();
+       otherEdges.ForEach(
+           e=>
+           {
+               var triangles = t.TrianglesByVertices.Where(tri =>
+                   tri.Value.Contains(e.v) &&
+                   tri.Value.Contains(t.SubEdges.ElementAt(e.Key).Key.Item1) &&
+                   tri.Value.Contains(t.SubEdges.ElementAt(e.Key).Key.Item1)).ToList();
+               if (triangles.Count != 1)
+                   throw new InvalidOperationException("There should have been a matching triangle here");
+               var triangleIdx = triangles[0].Key;
+               var triangle = triangles[0].Value;
+               var trianglePos = triangle.Select(idx => t.Vertices[idx]).ToArray();
+               bool isIntersecting = t.TrianglesByVertices.Any(tri =>
+               {
+                   var n = TriangleUtils.GetNormal(trianglePos);
+                   Vector3[] triPos = tri.Value.Select(idx => t.Vertices[idx]).ToArray();
+                   if (!n.IsEqualApprox(TriangleUtils.GetNormal(triPos)))
+                   {
+                       return false;
+                   }
+
+                   return TriangleUtils.CoplanarTrianglesIntersect(trianglePos, triPos);
+               });
+               if (!isIntersecting)
+               {
+                   return;
+               }
+               
+               if (triangle.Count !=3)
+                   throw new InvalidOperationException("WTF");
+               for (int i = 0; i < triangle.Count; i++)
+               {
+                   //Reduce edge count for the triangle's edges
+                   t.SubEdges[(triangle[i], triangle[EngineUtils.mod(i + 1, triangle.Count)])]--;
+               }
+               //Remove triangle
+               t.TrianglesByVertices.Remove(triangleIdx);
+           });
+       
+
+        foreach (var placeValuePair in flattenedPointCreations.DistinctBy(v => v.v))
+        {
+            var affectedSubEdge = placeValuePair.Key;
+            (int, int) subEdgeIdxs = t.SubEdges.ElementAt(affectedSubEdge).Key;
+            var newPointIdx = placeValuePair.v;
+            var node = t.Edges[_edgeIdx].Find(affectedSubEdge);
+            if (node != null)
+            {
+                var newFirstHalfNode=t.Edges[_edgeIdx].AddAfter(node, t.SubEdges.IndexOf((subEdgeIdxs.Item1, newPointIdx)));
+                t.Edges[_edgeIdx].AddAfter(newFirstHalfNode, t.SubEdges.IndexOf((newPointIdx, subEdgeIdxs.Item2)));
+                t.Edges[_edgeIdx].Remove(node);
+            }
+        }
+
+        if (createdIndexes.Count == 0)
+        {
+            throw new InvalidOperationException("The action created no vertices which is not expected");
+        }
+
+        return flattenedPointCreations.First().v;
     }
 
     private List<(int, int)> FindBorderFromSubEdge(Triangulation t, (int, int) edge)
