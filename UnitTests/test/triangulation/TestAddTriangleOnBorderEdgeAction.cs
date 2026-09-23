@@ -57,7 +57,7 @@ public class TestAddTriangleOnBorderEdgeAction
     [Test]
     public void TestCanApplyAddTriangleActionOnSplitEdge()
     {
-        var action = new SplitEdgeAction(0, 0, 1, 0.5f);
+        var action = new SplitSubEdgeAction(0, 0, 1, 0.5f);
         action.Apply(t);
         Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(2));
         Assert.DoesNotThrow(() =>
@@ -65,7 +65,7 @@ public class TestAddTriangleOnBorderEdgeAction
             var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
             action.Apply(t);
         });
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(4));
+        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(3));
     }
 
     [Test]

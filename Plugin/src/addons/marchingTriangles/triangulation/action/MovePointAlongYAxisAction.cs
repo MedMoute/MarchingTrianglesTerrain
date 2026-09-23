@@ -10,7 +10,7 @@ public class MovePointAlongYAxisAction : DelegatedTriangulationEditAction<int>
 {
     private readonly int _editedVertexI;
     private readonly float _heightValue;
-    
+
     /// <summary>
     /// Constructor.
     /// </summary>
@@ -23,7 +23,7 @@ public class MovePointAlongYAxisAction : DelegatedTriangulationEditAction<int>
 
         if (_editedVertexI < 0)
         {
-            throw new ArgumentException("Illegal index "+editedPoint,nameof(editedPoint));
+            throw new ArgumentException("Illegal index " + editedPoint, nameof(editedPoint));
         }
 
         _heightValue = heightValue;
@@ -40,8 +40,11 @@ public class MovePointAlongYAxisAction : DelegatedTriangulationEditAction<int>
         t.ReverseVertices.Remove(pos);
         t.Vertices.Remove(_editedVertexI);
         var newVertex = new Vector3(pos.X, _heightValue, pos.Z);
-        t.Vertices.Add(_editedVertexI, newVertex);
-        t.ReverseVertices.Add(newVertex, _editedVertexI);
-        return _editedVertexI;
+        if (t.ReverseVertices.TryAdd(newVertex, _editedVertexI))
+        {
+            t.Vertices.TryAdd(_editedVertexI, newVertex);
+        }
+        //TODO :  support edge and triiangle deletion here by re adressingg the content
+        return t.ReverseVertices[newVertex];
     }
 }

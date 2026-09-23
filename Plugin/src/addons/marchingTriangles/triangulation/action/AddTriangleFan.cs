@@ -64,7 +64,7 @@ public class AddTriangleFan : DelegatedTriangulationEditAction<int>
         if (newIdx == eIdx || newIdx == sIdx)
         {
             //NOOP
-            return newIdx;
+            return -newIdx;
         }
 
 

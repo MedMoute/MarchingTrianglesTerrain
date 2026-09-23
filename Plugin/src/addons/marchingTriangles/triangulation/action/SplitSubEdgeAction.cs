@@ -13,7 +13,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 /// point defined by a weight between the sub-edge's starting and ending vertices.
 /// The provided starting indexes must be registered as part of an edge's border  
 /// </summary>
-public class SplitEdgeAction : DelegatedTriangulationEditAction<int>
+public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
 {
     /// <summary>
     /// The index of the split edge. Must be between 0 and 2.
@@ -35,7 +35,7 @@ public class SplitEdgeAction : DelegatedTriangulationEditAction<int>
     /// </summary>
     private readonly float _weight;
 
-    public SplitEdgeAction(int edgeIdx, int startIdx, int endIdx, float weight)
+    public SplitSubEdgeAction(int edgeIdx, int startIdx, int endIdx, float weight)
     {
         _edgeIdx = edgeIdx;
         _startIdx = startIdx;

@@ -495,7 +495,7 @@ public class HexTerrainCell
             var yEnd = Math.Abs(triangles.SourceTriangle[mod(edgeIdx + 1, 3)].Y - setLevel);
 
             var newPoint =
-                new SplitEdgeAction(
+                new SplitSubEdgeAction(
                     1,
                     subEdge.Item1,
                     subEdge.Item2,
