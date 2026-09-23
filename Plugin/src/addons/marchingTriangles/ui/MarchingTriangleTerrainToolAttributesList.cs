@@ -2,6 +2,9 @@ using Godot;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
 
+/// <summary>
+/// List of entries for each possible attribute.
+/// </summary>
 public class MarchingTriangleTerrainToolAttributesList
 {
     public MarchingTrianglesTextureNames VpTexturePaints { get; } = new();

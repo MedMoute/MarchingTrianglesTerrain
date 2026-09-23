@@ -10,25 +10,18 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 [GlobalClass]
 public partial class GdPluginHexTerrainChunk : MeshInstance3D
 {
-    public HexagonalTerrainChunk Underlying { get; private set; }
+    public HexagonalTerrainChunk Underlying { get; }
 
     /// <summary>
     /// The default collision layer used for plugin editing. 
     /// </summary>
-    public static readonly uint DefaultCollisionLayer = 17;
+    public const uint DefaultCollisionLayer = 17;
 
-    internal ConcavePolygonShape3D _tempCollisionShape;
+    internal ConcavePolygonShape3D TempCollisionShape;
 
     private SurfaceTool _st = new();
 
-    public bool SkipSaveOnExit { get; set; } = false; // Set to true when chunk is removed temporarily (undo/redo)
-
-    public enum Mode
-    {
-        MODE_1 = 1,
-        MODE_2 = 2
-    }
-
+    public bool SkipSaveOnExit { get; set; } // Set to true when chunk is removed temporarily (undo/redo)
 
     /// <summary>
     /// Public constructor.
@@ -81,7 +74,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             Mesh.SurfaceSetMaterial(0, terrain.TerrainSettings.ShaderMaterial);
         }
 
-        _tempCollisionShape = CreateAndGetCollision();
+        TempCollisionShape = CreateAndGetCollision();
         ProcessCollisionShape();
         if (!Engine.IsEditorHint() && false) // No runtime baking atm.
         {
@@ -100,7 +93,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         }
 
         GenerateSurfaces(forceFullRebuild);
-        _tempCollisionShape = CreateAndGetCollision();
+        TempCollisionShape = CreateAndGetCollision();
         ProcessCollisionShape();
     }
 
@@ -150,7 +143,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
                 return;
             }
 
-            if (_tempCollisionShape == null)
+            if (TempCollisionShape == null)
             {
                 GD.PushError(string.Format("Chunk {0} has no pending shape. Aborting collision shape creation.",
                     Underlying.Coordinates));
@@ -176,7 +169,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
             var colShape = new CollisionShape3D();
             colShape.Name = "CollisionShape3D";
-            colShape.Shape = _tempCollisionShape;
+            colShape.Shape = TempCollisionShape;
             colShape.Visible = false;
             body.AddChild(colShape);
             AddChild(body);
@@ -207,6 +200,9 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             _st.SetCustomFormat(0, SurfaceTool.CustomFormat.RgbaFloat);
             _st.SetCustomFormat(1, SurfaceTool.CustomFormat.RgbaFloat);
             _st.SetCustomFormat(2, SurfaceTool.CustomFormat.RgbaFloat);
+            // Used for GeometryEditor
+            _st.SetCustomFormat(3, SurfaceTool.CustomFormat.RgbaFloat);
+
         }
 
         //Free the lock so the thread workers can take it
@@ -275,6 +271,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
                 _st.SetCustom(0, dataArray.Color1[i]);
                 _st.SetCustom(1, dataArray.Custom1Value[i]);
                 _st.SetCustom(2, dataArray.MatBlend[i]);
+                _st.SetCustom(3, dataArray.Custom3Value[i]);
                 _st.SetUV(dataArray.Uv[i]);
                 _st.SetUV2(dataArray.Uv2[i]);
                 _st.AddVertex(dataArray.Pt[i]);
@@ -301,6 +298,8 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         data.Custom1Value.Add(colors["custom_1_value"]);
         data.Color0.Add(colors["color_0"]);
         data.Color1.Add(colors["color_1"]);
+        // TODO : pack data in custom 3
+        data.Custom3Value.Add(new Color(0/255f,0,0,1));
         data.MatBlend.Add(colors["mat_blend"]);
         data.Floor.Add(cell.FloorMode);
         

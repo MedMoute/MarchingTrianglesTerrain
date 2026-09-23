@@ -42,7 +42,7 @@ public partial class MarchingTrianglesToolUiAttributes
         { "quick_paint", SettingType.QuickPaint }
     };
 
-    enum SettingType
+    private enum SettingType
     {
         Checkbox,
         Slider,
@@ -58,24 +58,22 @@ public partial class MarchingTrianglesToolUiAttributes
     private readonly System.Collections.Generic.Dictionary<string, string> _terrainSettingsData = new()
     {
         { "ChunkDimensions", "Vector2i" },
-        { "CellScale", "EditorSpinSlider" }, 
+        { "CellScale", "EditorSpinSlider" },
         { "BlendMode", "OptionButton" },
-        
+
         //{ "noise_hmap", "EditorResourcePicker" },
         //{ "default_wall_texture", "OptionButton" },
-        
+
         { "CollisionLayer", "OptionButton" },
         // //Special texture settings
         //{ "use_ridge_texture", "CheckBox" },
         //{ "use_ledge_texture", "CheckBox" },
-        
+
         { "RidgeThreshold", "EditorSpinSlider" },
         { "LedgeThreshold", "EditorSpinSlider" }
     };
 
     public static MarchingTriangleTerrainToolAttributesList Attributes { get; } = new();
-
-    private readonly System.Collections.Generic.Dictionary<int, Variant> _settings = new();
 
     private SettingType _lastSettingType = SettingType.Error;
     public GdPluginHexTerrainChunk SelectedChunk { get; set; }
@@ -97,7 +95,11 @@ public partial class MarchingTrianglesToolUiAttributes
         VerticalScrollMode = ScrollMode.Disabled;
     }
 
-
+    /// <summary>
+    /// The most important method of this component : Parses the tool's attribute list and display
+    /// the tool's attributes in a panel. 
+    /// </summary>
+    /// <param name="toolIdx"></param>
     public void DisplayToolAttributes(int toolIdx)
     {
         _hboxContainer = new HBoxContainer();
@@ -115,7 +117,6 @@ public partial class MarchingTrianglesToolUiAttributes
             node.QueueFree();
         }
 
-        _settings.Clear();
 
         if (_terrainPlugin.Ui.Toolbar.ToolBox == null)
         {
@@ -168,7 +169,7 @@ public partial class MarchingTrianglesToolUiAttributes
     private void AddToolSetting(Godot.Collections.Dictionary<string, Variant> toolSettingParameters)
     {
         string settingName = (String)toolSettingParameters.GetValueOrDefault("name", "");
-        SettingType.TryParse((string)toolSettingParameters.GetValueOrDefault("type", (int)SettingType.Error),
+        Enum.TryParse((string)toolSettingParameters.GetValueOrDefault("type", (int)SettingType.Error),
             out SettingType settingType);
         string labelText = (String)toolSettingParameters.GetValueOrDefault("label", "");
 
@@ -283,7 +284,7 @@ public partial class MarchingTrianglesToolUiAttributes
             }
 
             throw new ConstraintException("Cannot process the UI for the Terrain settings as the "
-                                          + nameof(MarchingTrianglesTerrain)+"."+nameof(TerrainSettings)
+                                          + nameof(MarchingTrianglesTerrain) + "." + nameof(TerrainSettings)
                                           + " class does not expose the following properties : [ " + sb + "]");
         }
 
@@ -641,7 +642,7 @@ public partial class MarchingTrianglesToolUiAttributes
         OptionButton optionButton = new();
         optionButton.SetCustomMinimumSize(new Vector2(65, 35));
         optionButton.SetFlat(true);
-        foreach (GdPluginHexTerrainChunk.Mode mode in Enum.GetValues(typeof(GdPluginHexTerrainChunk.Mode)))
+        foreach (GeometryMode mode in Enum.GetValues(typeof(GeometryMode)))
         {
             optionButton.AddItem(mode.ToString());
         }
@@ -668,7 +669,7 @@ public partial class MarchingTrianglesToolUiAttributes
         OptionButton quickPaint = new();
         quickPaint.AddItem("None");
         quickPaint.SetItemMetadata(0, new Variant());
-        /// 1. Load GLOBAL quick paints from folder (always available)
+        // 1. Load GLOBAL quick paints from folder (always available)
         var dir = DirAccess.Open(_defaultQuickPaintPath);
         if (dir != null)
         {
@@ -681,6 +682,8 @@ public partial class MarchingTrianglesToolUiAttributes
                     // TODO implement => tool_attributes ll.300 -> 350
                     GD.PushError("Found a .(t)res in the quick pain preset, not doing anything with it");
                 }
+
+                fileName = dir.GetNext();
             }
         }
 
@@ -963,9 +966,7 @@ public partial class MarchingTrianglesToolUiAttributes
         {
             child.QueueFree();
         }
-
-        _settings.Clear();
-
+        
         if (_terrainPlugin.Ui.Toolbar?.ToolBox == null)
         {
             return;

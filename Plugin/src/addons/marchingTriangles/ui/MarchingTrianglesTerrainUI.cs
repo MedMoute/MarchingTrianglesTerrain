@@ -5,9 +5,13 @@ using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
 
+/// <summary>
+/// Component handling the Godot Editor's diisplay of the plugin.
+/// </summary>
+/// <param name="plugin"></param>
 public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin plugin) : Node
 {
-    public ShaderMaterial BrushMaterial => BrushData[plugin.ToolAttributes.BrushIndex].Item2;
+    public ShaderMaterial BrushMaterial => BrushData[Plugin.ToolAttributes.BrushIndex].Item2;
 
     public MarchingTrianglesToolUiAttributes UiToolAttributes { get; private set; } = new(plugin);
 
@@ -17,11 +21,11 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
 
     public MarchingTrianglesTerrainPlugin Plugin { get; set; } = plugin;
 
-    private bool _isVisible = false;
+    private bool _isVisible;
 
-    private int _activeTool = 0;
+    private int _activeTool;
 
-    public static Dictionary<int, Tuple<Mesh, ShaderMaterial>> BrushData = new()
+    public static readonly Dictionary<int, Tuple<Mesh, ShaderMaterial>> BrushData = new()
     {
         {
             0,
@@ -97,13 +101,13 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
 
         if (isVisible)
         {
-            // looks like some kind of Band-Aid =>
+            // looks like some kind of Band-Aid to avoid multiple calls to set visible =>
             //		await get_tree().create_timer(.01).timeout
-            if (Toolbar != null && Toolbar.ToolboxButtons.ContainsKey(_activeTool))
+            if (Toolbar != null && Toolbar.ToolBox.Buttons.ContainsKey(_activeTool))
             {
                 //Automatically trigger the tool button press to construct the 
                 // tool settings via the Observers on the button press.
-                Toolbar.ToolboxButtons[_activeTool].SetPressed(true);
+                Toolbar.ToolBox.Buttons[_activeTool].SetPressed(true);
             }
 
             UiToolAttributes.Show();
@@ -125,7 +129,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         UiToolAttributes.SetPluginAttributeValue(setting,value);
     }
 
-    //TODO : do not restart tool if same
+    //TODO : do not restart tool if same. also, this could be cleaner
     private void OnToolChanged(int toolIndex)
     {
         _activeTool = toolIndex;
@@ -155,11 +159,21 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
 
         //Grey out all tool attributes inn the terrain settings if there is at least onne chunk
         if ((TerrainToolMode)toolIndex == TerrainToolMode.TerrainSettings
-            && plugin.CurTerrainNode!=null
-            && plugin.CurTerrainNode.Chunks.Count>0)
+            && Plugin.CurTerrainNode!=null
+            && Plugin.CurTerrainNode.Chunks.Count>0)
         {
             // Since we cannot delete a chunk from this tool,the condition will remain true 
             UiToolAttributes.DisableEditToolAttributes();
+        }
+
+        if ((TerrainToolMode)toolIndex == TerrainToolMode.GeometryEdit)
+        {
+            var tmpShaderMat = new ShaderMaterial();
+            tmpShaderMat.SetShader(FileUtils.Load<Shader>("res://addons/marchingTriangles/editor/resources/shaders/geometryBehaviour.gdshader"));
+            foreach (var chunk   in Plugin.CurTerrainNode.Chunks)
+            {
+                chunk.Value.Mesh._SurfaceSetMaterial(0,tmpShaderMat);
+            }
         }
     }
 }
