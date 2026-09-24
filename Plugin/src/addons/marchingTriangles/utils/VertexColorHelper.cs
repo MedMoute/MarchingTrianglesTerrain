@@ -295,10 +295,31 @@ public class VertexColorHelper
         HexTerrainCell cell,
         Func<Vector3I, Color> source)
     {
-        var idx = new Vector3I(cell.CellCoordsImplicit.X, cell.CellCoordsImplicit.Y, 0);
+        // Smooth blend mode - lerp diagonal corners for smoother effect
+        // TODO recycle ?
+        Color[] colorArray = new Color[HexTerrainCell.VertexCount];
+        for (int i = 0; i < HexTerrainCell.VertexCount; i++)
+        {
+            //Find the index of the vertex in the triangle-based dual grid to fetch the required data
+            colorArray[i] = source(cell.DualCellsMapping[i]);
+        }
 
-            // Hard edge mode uses same color as cell's top-left corner
-            return source(idx);
+        var diag0 = colorArray[0].Lerp(colorArray[3], 0.5f);
+        var diag1 = colorArray[1].Lerp(colorArray[4], 0.5f);
+        var diag2 = colorArray[2].Lerp(colorArray[5], 0.5f);
+
+        var result = new Color(
+            MathF.Min(diag0.R, MathF.Min(diag1.R, diag2.R)),
+            MathF.Min(diag0.G, MathF.Min(diag1.G, diag2.G)),
+            MathF.Min(diag0.B, MathF.Min(diag1.B, diag2.B)),
+            MathF.Min(diag0.A, MathF.Min(diag1.A, diag2.A))
+        );
+        // Cleanup for smoother effect
+        if (diag0.R > 0.99f || diag1.R > 0.99f || diag2.R > 0.99f) result.R = 1f;
+        if (diag0.G > 0.99f || diag1.G > 0.99f || diag2.G > 0.99f) result.G = 1f;
+        if (diag0.B > 0.99f || diag1.B > 0.99f || diag2.B > 0.99f) result.B = 1f;
+        if (diag0.A > 0.99f || diag1.A > 0.99f || diag2.A > 0.99f) result.A = 1f;
+        return result;
         }
 
 }

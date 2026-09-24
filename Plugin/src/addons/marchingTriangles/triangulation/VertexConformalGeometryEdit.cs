@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
@@ -16,8 +17,9 @@ public class VertexConformalGeometryEdit
         _actions.Add(action);
     }
 
-    public void RegisterAction(TriangulationEditAction<int> action)
+    public void RegisterAction(TriangulationEditAction<int> action,Triangulation triangulation)
     {
+        actionToTriangulationHandle.Add(action, triangulation);
         _actions.Add(action);
     }
 
@@ -34,9 +36,11 @@ public class VertexConformalGeometryEdit
         switch (operationType)
         {
             case GeometryMode.FlatHexagons:
-                throw new NotImplementedException();
+                TriangleEdgeActions.RegisterFlatHexagonEdgeProcessingActions(cell.Item2,cell.Item1,edge.Item1,edge.Item2,this);
+                break;
             case GeometryMode.FlatTriangles:
-                throw new NotImplementedException();
+                TriangleEdgeActions.RegisterFlatHexagonEdgeProcessingActions(cell.Item2,cell.Item1,edge.Item1,edge.Item2,this);
+                break;
             case GeometryMode.SmoothLinear:
                 break;
             case GeometryMode.Foothill:

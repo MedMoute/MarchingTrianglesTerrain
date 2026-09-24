@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
@@ -11,30 +12,30 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 /// </summary>
 internal static class TriangleEdgeActions
 {
-    internal static void ProcessFlatHexagonEdge(int edgeIdx, Triangulation triangles)
+    internal static void RegisterFlatHexagonEdgeProcessingActions(HexTerrainCell cell, int vertexIdx,Triangulation triangles, int edgeIdx,VertexConformalGeometryEdit v)
     {
-        var setLevel = (float)triangles._additionalHints![HexTerrainCell.AverageHeightHint];
+        var setLevel = cell.AverageHeight;
         //Move the triangle along the edge
-        new DisplaceEdgeAlongYAxis(edgeIdx, setLevel, setLevel).Apply(triangles);
+        v.RegisterAction(new DisplaceEdgeAlongYAxis(edgeIdx, setLevel, setLevel),triangles);
 
         if (edgeIdx != 1) return;
         //If outer edge (edgeIdx =1) add fans to match the previous height
         // The center of the cell is the first point of the triangulation as per
         // ComputeTriangleAndMask()
-        AddEdgeFans(1, triangles, setLevel);
+        AddEdgeFans(1, triangles, setLevel,v);
     }
 
 
-    internal static void ProcessFlatTriangleEdge(int edgeIdx, Triangulation triangles)
+    internal static void RegisterFlatTriangleEdgeProcessingActions(HexTerrainCell cell, int vertexIdx,Triangulation triangles, int edgeIdx,VertexConformalGeometryEdit v)
     {
         var setLevel = (triangles.SourceTriangle[1].Y + triangles.SourceTriangle[2].Y) / 2;
         var nextTriLevel = (float)triangles._additionalHints![HexTerrainCell.NextTriangleEdgeAvgHeight];
         var nextTriVertex = (Vector3)triangles._additionalHints![HexTerrainCell.NextTriangleVertexPos];
         //Move the triangle along the edge
-        new DisplaceEdgeAlongYAxis(
+        v.RegisterAction(new DisplaceEdgeAlongYAxis(
             edgeIdx,
             setLevel,
-            setLevel).Apply(triangles);
+            setLevel),triangles);
         switch (edgeIdx)
         {
             // If right inner edge (edgeIdx =0)  :NOOP
@@ -44,7 +45,7 @@ internal static class TriangleEdgeActions
             // The center of the cell is the first point of the triangulation as per
             // ComputeTriangleAndMask()
             case 1:
-                AddEdgeFans(edgeIdx, triangles, setLevel);
+                AddEdgeFans(edgeIdx, triangles, setLevel,v);
                 break;
             // If right inner edge (edgeIdx =2) add fans to the level of the next triangle , hinted in the dictionary
             case 2:
@@ -86,7 +87,7 @@ internal static class TriangleEdgeActions
         }
     }
 
-    private static void AddEdgeFans(int edgeIdx, Triangulation triangles, float setLevel)
+    private static void AddEdgeFans(int edgeIdx, Triangulation triangles, float setLevel, VertexConformalGeometryEdit v)
     {
         if (triangles.Edges[edgeIdx].Count > 1)
         {
@@ -101,31 +102,32 @@ internal static class TriangleEdgeActions
         {
             if (Math.Abs(triangles.SourceTriangle[edgeIdx].Y - setLevel) > 1e-5)
             {
-                new AddTrianglesOnBorderEdge(edgeIdx, triangles.SourceTriangle[edgeIdx]).Apply(triangles);
+                v.RegisterAction(new AddTrianglesOnBorderEdge(edgeIdx, triangles.SourceTriangle[edgeIdx]),triangles);
             }
 
             if (Math.Abs(triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)].Y - setLevel) > 1e-5)
             {
-                new AddTrianglesOnBorderEdge(edgeIdx, triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)])
-                    .Apply(triangles);
+                v.RegisterAction(new AddTrianglesOnBorderEdge(edgeIdx, triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)]),triangles);
             }
         }
         else
         {
-            var subEdge = triangles.SubEdges.ElementAt(triangles.Edges[edgeIdx].First!.Value).Key;
-            var yStart = Math.Abs(triangles.SourceTriangle[edgeIdx].Y - setLevel);
-            var yEnd = Math.Abs(triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)].Y - setLevel);
+            v.RegisterAction(new ComposedTriangularEditAction(triangles => { 
+                var subEdge = triangles.SubEdges.ElementAt(triangles.Edges[edgeIdx].First!.Value).Key;
+                var yStart = Math.Abs(triangles.SourceTriangle[edgeIdx].Y - setLevel);
+                var yEnd = Math.Abs(triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)].Y - setLevel);
 
-            var newPoint =
-                new SplitSubEdgeAction(
-                    1,
-                    subEdge.Item1,
-                    subEdge.Item2,
-                    yStart / (yStart + yEnd)).Apply(triangles);
-            var pos1 = triangles.SourceTriangle[edgeIdx];
-            var pos2 = triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)];
-            new AddTriangleFan((subEdge.Item1, newPoint), pos1).Apply(triangles);
-            new AddTriangleFan((subEdge.Item2, newPoint), pos2).Apply(triangles);
+                var newPoint =
+                    new SplitSubEdgeAction(
+                        1,
+                        subEdge.Item1,
+                        subEdge.Item2,
+                        yStart / (yStart + yEnd)).Apply(triangles);
+                var pos1 = triangles.SourceTriangle[edgeIdx];
+                var pos2 = triangles.SourceTriangle[EngineUtils.mod(edgeIdx + 1, 3)];
+                new AddTriangleFan((subEdge.Item1, newPoint), pos1).Apply(triangles);
+                new AddTriangleFan((subEdge.Item2, newPoint), pos2).Apply(triangles);}
+                ),triangles);
         }
     }
 
