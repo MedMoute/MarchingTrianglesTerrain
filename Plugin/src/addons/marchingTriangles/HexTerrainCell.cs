@@ -14,9 +14,9 @@ public class HexTerrainCell
 {
     public Tuple<GeometryMode, GeometryMode>? GeometryModesOverride;
 
-    // TODO : Cell based ?
-    public static double A = 0.5f;
-    public static double Theta = 0.1d;
+    // DO NOT USE : Not implemented : having a  per-cell threshold will create non-conformal meshes.
+    // FIXME : Threshold override should be done on cell edge level, not @per-cell level
+    public Tuple<float, ThresholdComputationMode>? ThresholdOverride;
 
     public bool Verbose;
     public bool RunIntegrityChecks;
@@ -36,7 +36,7 @@ public class HexTerrainCell
     }
 
     /// <summary>
-    /// The coordinates of the current cell in the paren chunk's hex frame.
+    /// The coordinates of the current cell in the parent chunk's hex frame.
     /// </summary>
     public Vector3I CellCoords
     {
@@ -189,7 +189,12 @@ public class HexTerrainCell
         };
     }
 
-    public static Vector2I GetChunkOffsetForDualCell(Vector2I chunkDimension, Vector3I dualIndex)
+    internal static Vector2I GetChunkOffsetForDualCell(Vector2I chunkDimension, Vector3I dualIndex)
+    {
+        return GetChunkOffsetForDualCell(chunkDimension, new Vector2I(dualIndex.X,dualIndex.Y));
+    }
+    
+    private static Vector2I GetChunkOffsetForDualCell(Vector2I chunkDimension, Vector2I dualIndex)
     {
         var offset = new Vector2I(
             Mathf.FloorToInt(dualIndex.X / (float)chunkDimension.X),
@@ -240,13 +245,6 @@ public class HexTerrainCell
             TerrainToolPluginHelper.FormatVector2(CenterPosition));
     }
 
-    private void UpdateChunkMesh(List<TriangleInfo> processedTriangles, GdPluginHexTerrainChunk chunk)
-    {
-        ProcessTrianglesIntoPoints(processedTriangles, chunk);
-        chunk.ProcessPointsIntoMeshTriangles(this);
-        TempDataArrays.Clear();
-    }
-
     private (Vector3[] tri, int Mask) ComputeTriangleAndMask(
         int i, Dictionary<Vector2D,
             float> dataArray,
@@ -269,99 +267,21 @@ public class HexTerrainCell
         return (tri, mask);
     }
 
-    private void ProcessTrianglesIntoPoints(List<TriangleInfo> trianglesWithWallEdges,
-        GdPluginHexTerrainChunk chunk)
+    internal void ProcessTrianglesIntoPoints(
+        List<TriangleInfo> triangles,
+        HexagonalTerrainChunk chunk)
     {
-        foreach (var trianglesWithWallEdge in trianglesWithWallEdges)
+        foreach (var triangleInfo in triangles)
         {
-            FloorMode = !trianglesWithWallEdge.IsWall;
+            FloorMode = !triangleInfo.IsWall;
 
-            foreach (var point in trianglesWithWallEdge.Points)
+            foreach (var point in triangleInfo.Points)
             {
                 chunk.AddPoint(point, Vector2.Zero, this);
             }
         }
     }
-
-    public List<TriangleInfo> ProcessCellGeometry(
-        Dictionary<Vector2D, float> dataArray,
-        HexagonalTerrainChunk chunk)
-    {
-        var effectiveGeometryMode = GeometryModesOverride ?? chunk.DefaultGeometryModes;
-
-        List<TriangleInfo> triangles = [];
-
-        for (var i = 0; i < 6; i++)
-        {
-            var (tri, mask) = ComputeTriangleAndMask(i, dataArray, chunk);
-            Func<int, GeometryMode> computeGeometryMode = ComputeEdgeGeometryMode(mask, effectiveGeometryMode);
-            Dictionary<string, object> hints = new()
-            {
-                [AverageHeightHint] = AverageHeight,
-                [NextTriangleEdgeAvgHeight] = GetEdgeAvgHeight!(mod(i + 1, VertexCount)),
-                [NextTriangleVertexPos] = new Vector3(
-                    (float)VertexPositionsInPlane[mod(i + 1, VertexCount)].X,
-                    GetVertexData!(mod(i + 1, VertexCount)),
-                    (float)VertexPositionsInPlane[mod(i + 1, VertexCount)].Y)
-            };
-            var output = ProcessTriangle(this, tri, computeGeometryMode, hints);
-            triangles.AddRange(output);
-        }
-
-        return triangles;
-    }
-
-    public static Func<int, GeometryMode> ComputeEdgeGeometryMode(int mask,
-        Tuple<GeometryMode, GeometryMode>? cellGeometryBehaviour)
-    {
-        if (cellGeometryBehaviour == null)
-        {
-            throw new ArgumentNullException(nameof(cellGeometryBehaviour));
-        }
-
-        return edgeIdx =>
-        {
-            var implicitGeometryMode =
-                (mask & (1 << edgeIdx)) == 0 ? cellGeometryBehaviour.Item1 : cellGeometryBehaviour.Item2;
-            //TODO fetch neighbor cell if edgeIdx ==1 and apply logic
-            return implicitGeometryMode;
-        };
-    }
-
-    /// <summary>
-    /// Returns the sub triangles created by applying the transformation algorithm defined by the cellGeometryBehaviour argument.
-    /// </summary>
-    public static List<TriangleInfo> ProcessTriangle(
-        HexTerrainCell cell,
-        Vector3[] triangle,
-        Func<int, GeometryMode> cellGeometryBehaviour,
-        Dictionary<string, object>? additionalHints = null)
-    {
-        // We create a Triangulation instance based on the triangle
-        // that will receive all the transformations from the algorithms
-        var triangles = new Triangulation(
-            triangle,
-            cell.Verbose,
-            cell.RunIntegrityChecks,
-            additionalHints);
-
-        for (var i = 0; i <= 2; i++)
-        {
-            var algo = cellGeometryBehaviour.Invoke(i);
-            Console.WriteLine($"Processing Edge {i} : Algorithm {algo}");
-            triangulation.TriangleEdgeActions.ProcessTriangleEdge(i,
-                triangles,
-                algo);
-        }
-
-        triangles.Debug("Triangle done", true);
-        Console.WriteLine("Triangle Processing done");
-
-
-        var tInfos = triangles.ToTriangleInfoList();
-        return tInfos;
-    }
-
+    
     /// <summary>
     /// Triangle processing output.
     /// </summary>
@@ -407,49 +327,50 @@ public class HexTerrainCell
         return z;
     }
 
-    /// <summary>
-    /// Processes the temporary data of the cell to generate the expected surface mesh.
-    /// </summary>
-    public Action CopyCellDataToPending(GdPluginHexTerrainChunk chunk)
-    {
-        // TODO actually copy the data => cf. chunk.gd ll. 314 -> 335 (dont forget the lock)
-        return PlanCellProcessing(chunk);
-    }
-
-
-    public Action PlanCellProcessing(GdPluginHexTerrainChunk chunk)
-    {
-        var tempHexagonData = ExtractDataFromCell();
-
-        return () => { DoMarchingTrianglesOnFullCell(tempHexagonData, chunk); };
-    }
-
     public Dictionary<Vector2D, float> ExtractDataFromCell()
     {
+        if (GetVertexData == null)
+        {
+            throw new InvalidOperationException("GetVertexData is null");
+        }
         Dictionary<Vector2D, float> tempHexagonData = new();
 
         for (int i = 0; i < VertexCount; i++)
         {
             tempHexagonData.Add(
                 _orientationSystem.GetVertex(_cellCoordsImplicit, i, 0),
-                GetVertexData!(i));
+                GetVertexData(i));
         }
 
         return tempHexagonData;
     }
 
-    private void DoMarchingTrianglesOnFullCell(
-        Dictionary<Vector2D, float> tempHexagonData,
-        GdPluginHexTerrainChunk chunk)
+    internal List<Vector2I> FetchNeighboringCellsData(Dictionary<Vector2I, HexTerrainCell> pendingDataDictionary,HexagonalTerrainChunk chunk)
     {
-        if (tempHexagonData.Count != 6)
+        var neighbors = GetNeighborCellsCoordinates();
+
+        var neighborCells = chunk.GetHexCells(cell => neighbors.Contains(cell.CellCoords));
+        foreach (var cell in neighborCells)
         {
-            throw new ArgumentException(
-                "We expect 6 values for this code path. Aborting.");
+            pendingDataDictionary.TryAdd(cell.CellCoordsImplicit, cell);
         }
 
-        List<TriangleInfo> triangles = ProcessCellGeometry(tempHexagonData, chunk.Underlying);
-        UpdateChunkMesh(triangles, chunk);
+        return [.. neighbors.Select(v => new Vector2I(v.X, v.Y))];
+    }
+
+    /// <summary>
+    /// Returns the list of the cells indexes that touch this cell. 
+    /// </summary>
+    /// <returns></returns>
+    private List<Vector3I> GetNeighborCellsCoordinates()
+    {
+        // Trivial with cube coordinates
+        return [CellCoords+Vector3I.Right-Vector3I.Up,
+            CellCoords-Vector3I.Right+Vector3I.Up,
+            CellCoords+Vector3I.Back-Vector3I.Up,
+            CellCoords-Vector3I.Back+Vector3I.Up,
+            CellCoords+Vector3I.Back-Vector3I.Right,
+            CellCoords-Vector3I.Back+Vector3I.Right];  
     }
 }
 

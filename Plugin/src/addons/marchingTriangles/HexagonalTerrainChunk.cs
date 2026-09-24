@@ -14,8 +14,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 /// 
 /// The source map is a cartesian grid, storing the output of two separate <b>triangular</b> vertex brushes.
 /// This map can also be seen as a cluster of height values in the dual hexagonal grid.
-/// Each underlying hexagonal cell is then split into 6 equilateral triangles, and we apply the Marching Triangles algorithm to
-/// extract a mesh for it.
+/// Each underlying hexagonal cell is then split into 6 equilateral triangles
 public class HexagonalTerrainChunk
 {
     /// <summary>
@@ -88,8 +87,9 @@ public class HexagonalTerrainChunk
     public float MergeThreshold { get; set; }
 
     public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes = new(GeometryMode.FlatHexagons,GeometryMode.FlatHexagons);
-    public float DefaultGeometryParam0;
-    public float DefaultGeometryParam1;
+
+    public Tuple<float, ThresholdComputationMode> DefaultThreshold = new(MathF.PI / 4, ThresholdComputationMode.Angle);
+
 
     /// <summary>
     /// Data holder for the chunk's color data
@@ -265,16 +265,14 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// Returns the hexagonal cells of a chunk.
     /// </summary>
-    public List<HexTerrainCell> GetHexCells()
+    public List<HexTerrainCell> GetHexCells(Func<HexTerrainCell,bool>? predicate = null)
     {
-        var result = new List<HexTerrainCell>(_terrainDualGrid.CompleteCells);
-        var pendingCells = _terrainDualGrid.PendingCells.Where(c => c.Value != null);
-        foreach (var pendingCell in pendingCells)
-        {
-            result.Add(pendingCell.Value);
-        }
-
-        return result;
+            var result = new List<HexTerrainCell>(_terrainDualGrid.CompleteCells.Where(predicate ?? (_=>true)));
+            result.AddRange(
+                _terrainDualGrid.PendingCells
+                    .Where(c => c.Value != null && (predicate?.Invoke(c.Value) ?? true) )
+                    .Select(kvp => kvp.Value));
+            return result;
     }
 
     private Vector2I ApplyBorderFrom(HexagonalTerrainChunk neighbor)
@@ -363,9 +361,68 @@ public class HexagonalTerrainChunk
         return chunksFlaggedForRebuild;
     }
 
-    public Dictionary<string, Color> BlendColors(GdPluginHexTerrainChunk chunk, HexTerrainCell cell, Vector3 pos, Vector2 uv, bool b)
+    public Dictionary<string, Color> BlendColors( HexTerrainCell cell, Vector3 pos, Vector2 uv, bool b)
     {
-        return _colorHelper.BlendColors(chunk, cell, pos, uv, b);
+        return _colorHelper.BlendColors(this, cell, pos, uv, b);
+    }
+
+    public void AddPoint(Vector3 p, Vector2 _uv, HexTerrainCell cell)
+    {
+        //UV - used for ledge detection. X = closeness to top terrace, Y = closeness to bottom of terrace
+        //Walls will always have UV of 1, 1
+        Vector2 uv = cell.FloorMode ? _uv : Vector2.One;
+
+        Vector2 uv2 = cell.FloorMode
+            ? new Vector2(p.X, p.Z) / 1f / MathF.Sqrt(3)
+            : new Vector2(p.X, p.Y) + new Vector2(p.Z, p.Y);
+
+        var data = cell.TempDataArrays;
+
+        data.Pt.Add(p);
+        data.Uv.Add(uv);
+        data.Uv2.Add(uv2);
+        var colors = BlendColors( cell, p, uv, true);
+        data.Custom1Value.Add(colors["custom_1_value"]);
+        data.Color0.Add(colors["color_0"]);
+        data.Color1.Add(colors["color_1"]);
+        // TODO : pack data in custom 3
+        data.Custom3Value.Add(new Color(0/255f,0,0,1));
+        data.MatBlend.Add(colors["mat_blend"]);
+        data.Floor.Add(cell.FloorMode);
+        
+    }
+
+    public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> ProcessGeometry(bool forceRebuild = false)
+    {
+        var editor = new ChunkConformalEditor(this);
+        //Step 1 : Collect all the required operations
+        editor.CollectAllOperations(forceRebuild);
+        //Step 2 : Apply all the operations on triangulations
+        editor.ApplyGeometryOperations();
+        //Step 3 : Extract the triangles
+        return editor.GetTriangleInfos();
+    }   
+}
+
+public enum ThresholdComputationMode
+{
+    Angle,
+    HeightDifference
+}
+
+public static class ThresholdComputationModeExtensions
+{
+    public static bool IsOverThreshold(this ThresholdComputationMode mode, float threshold,Vector3 a, Vector3 b)
+    {
+        switch (mode)
+        {
+            case  ThresholdComputationMode.Angle:
+                return (b - a).AngleTo((b - a).Slide(Vector3.Up)) >= threshold;
+            case ThresholdComputationMode.HeightDifference:
+                return Math.Abs(b.Y - a.Y) >= threshold;
+            default:
+                return false;
+        }
     }
 }
 
