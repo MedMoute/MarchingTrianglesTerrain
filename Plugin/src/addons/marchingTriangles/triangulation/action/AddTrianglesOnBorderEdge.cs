@@ -113,8 +113,8 @@ public class AddTrianglesOnBorderEdge : DelegatedTriangulationEditAction<int>
         }
 
         // If there is more than one entry, each of the listed subEdge executed an action that generates a triangle,
-        // We check all the created triangles and we need to make sure that the triangles that intersect with
-        // preexisisting triangles are removed from the triangle list 
+        // We check all the created triangles, and we need to make sure that the triangles that intersect with
+        // pre-existing triangles are removed from the triangle list 
 
         var otherEdges = flattenedPointCreations.ToList();
         otherEdges.Remove(flattenedPointCreations.DistinctBy(v => v.v).First());

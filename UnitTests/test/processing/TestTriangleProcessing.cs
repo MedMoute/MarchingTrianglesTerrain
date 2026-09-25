@@ -79,7 +79,7 @@ public class TestTriangleProcessing
             GeometryMode.BendingEdge)]
         GeometryMode geometryMode)
     {
-        //Change src1 and src2
+        //Change src1 and src2 : this case has a constant average  per cell WTFFFFF
         for (int i = 0; i < src1.Length; i++)
         {
             src1[i] = new float[dimension];
@@ -92,6 +92,19 @@ public class TestTriangleProcessing
             }
         }
         
+        //Change src1 and src2 : this case has a constant average  per cell WTFFFFF
+        for (int i = 0; i < src1.Length; i++)
+        {
+            src1[i] = new float[dimension];
+            src2[i] = new float[dimension];
+
+            for (int j = 0; j < src1.Length; j++)
+            {
+                src1[i][j] = i * src1.Length + j;
+                src2[i][j] = 3*(i * src1.Length + j);
+            }
+        }
+
         chunk = new HexagonalTerrainChunk(
             Vector2I.Zero,
             dimension * Vector2I.One,
@@ -102,12 +115,10 @@ public class TestTriangleProcessing
             DefaultThreshold =
                 new Tuple<float, ThresholdComputationMode>(0.5f, ThresholdComputationMode.HeightDifference)
         };
-
-
         chunk.Dirty = true;
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
-
+        output = chunk.ProcessGeometry();
         Assert.DoesNotThrow(() => { output = chunk.ProcessGeometry(); });
 
 
@@ -115,6 +126,20 @@ public class TestTriangleProcessing
         foreach (var keyValuePair in output)
         {
             AssertIsTriangleListManifold(keyValuePair.Value);
+
+            switch (geometryMode)
+            {
+                case GeometryMode.SmoothLinear:
+                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
+                    break;
+                case GeometryMode.FlatHexagons:
+                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6 + 
+                            //Count the existing neighbor cells
+                            output.Keys
+                                .Count(c => c.GetNeighborCellsCoordinates()
+                                    .Any( cIdx => keyValuePair.Key.CellCoords == cIdx))));
+                    break;
+            }
         }
 
         //Global checks

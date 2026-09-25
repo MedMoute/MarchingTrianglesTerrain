@@ -362,7 +362,7 @@ public class HexTerrainCell
     /// Returns the list of the cells indexes that touch this cell. 
     /// </summary>
     /// <returns></returns>
-    private List<Vector3I> GetNeighborCellsCoordinates()
+    public List<Vector3I> GetNeighborCellsCoordinates()
     {
         // Trivial with cube coordinates
         return [CellCoords+Vector3I.Right-Vector3I.Up,

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using Godot;
+using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
@@ -35,5 +37,25 @@ public class EngineUtils
     public static int mod(int x, int m)
     {
         return (x % m + m) % m;
+    }
+
+    public class V2DComp : IEqualityComparer<Vector2D>
+    {
+
+        private readonly double _eps;
+        
+        public V2DComp(double eps)
+        {
+            _eps = eps;
+        }
+        public bool Equals(Vector2D v1, Vector2D v2)
+        {
+            return v1.Equals(v2, _eps);
+        }
+
+        public int GetHashCode(Vector2D obj)
+        {
+            return 1;
+        }
     }
 }

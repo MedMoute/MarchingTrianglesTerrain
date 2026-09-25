@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b4m2n17e0x2tw"
-path="res://.godot/imported/level_tool.svg-a72469f87cefd28b9719d70c10a413e4.ctex"
+path="res://.godot/imported/level_tool.svg-bda4f216ce284bf313d390795a31b5ce.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://src/addons/marchingTriangles/editor/icons/level_tool.svg"
-dest_files=["res://.godot/imported/level_tool.svg-a72469f87cefd28b9719d70c10a413e4.ctex"]
+source_file="res://addons/marchingTriangles/editor/icons/level_tool.svg"
+dest_files=["res://.godot/imported/level_tool.svg-bda4f216ce284bf313d390795a31b5ce.ctex"]
 
 [params]
 

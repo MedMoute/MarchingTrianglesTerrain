@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dqjst730tmfy4"
-path="res://.godot/imported/chunk_manager_tool.svg-8f610647e7d714ad6a16745bfea02eca.ctex"
+path="res://.godot/imported/chunk_manager_tool.svg-7b07ccbb91c15f7bb95aac626bce558d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://src/addons/marchingTriangles/editor/icons/chunk_manager_tool.svg"
-dest_files=["res://.godot/imported/chunk_manager_tool.svg-8f610647e7d714ad6a16745bfea02eca.ctex"]
+source_file="res://addons/marchingTriangles/editor/icons/chunk_manager_tool.svg"
+dest_files=["res://.godot/imported/chunk_manager_tool.svg-7b07ccbb91c15f7bb95aac626bce558d.ctex"]
 
 [params]
 
