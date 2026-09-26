@@ -212,20 +212,6 @@ public class HexagonalTerrainChunk
         return GetHeightFromTriCellCoords(new Vector3I(triCell.X, triCell.Y, triIdx));
     }
 
-    public List<List<List<float>>> CopyHeightMapData()
-    {
-        var data = new List<List<List<float>>>();
-
-        foreach (var dataSource in DataGrid.Data)
-        {
-            var tile = dataSource.Key;
-            data[tile.X][tile.Y][tile.Z] = dataSource.Value;
-        }
-
-        return data;
-    }
-
-
     /// <summary>
     /// Returns the list of triangle tiles' coordinates of the chunk that are affected by the addition of a border
     /// </summary>
@@ -366,7 +352,7 @@ public class HexagonalTerrainChunk
         return _colorHelper.BlendColors(this, cell, pos, uv, b);
     }
 
-    public void AddPoint(Vector3 p, Vector2 _uv, HexTerrainCell cell)
+    internal void CopyPointDataToCellStructures(Vector3 p, Vector2 _uv, HexTerrainCell cell)
     {
         //UV - used for ledge detection. X = closeness to top terrace, Y = closeness to bottom of terrace
         //Walls will always have UV of 1, 1

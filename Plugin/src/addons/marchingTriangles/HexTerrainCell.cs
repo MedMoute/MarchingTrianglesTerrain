@@ -277,7 +277,7 @@ public class HexTerrainCell
 
             foreach (var point in triangleInfo.Points)
             {
-                chunk.AddPoint(point, Vector2.Zero, this);
+                chunk.CopyPointDataToCellStructures(point, Vector2.Zero, this);
             }
         }
     }

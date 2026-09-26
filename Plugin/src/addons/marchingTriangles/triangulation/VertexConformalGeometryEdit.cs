@@ -13,7 +13,7 @@ public class VertexConformalGeometryEdit
 {
     private Dictionary<TriangulationEditAction<int>, Triangulation> actionToTriangulationHandle = new();
 
-    private List<TriangulationEditAction<int>> _actions = new();
+    private readonly List<TriangulationEditAction<int>> _actions = new();
 
     public void RegisterAction(TriangulationEditAction<int> action, Triangulation triangulation)
     {
@@ -30,9 +30,9 @@ public class VertexConformalGeometryEdit
     }
 
     /// <summary>
-    /// Registers the local vertex operation required to perform the action upon application.
+    /// Registers the local vertex operations required to perform the GeometryMode's induced action upon application.
     /// </summary>
-    public void RegisterLocalAction(
+    public void RegisterLocalVertexAction(
         Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations,
         Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)?>> localTriangulations)
     {
@@ -49,7 +49,7 @@ public class VertexConformalGeometryEdit
 
             var tri = target.Item1;
             var vertexInTriIdx = target.Item2;
-            RegisterActionDependingOnGeometry(
+            RegisterVertexActionDependingOnGeometry(
                 operationType,
                 htCell,
                 vertexInHtCellIdx,
@@ -65,7 +65,7 @@ public class VertexConformalGeometryEdit
 
                 tri = target.Item1;
                 vertexInTriIdx = target.Item2;
-                RegisterActionDependingOnGeometry(
+                RegisterVertexActionDependingOnGeometry(
                     operationType,
                     htCell,
                     vertexInHtCellIdx,
@@ -75,7 +75,7 @@ public class VertexConformalGeometryEdit
         }
 
 
-        void RegisterActionDependingOnGeometry(
+        void RegisterVertexActionDependingOnGeometry(
             GeometryMode operationType,
             HexTerrainCell htCell,
             int vertexInHtCellIdx,
@@ -86,11 +86,13 @@ public class VertexConformalGeometryEdit
             switch (operationType)
             {
                 case GeometryMode.FlatHexagons:
-                    ProcessVertexOperationsForFlatHexes(appliedGeometryOperations, htCell, vertexInHtCellIdx,
+                    GeometryModeActions.ProcessVertexOperationsForFlatHexes(this, appliedGeometryOperations, htCell,
+                        vertexInHtCellIdx,
                         vertexInTriIdx, tri);
                     break;
                 case GeometryMode.FlatTriangles:
-                    ProcessVertexOperationsForFlatTriangles(appliedGeometryOperations, htCell, vertexInHtCellIdx,
+                    GeometryModeActions.ProcessVertexOperationsForFlatTriangles(this, appliedGeometryOperations, htCell,
+                        vertexInHtCellIdx,
                         vertexInTriIdx, tri, secondTriangulationOfCell);
                     break;
                 case GeometryMode.SmoothLinear:
@@ -106,141 +108,17 @@ public class VertexConformalGeometryEdit
                 //TODO
                 //throw new NotImplementedException();
                 case GeometryMode.FlatHexagonsNoFans:
-                    ProcessVertexOperationsForFlatHexes(appliedGeometryOperations, htCell, vertexInHtCellIdx,
+                    GeometryModeActions.ProcessVertexOperationsForFlatHexes(this, appliedGeometryOperations, htCell,
+                        vertexInHtCellIdx,
                         vertexInTriIdx, tri, false);
                     break;
                 case GeometryMode.FlatTrianglesNoFans:
-                    ProcessVertexOperationsForFlatTriangles(appliedGeometryOperations, htCell, vertexInHtCellIdx,
+                    GeometryModeActions.ProcessVertexOperationsForFlatTriangles(this, appliedGeometryOperations, htCell,
+                        vertexInHtCellIdx,
                         vertexInTriIdx, tri, secondTriangulationOfCell, false);
                     break;
                 default:
                     throw new NotImplementedException();
-            }
-        }
-    }
-
-    private void ProcessVertexOperationsForFlatTriangles(
-        Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations,
-        HexTerrainCell htCell,
-        int vertexInHtCellIdx,
-        int vertexInTriIdx,
-        Triangulation tri,
-        bool secondTriangulationFlag,
-        bool applyFans = true)
-    {
-        var pInit = vertexInTriIdx == 0
-            ? htCell.CenterPosition
-            : //Cell center point, we cant rely on the cell
-            htCell.VertexPositionsInPlane[vertexInHtCellIdx]; //Usual vertex
-
-        var height = secondTriangulationFlag
-            ? htCell.GetEdgeAvgHeight(EngineUtils.mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
-            : htCell.GetEdgeAvgHeight(vertexInHtCellIdx);
-
-        RegisterAction(new MovePointAlongYAxisAction(vertexInTriIdx, height), tri);
-        // If the action target edge is a cell border (e.g. targetEdge ==1)
-        // We find the other cell and add a fan from the vertex to the vertex @ other cell's height 
-        if (applyFans)
-        {
-            if (vertexInTriIdx == 1)
-            {
-                //To find the other matching edge, we fetch the other point of the triangulation that is not
-                // the cell center
-                Vector3 otherPos = tri.SourceTriangle.First(pos =>
-                    !new Vector2(pos.X, pos.Z).IsEqualApprox(
-                        new Vector2((float)htCell.CenterPosition.X, (float)htCell.CenterPosition.Y)) &&
-                    !new Vector2(pos.X, pos.Z).IsEqualApprox(
-                        new Vector2((float)pInit.X, (float)pInit.Y)));
-                //We find the other cell containing that point
-                List<HexTerrainCell> otherCells = appliedGeometryOperations.Keys.Select(t =>
-                    t.Item2).Where(oCell => oCell != htCell
-                                            && oCell.VertexPositionsInPlane.Any(v =>
-                                                v.Equals(new Vector2D(otherPos.X, otherPos.Z), 1e-5))).ToList();
-                if (otherCells.Count > 1)
-                {
-                    throw new Exception("There should be no more another cell matching the predicate");
-                }
-
-                if (otherCells.Count < 1)
-                {
-                    return;
-                }
-
-                var otherCell = otherCells[0];
-                // We fetch the index of the vertex in that cell
-                int idx = otherCell.VertexPositionsInPlane.FindIndex(v => v.Equals(pInit, 1e-5));
-                if (otherCell.GetEdgeAvgHeight != null)
-                {
-                    var hOtherCell = otherCell.GetEdgeAvgHeight(idx);
-                    // TODO : FIXME 
-                    // RegisterAction(
-                    //     new AddTrianglesOnBorderEdge(vertexInTriIdx,
-                    //         new Vector3((float)pInit.X, hOtherCell, (float)pInit.Y)),
-                    //     tri);
-                }
-            }
-            else //The action is on an internal edge of the cell, we essentially do
-                //the same thing except we dont need to find either the index
-                //(0=> VertexInHtCellIdx-1; 2=>VertexInHtCellIdx-1), or  the cell
-            {
-                height = vertexInTriIdx == 0
-                    ? htCell.GetEdgeAvgHeight(EngineUtils.mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
-                    : htCell.GetEdgeAvgHeight(vertexInHtCellIdx);
-                RegisterAction(
-                    new AddTrianglesOnBorderEdge(vertexInTriIdx, new Vector3((float)pInit.X, height, (float)pInit.Y)),
-                    tri);
-            }
-        }
-    }
-
-    private void ProcessVertexOperationsForFlatHexes(
-        Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations,
-        HexTerrainCell htCell,
-        int VertexInHtCellIdx,
-        int VertexInTriIdx,
-        Triangulation tri,
-        bool ApplyFans = true)
-    {
-        var pInit = htCell.VertexPositionsInPlane[VertexInHtCellIdx];
-        var height = htCell.AverageHeight;
-
-        RegisterAction(new MovePointAlongYAxisAction(VertexInTriIdx, height), tri);
-
-        if (ApplyFans)
-        {
-            // If the action target edge is a cell border (e.g. target.Item2 ==1)
-            // We find the other cell and add a fan from the vertex to the vertex @ other cell's height 
-            if (VertexInTriIdx == 1)
-            {
-                //To find the other matching edge, we fetch the other point of the triangulation that is not
-                // the cell center
-                Vector3 otherPos = tri.SourceTriangle.Where(pos =>
-                {
-                    return !new Vector2(pos.X, pos.Z).IsEqualApprox(new Vector2((float)htCell.CenterPosition.X,
-                               (float)htCell.CenterPosition.Y)) &&
-                           !new Vector2(pos.X, pos.Z).IsEqualApprox(new Vector2((float)pInit.X,
-                               (float)pInit.Y));
-                }).First();
-                //We find the other cell containing that point
-                List<HexTerrainCell> otherCells = appliedGeometryOperations.Keys.Select(t =>
-                    t.Item2).Where(oCell => oCell != htCell
-                                            && oCell.VertexPositionsInPlane.Any(v =>
-                                                v.Equals(new Vector2D(otherPos.X, otherPos.Z), 1e-5))).ToList();
-                if (otherCells.Count > 1)
-                {
-                    throw new Exception("There should be no more another cell matching the predicate");
-                }
-
-                if (otherCells.Count < 1)
-                {
-                    return;
-                }
-
-                var otherCell = otherCells[0];
-                var hOtherCell = otherCell.AverageHeight;
-                RegisterAction(
-                    new AddTrianglesOnBorderEdge(1, new Vector3((float)pInit.X, hOtherCell, (float)pInit.Y)),
-                    tri);
             }
         }
     }
@@ -255,6 +133,6 @@ public class CopyOnlyGeometryEdit : VertexConformalGeometryEdit
 
     public new void RegisterAction(TriangulationEditAction<int> action)
     {
-        throw new NotSupportedException();
+        base.RegisterAction(action,null);
     }
 }

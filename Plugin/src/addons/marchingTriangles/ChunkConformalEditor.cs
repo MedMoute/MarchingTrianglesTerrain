@@ -34,7 +34,10 @@ public class ChunkConformalEditor
         get { return _chunk; }
     }
 
-    //Once and for all computation of the vertex=> cells mappings
+    /// <summary>
+    /// Pre-computation of the chunks relation mappings between cells from the HexGrid space and triangulations
+    /// on the data grid
+    /// </summary>
     private void PrepareMappings()
     {
         foreach (var cell in _chunk._terrainDualGrid.CompleteCells)
@@ -187,7 +190,7 @@ public class ChunkConformalEditor
                 (_triangulationsPerCell[hexTerrainCell.CellCoordsImplicit][i], 0),
                 null));
         }
-        edit.RegisterLocalAction(appliedGeometryOperations, appliedTriangulations);
+        edit.RegisterLocalVertexAction(appliedGeometryOperations, appliedTriangulations);
 
     }
 
@@ -303,7 +306,7 @@ public class ChunkConformalEditor
             appliedGeometryOperations = ProcessCellGeometryOperations();
         }
 
-        editor.RegisterLocalAction(appliedGeometryOperations, localTriangulations);
+        editor.RegisterLocalVertexAction(appliedGeometryOperations, localTriangulations);
     }
 
     private static Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> ProcessCellGeometryOperations()
@@ -343,6 +346,10 @@ public class ChunkConformalEditor
         return thresholdMask;
     }
 
+    /// <summary>
+    /// Returns the dictionary of mesh triangles, indexed by the cell it's originating from.  
+    /// </summary>
+    /// <returns></returns>
     public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> GetTriangleInfos()
     {
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
