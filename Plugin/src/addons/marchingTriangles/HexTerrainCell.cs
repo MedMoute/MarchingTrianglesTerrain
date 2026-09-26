@@ -18,6 +18,8 @@ public class HexTerrainCell
     // FIXME : Threshold override should be done on cell edge level, not @per-cell level
     public Tuple<float, ThresholdComputationMode>? ThresholdOverride;
 
+    public ((int, int), (int, int))? ParametersOverride;
+
     public bool Verbose;
     public bool RunIntegrityChecks;
 

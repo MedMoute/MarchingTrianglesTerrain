@@ -50,6 +50,8 @@ public static class GeometryModeActions
 
                 if (otherCells.Count < 1)
                 {
+                    //TODO cross chunk fetch
+                    Console.WriteLine($"No other cell @X={pInit.X};Z={pInit.Y}");
                     return;
                 }
 

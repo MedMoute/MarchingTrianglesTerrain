@@ -21,6 +21,9 @@ public class HexagonalTerrainChunk
     /// Coordinates of the current chunk in the global plane frame
     /// </summary>
     public Vector2I Coordinates { get; set; }
+    
+    public ((int, int), (int, int)) GeometryModeParameters;
+
 
     /// <summary>
     /// The size of the chunk (measured in cells)
@@ -72,7 +75,7 @@ public class HexagonalTerrainChunk
     private readonly Func<Vector2I, HexagonalTerrainChunk> _neighborChunksProvider;
 
     /// Helper for computing/interpolating cell colors.
-    private readonly VertexColorHelper _colorHelper ;
+    private readonly VertexColorHelper _colorHelper;
 
     /// <summary>
     /// Dirtiness (need to reprocess) flag for the chunk.
@@ -86,7 +89,8 @@ public class HexagonalTerrainChunk
     /// </summary>
     public float MergeThreshold { get; set; }
 
-    public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes = new(GeometryMode.FlatTriangles,GeometryMode.FlatTriangles);
+    public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes =
+        new(GeometryMode.SmoothLinear , GeometryMode.SmoothLinear);
 
     public Tuple<float, ThresholdComputationMode> DefaultThreshold = new(MathF.PI / 4, ThresholdComputationMode.Angle);
 
@@ -251,14 +255,14 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// Returns the hexagonal cells of a chunk.
     /// </summary>
-    public List<HexTerrainCell> GetHexCells(Func<HexTerrainCell,bool>? predicate = null)
+    public List<HexTerrainCell> GetHexCells(Func<HexTerrainCell, bool>? predicate = null)
     {
-            var result = new List<HexTerrainCell>(_terrainDualGrid.CompleteCells.Where(predicate ?? (_=>true)));
-            result.AddRange(
-                _terrainDualGrid.PendingCells
-                    .Where(c => c.Value != null && (predicate?.Invoke(c.Value) ?? true) )
-                    .Select(kvp => kvp.Value));
-            return result;
+        var result = new List<HexTerrainCell>(_terrainDualGrid.CompleteCells.Where(predicate ?? (_ => true)));
+        result.AddRange(
+            _terrainDualGrid.PendingCells
+                .Where(c => c.Value != null && (predicate?.Invoke(c.Value) ?? true))
+                .Select(kvp => kvp.Value));
+        return result;
     }
 
     private Vector2I ApplyBorderFrom(HexagonalTerrainChunk neighbor)
@@ -285,7 +289,7 @@ public class HexagonalTerrainChunk
                     Dimensions2D,
                     v => _neighborChunksProvider(v).DataGrid,
                     v => existingNeighbors.Contains(v));
-                NeedUpdate[triCell-offset3D] = true;
+                NeedUpdate[triCell - offset3D] = true;
             }
         }
 
@@ -344,10 +348,11 @@ public class HexagonalTerrainChunk
                 chunksFlaggedForRebuild.Add(neighbor.Coordinates);
             }
         }
+
         return chunksFlaggedForRebuild;
     }
 
-    public Dictionary<string, Color> BlendColors( HexTerrainCell cell, Vector3 pos, Vector2 uv, bool b)
+    public Dictionary<string, Color> BlendColors(HexTerrainCell cell, Vector3 pos, Vector2 uv, bool b)
     {
         return _colorHelper.BlendColors(this, cell, pos, uv, b);
     }
@@ -367,15 +372,17 @@ public class HexagonalTerrainChunk
         data.Pt.Add(p);
         data.Uv.Add(uv);
         data.Uv2.Add(uv2);
-        var colors = BlendColors( cell, p, uv, true);
+        var colors = BlendColors(cell, p, uv, true);
         data.Custom1Value.Add(colors["custom_1_value"]);
         data.Color0.Add(colors["color_0"]);
         data.Color1.Add(colors["color_1"]);
+        var parameters = cell.ParametersOverride ?? GeometryModeParameters;
         // TODO : pack data in custom 3
-        data.Custom3Value.Add(new Color(0/255f,0,0,1));
+        data.Custom3Value.Add((cell.GeometryModesOverride??DefaultGeometryModes).Item1.GetModePalette()(
+            parameters.Item1.Item1,
+            parameters.Item1.Item2));
         data.MatBlend.Add(colors["mat_blend"]);
         data.Floor.Add(cell.FloorMode);
-        
     }
 
     public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> ProcessGeometry(bool forceRebuild = false)
@@ -387,7 +394,7 @@ public class HexagonalTerrainChunk
         editor.ApplyGeometryOperations();
         //Step 3 : Extract the triangles
         return editor.GetTriangleInfos();
-    }   
+    }
 }
 
 public enum ThresholdComputationMode
@@ -398,11 +405,11 @@ public enum ThresholdComputationMode
 
 public static class ThresholdComputationModeExtensions
 {
-    public static bool IsOverThreshold(this ThresholdComputationMode mode, float threshold,Vector3 a, Vector3 b)
+    public static bool IsOverThreshold(this ThresholdComputationMode mode, float threshold, Vector3 a, Vector3 b)
     {
         switch (mode)
         {
-            case  ThresholdComputationMode.Angle:
+            case ThresholdComputationMode.Angle:
                 return (b - a).AngleTo((b - a).Slide(Vector3.Up)) >= threshold;
             case ThresholdComputationMode.HeightDifference:
                 return Math.Abs(b.Y - a.Y) >= threshold;
@@ -424,4 +431,134 @@ public enum GeometryMode
     FlatTrianglesNoFans = 8
 }
 
+/// <summary>
+/// Extension class for defining methods using the GeometryMode enum
+/// </summary>
+public static class GeometryModeExtensions
+{
+    private static float lMin = 0.3f;
 
+    private static float lMax = 0.8f;
+
+    //Hue-margin
+    private static float hMargin = 0.2f;
+
+    //Saturation margin
+    private static float saturationMargin = 0.3f;
+
+
+    /// <summary>
+    /// Returns the the palette method (a double parametered float function)
+    /// for a given GeometryMode.
+    /// The input range for the resulting function is [0,1]
+    /// </summary>
+    /// <param name="gMode"></param>
+    /// <returns></returns>
+    public static Func<float?, float?, Color> GetModePalette(this GeometryMode gMode)
+    {
+        //We quantize the HSL space into as many quadrants as there are GeometryModes.
+        //The output palettes will have lightness values between lMin and lMax.
+        var enumArray = Enum.GetValues(typeof(GeometryMode));
+
+        var count = enumArray.Length;
+        var idx = (int)gMode;
+        if (idx < 1 || idx >= count)
+        {
+            throw new Exception("This is not supported");
+        }
+
+        var hueMin = (idx - 1f) / count;
+        var hueMax = (float)idx / count;
+        var hueMid = (hueMax + hueMin) / 2;
+        var lMid = (lMin + lMax) / 2;
+
+        bool supportsParameter1, supportsParameter2;
+        switch (gMode)
+
+        {
+            case GeometryMode.FlatHexagonsNoFans:
+            case GeometryMode.FlatTrianglesNoFans:
+            case GeometryMode.FlatTriangles:
+            case GeometryMode.FlatHexagons:
+            case GeometryMode.SmoothLinear:
+                supportsParameter1 = false;
+                break;
+            case GeometryMode.Foothill:
+            case GeometryMode.Plateau:
+            case GeometryMode.BendingEdge:
+                supportsParameter1 = true;
+                break;
+            default:
+                throw new NotSupportedException();
+        }
+
+        switch (gMode)
+
+        {
+            case GeometryMode.FlatHexagonsNoFans:
+            case GeometryMode.FlatTrianglesNoFans:
+            case GeometryMode.FlatTriangles:
+            case GeometryMode.FlatHexagons:
+            case GeometryMode.SmoothLinear:
+                supportsParameter2 = false;
+                break;
+            case GeometryMode.Foothill:
+            case GeometryMode.Plateau:
+            case GeometryMode.BendingEdge:
+                supportsParameter2 = true;
+                break;
+            default:
+                throw new NotSupportedException();
+        }
+
+        if (supportsParameter2)
+        {
+            if (!supportsParameter1)
+            {
+                throw new InvalidOperationException("Geometry mode is said to support 2 parameters," +
+                                                    " but not 1. Verify your implementations.");
+            }
+
+            //Double ended function we map
+            // the hue to the middle or the range
+            // the saturation to [margin,1-margin] 
+            //the lightness to [lMin, lMax]
+            return (p1, p2) =>
+            {
+                if (p1 is > 1 or < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(p1));
+                }
+
+                if (p2 is > 1 or < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(p2));
+                }
+
+                return Color.FromOkHsl(hueMid,
+                    Mathf.Lerp(saturationMargin, 1 - saturationMargin, p1.Value),
+                    Mathf.Lerp(lMin, lMax, p2.Value));
+            };
+        }
+
+        if (supportsParameter1)
+        {
+            //single paramerized function
+            //We map with the saturation, with lightness fixed @ lMin+lMax/2
+            return (p1, _) =>
+            {
+                if (p1 is > 1 or < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(p1));
+                }
+
+                return Color.FromOkHsl(hueMid,
+                    Mathf.Lerp(saturationMargin, 1 - saturationMargin, p1.Value),
+                    lMid);
+            };
+        }
+
+        //Constant
+        return (_, _) => Color.FromOkHsl(hueMid, 0.8f, lMid);
+    }
+}

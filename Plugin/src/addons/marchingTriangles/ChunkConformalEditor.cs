@@ -40,6 +40,7 @@ public class ChunkConformalEditor
     /// </summary>
     private void PrepareMappings()
     {
+        //TODO support cross chunk neighbors
         foreach (var cell in _chunk._terrainDualGrid.CompleteCells)
         {
             if (!_cells.TryAdd(cell.CellCoordsImplicit, cell))
