@@ -87,7 +87,7 @@ public class AddTrianglesOnBorderEdge : DelegatedTriangulationEditAction<int>
             {
                 var action = new AddTriangleFan(borderEdge, _p);
                 var createdIdx = action.Apply(t);
-                if (createdIdx >= 0)
+                if (createdIdx >= 0 && createdIdx!=borderEdge.Item1 && createdIdx!=borderEdge.Item2)
                 {
                     createdIndexes[affectedEdge].Add(createdIdx);
                 }

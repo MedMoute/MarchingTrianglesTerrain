@@ -11,9 +11,13 @@ public class ChunkConformalEditor
 {
     private readonly HexagonalTerrainChunk _chunk;
 
-    // Dictionaries on vertices (dual grid)
+    // Dictionaries on vertices (dual(data) grid)
     private readonly Dictionary<Vector3I, VertexConformalGeometryEdit> _editions = new();
+
     private readonly Dictionary<Vector3I, List<(Vector2I, int)>> vertexToCellsMapping = new();
+
+    //Dictionary for cell centers (since there is no indexing for them)
+    private readonly Dictionary<Vector2I, VertexConformalGeometryEdit> _cellCenterEditions = new();
 
     // Dictionaries on cell idxs (hex grid)
     private readonly Dictionary<Vector2I, HexTerrainCell> _cells = new();
@@ -138,6 +142,53 @@ public class ChunkConformalEditor
                 ComputeVertexGeometryActions(vIdx);
             }
         }
+
+        // Process the cell centers if needed
+        foreach (var hexTerrainCell in completeCells)
+        {
+            // The cell center is not a part of the data grid, and its value is interpolated from the cell
+            // however, we may want to apply local geometry changes to the triangulations
+            // (notably for the flat triangle usecase)
+            ComputeCellCenterGeometryActions(hexTerrainCell);
+        }
+    }
+
+    private void ComputeCellCenterGeometryActions(HexTerrainCell hexTerrainCell, bool copyOnly = false)
+    {
+        if (copyOnly)
+        {
+            throw new NotImplementedException();
+        }
+
+        if (_cellCenterEditions.ContainsKey(hexTerrainCell.CellCoordsImplicit))
+        {
+            throw new InvalidOperationException(
+                $"We should collect the local actions only once, but the cell center" +
+                $" {hexTerrainCell.CellCoordsImplicit} was visited at least twice");
+        }
+
+        var appliedGeometryOperations =
+            new Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>>();
+        var appliedTriangulations =
+            new Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)?>>();
+
+        var edit = new VertexConformalGeometryEdit();
+        _cellCenterEditions.Add(hexTerrainCell.CellCoordsImplicit, edit);
+        for (int i = 0; i < HexTerrainCell.VertexCount; i++)
+        {
+            //Process cell data to determine the mask for each of the triangles (maybe??)
+            // ^This may not be needed (MARK AS TODO just in case)
+            var appliedMode = (hexTerrainCell.GeometryModesOverride ?? _chunk.DefaultGeometryModes).Item1;
+            //
+            appliedGeometryOperations.Add(
+                (i, hexTerrainCell), new Tuple<GeometryMode, GeometryMode?>(appliedMode, null));
+
+            appliedTriangulations.Add((i, hexTerrainCell), new Tuple<(Triangulation, int), (Triangulation, int)?>(
+                (_triangulationsPerCell[hexTerrainCell.CellCoordsImplicit][i], 0),
+                null));
+        }
+        edit.RegisterLocalAction(appliedGeometryOperations, appliedTriangulations);
+
     }
 
     private void ComputeVertexGeometryActions(Vector3I coords, bool copyOnly = false)
@@ -156,14 +207,14 @@ public class ChunkConformalEditor
         {
             var localVertexIndexingInNeighbors = vertexToCellsMapping[coords];
             var triangulationsByCell =
-                new Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)>>();
+                new Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)?>>();
             var neighborCells = new Dictionary<Vector2I, HexTerrainCell>();
             foreach (var neigborCell in localVertexIndexingInNeighbors)
             {
                 neighborCells.Add(neigborCell.Item1, _cells[neigborCell.Item1]);
                 //Add the two triangulations of the cell containing the vertex (the one pointed by the mapping...and the one after)
                 triangulationsByCell.Add((neigborCell.Item2, _cells[neigborCell.Item1]),
-                    new Tuple<(Triangulation, int), (Triangulation, int)>(
+                    new Tuple<(Triangulation, int), (Triangulation, int)?>(
                         (_triangulationsPerCell[neigborCell.Item1]?[neigborCell.Item2]!,
                             1), // For the first triangulation, the vertex is the index#1 of the triangulation
                         (_triangulationsPerCell[neigborCell.Item1]?[EngineUtils.mod(neigborCell.Item2 - 1, HexTerrainCell.VertexCount)]!,
@@ -205,7 +256,7 @@ public class ChunkConformalEditor
     private static void ComputeLocalGeometryActions(
         VertexConformalGeometryEdit editor,
         List<(Vector2I, int)> localVertexIndexing,
-        Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)>> localTriangulations,
+        Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)?>> localTriangulations,
         Tuple<GeometryMode, GeometryMode> chunkGeometryMode,
         Tuple<float, ThresholdComputationMode> chunkThreshold,
         Dictionary<Vector2I, HexTerrainCell> neighborCells)
@@ -219,7 +270,7 @@ public class ChunkConformalEditor
         int thresholdMask = ComputeLocalMask(localVertexIndexing, chunkThreshold, neighborCells);
 
         Dictionary<Vector2I, GeometryMode> requestedGeometryOperation = new();
-        Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode>> appliedGeometryOperations = new();
+        Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations = new();
 
         for (int i = 0; i < localVertexIndexing.Count; i++)
         {
@@ -232,7 +283,7 @@ public class ChunkConformalEditor
         // Now that we know which operations are requested by each cell, we check if there are incompatibilities
         var differentGeometryModes = requestedGeometryOperation.Values.Distinct();
 
-        Dictionary<(int, Vector2I), Tuple<GeometryMode, GeometryMode>> plannedGeometryOperations = new();
+        Dictionary<(int, Vector2I), Tuple<GeometryMode, GeometryMode?>> plannedGeometryOperations = new();
         //Single type of operation, all the triangulations will be edited similarly
         if (differentGeometryModes.Count() == 1)
         {
@@ -240,7 +291,7 @@ public class ChunkConformalEditor
             {
                 appliedGeometryOperations.Add(
                     cellAndVertexIndex,
-                    new Tuple<GeometryMode, GeometryMode>(
+                    new Tuple<GeometryMode, GeometryMode?>(
                         differentGeometryModes.First(),
                         differentGeometryModes.First()));
             }
@@ -251,10 +302,11 @@ public class ChunkConformalEditor
         {
             appliedGeometryOperations = ProcessCellGeometryOperations();
         }
+
         editor.RegisterLocalAction(appliedGeometryOperations, localTriangulations);
     }
 
-    private static Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode>> ProcessCellGeometryOperations()
+    private static Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> ProcessCellGeometryOperations()
     {
         throw new NotImplementedException();
     }
@@ -314,6 +366,11 @@ public class ChunkConformalEditor
         foreach (var geometryEdit in _editions.Values)
         {
             geometryEdit.ApplyTransformations();
+        }
+
+        foreach (var cellCenterGeometryEdit in (_cellCenterEditions.Values))
+        {
+            cellCenterGeometryEdit.ApplyTransformations();
         }
     }
 }

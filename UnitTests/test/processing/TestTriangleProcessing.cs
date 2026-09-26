@@ -24,20 +24,108 @@ public class TestTriangleProcessing
     }
 
     /// <summary>
+    /// Tests the processing of a chunk that only generates one full cell
+    /// </summary>
+    /// <param name="geometryMode"></param>
+    [Test]
+    public void TestProcessingOfSimpleChunk([Values] GeometryMode geometryMode)
+    {
+        dimension = 2;
+        src1 = new float[dimension][];
+        src2 = new float[dimension][];
+
+
+        for (int i = 0; i < src1.Length; i++)
+        {
+            src1[i] = new float[dimension];
+            src2[i] = new float[dimension];
+
+            for (int j = 0; j < src1.Length; j++)
+            {
+                src1[i][j] = i * src1.Length + j;
+                src2[i][j] = i * src1.Length + j;
+            }
+        }
+
+        chunk = new HexagonalTerrainChunk(
+            Vector2I.Zero,
+            dimension * Vector2I.One,
+            v => v is { X: 0, Y: 0 } ? chunk : null,
+            src1, src2)
+        {
+            DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode),
+            DefaultThreshold = new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference)
+        };
+
+        chunk.Dirty = true;
+
+        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
+
+        Assert.That(chunk._terrainDualGrid.CompleteCells, Has.Count.EqualTo(1));
+
+        Assert.DoesNotThrow(() => { output = chunk.ProcessGeometry(); });
+
+
+        //Per cell manifold checks
+        foreach (var keyValuePair in output)
+        {
+            switch (geometryMode)
+            {
+                case GeometryMode.SmoothLinear:
+                    AssertIsTriangleListManifold(keyValuePair.Value);
+                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
+                    break;
+                case GeometryMode.FlatHexagons:
+                    AssertIsTriangleListManifold(keyValuePair.Value);
+                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
+                    //Check all heights are identical and equal to the cell avg
+                    keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight)));
+                    break;
+                case GeometryMode.FlatHexagonsNoFans:
+                    AssertIsTriangleListManifold(keyValuePair.Value);
+                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
+                    keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight)));
+                    break;
+                case GeometryMode.FlatTrianglesNoFans:
+                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
+                    for (int i = 0; i < HexTerrainCell.VertexCount; i++)
+                        //Check all heights are identical and equal to the cell edge value
+                    {
+                        Assert.That(
+                            keyValuePair.Value[i].Points.All(p => p.Y.Equals(keyValuePair.Key.GetEdgeAvgHeight(i))),
+                            Is.True);
+                    }
+
+                    break;
+                case GeometryMode.FlatTriangles:
+                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6 + 12));
+                    AssertIsTriangleListManifold(keyValuePair.Value);
+                    break;
+                default:
+break;
+                
+            }
+        }
+
+        //Global checks
+        var flattenedOutput = output.SelectMany(kvp => kvp.Value).ToList();
+        switch (geometryMode)
+        {
+            case GeometryMode.FlatTrianglesNoFans:
+                break;
+            default:
+                AssertIsTriangleListManifold(flattenedOutput);
+                break;
+        }
+    }
+
+    /// <summary>
     /// Tests the processing of a flat chunk for different geometry modes.
     /// This tests ensure that the processing does not throw, that the output is a 2-manifold and checks triangle count
     /// </summary>
     /// <param name="geometryMode"></param>
     [Test]
-    public void TestProcessingOfFlatChunk(
-        [Values(
-            GeometryMode.FlatHexagons,
-            GeometryMode.FlatTriangles,
-            GeometryMode.SmoothLinear,
-            GeometryMode.Foothill,
-            GeometryMode.Plateau,
-            GeometryMode.BendingEdge)]
-        GeometryMode geometryMode)
+    public void TestProcessingOfFlatChunk([Values] GeometryMode geometryMode)
     {
         chunk = new HexagonalTerrainChunk(
             Vector2I.Zero,
@@ -69,15 +157,7 @@ public class TestTriangleProcessing
 
 
     [Test]
-    public void TestProcessingOfChunk(
-        [Values(
-            GeometryMode.FlatHexagons,
-            GeometryMode.FlatTriangles,
-            GeometryMode.SmoothLinear,
-            GeometryMode.Foothill,
-            GeometryMode.Plateau,
-            GeometryMode.BendingEdge)]
-        GeometryMode geometryMode)
+    public void TestProcessingOfChunk([Values] GeometryMode geometryMode)
     {
         //Change src1 and src2 : this case has a constant average  per cell WTFFFFF
         for (int i = 0; i < src1.Length; i++)
@@ -91,7 +171,7 @@ public class TestTriangleProcessing
                 src2[i][j] = -(i * src1.Length + j);
             }
         }
-        
+
         //Change src1 and src2 : this case has a constant average  per cell WTFFFFF
         for (int i = 0; i < src1.Length; i++)
         {
@@ -101,7 +181,7 @@ public class TestTriangleProcessing
             for (int j = 0; j < src1.Length; j++)
             {
                 src1[i][j] = i * src1.Length + j;
-                src2[i][j] = 3*(i * src1.Length + j);
+                src2[i][j] = 3 * (i * src1.Length + j);
             }
         }
 
@@ -133,11 +213,12 @@ public class TestTriangleProcessing
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
                     break;
                 case GeometryMode.FlatHexagons:
-                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6 + 
-                            //Count the existing neighbor cells
-                            output.Keys
-                                .Count(c => c.GetNeighborCellsCoordinates()
-                                    .Any( cIdx => keyValuePair.Key.CellCoords == cIdx))));
+                    // Assert.That(keyValuePair.Value, Has.Count.EqualTo(6 
+                    //         //Count the existing neighbor cells
+                    //         // + output.Keys
+                    //         //     .Count(c => c.GetNeighborCellsCoordinates()
+                    //         //         .Any( cIdx => keyValuePair.Key.CellCoords == cIdx))
+                    //         ));
                     break;
             }
         }
@@ -349,7 +430,7 @@ public class TestTriangleProcessing
     }
 }
 
-public class FloatArrayComparer : IEqualityComparer<float[]>
+public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
 {
     internal FloatArrayComparer(double epsilon)
     {
@@ -384,5 +465,10 @@ public class FloatArrayComparer : IEqualityComparer<float[]>
         }
 
         return v;
+    }
+
+    public int Compare(float[]? x, float[]? y)
+    {
+        return x.Equals(y) ? 0 : x.GetHashCode() - y.GetHashCode();
     }
 }

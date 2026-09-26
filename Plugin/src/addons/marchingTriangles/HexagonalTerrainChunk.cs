@@ -86,7 +86,7 @@ public class HexagonalTerrainChunk
     /// </summary>
     public float MergeThreshold { get; set; }
 
-    public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes = new(GeometryMode.FlatHexagons,GeometryMode.FlatHexagons);
+    public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes = new(GeometryMode.FlatTriangles,GeometryMode.FlatTriangles);
 
     public Tuple<float, ThresholdComputationMode> DefaultThreshold = new(MathF.PI / 4, ThresholdComputationMode.Angle);
 
@@ -433,7 +433,9 @@ public enum GeometryMode
     SmoothLinear = 3,
     Foothill = 4,
     Plateau = 5,
-    BendingEdge = 6
+    BendingEdge = 6,
+    FlatHexagonsNoFans = 7,
+    FlatTrianglesNoFans = 8
 }
 
 
