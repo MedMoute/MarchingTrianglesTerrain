@@ -14,7 +14,5 @@
         <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12"/>
     </ItemGroup>
-    <ItemGroup>
-      <Content Include="src\documentation\001_Introduce_Cell_Triangulation.md" />
-    </ItemGroup>
+
 </Project>

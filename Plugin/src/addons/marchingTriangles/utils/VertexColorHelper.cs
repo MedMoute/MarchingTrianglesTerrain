@@ -87,7 +87,7 @@ public class VertexColorHelper
         return chunk;
     }
 
-    public Dictionary<string, Color> BlendColors(GdPluginHexTerrainChunk chunk,
+    public Dictionary<string, Color> BlendColors(HexagonalTerrainChunk chunk,
         HexTerrainCell cell,
         Vector3 vertex,
         Vector2 uv,
@@ -95,7 +95,7 @@ public class VertexColorHelper
     {
         var colors = new Dictionary<string, Color>();
         // Tweaking the BLEND_EDGE_SENSITIVITY allows more "aggressive" Cliff vs Slope detection
-        float blendThreshold = chunk.Underlying.MergeThreshold * BlendEdgeSensitivity;
+        float blendThreshold = chunk.MergeThreshold * BlendEdgeSensitivity;
 
         List<float> vertexHeights = new();
         float centerHeight = cell.AverageHeight;
@@ -128,10 +128,10 @@ public class VertexColorHelper
         //Calculate vertex colors using appropriate interpolation method
         Color lower0 = useWallColors ? _wallLowerColor0 : _floorLowerColor0;
         Color upper0 = useWallColors ? _wallUpperColor0 : _floorUpperColor0;
-        colors["color_0"] = InterpolateVertexColor(chunk, cell, vertex, sources[0], diagMidPoint, lower0, upper0);
+        colors["color_0"] = InterpolateVertexColor( cell, vertex, sources[0], diagMidPoint, lower0, upper0);
         Color lower1 = useWallColors ? _wallLowerColor1 : _floorLowerColor1;
         Color upper1 = useWallColors ? _wallUpperColor1 : _floorUpperColor1;
-        colors["color_1"] = InterpolateVertexColor(chunk, cell, vertex, sources[1], diagMidPoint, lower1, upper1);
+        colors["color_1"] = InterpolateVertexColor( cell, vertex, sources[1], diagMidPoint, lower1, upper1);
 
         // isRidge & isLedge are already calculated above
         var custom = Colors.Green;
@@ -142,11 +142,11 @@ public class VertexColorHelper
         Color ridgeLedgeLower0 = _wallLowerColor0;
         Color ridgeLedgeUpper0 = _wallUpperColor0;
         var ridgeLedgeColor0 =
-            InterpolateVertexColor(chunk, cell, vertex, sources[2], diagMidPoint, ridgeLedgeLower0, ridgeLedgeUpper0);
+            InterpolateVertexColor( cell, vertex, sources[2], diagMidPoint, ridgeLedgeLower0, ridgeLedgeUpper0);
         Color ridgeLedgeLower1 = _wallLowerColor1;
         Color ridgeLedgeUpper1 = _wallUpperColor1;
         var ridgeLedgeColor1 =
-            InterpolateVertexColor(chunk, cell, vertex, sources[3], diagMidPoint, ridgeLedgeLower1, ridgeLedgeUpper1);
+            InterpolateVertexColor( cell, vertex, sources[3], diagMidPoint, ridgeLedgeLower1, ridgeLedgeUpper1);
 
         var ridgeLedgeTextureIdx = GetTextureIndexFromColors(ridgeLedgeColor0, ridgeLedgeColor1);
 
@@ -276,7 +276,6 @@ public class VertexColorHelper
     }
 
     private Color InterpolateVertexColor(
-        GdPluginHexTerrainChunk chunk,
         HexTerrainCell cell,
         Vector3 vertex,
         Func<Vector3I, Color> source,
@@ -286,27 +285,16 @@ public class VertexColorHelper
     {
         if (diagMidPoint)
         {
-            return CalcDiagonalColor(chunk, cell, source);
+            return CalcDiagonalColor( cell, source);
         }
 
         throw new NotImplementedException();
     }
 
     private Color CalcDiagonalColor(
-        GdPluginHexTerrainChunk chunk,
         HexTerrainCell cell,
         Func<Vector3I, Color> source)
     {
-        var idx = new Vector3I(cell.CellCoordsImplicit.X, cell.CellCoordsImplicit.Y, 0);
-        // Check if the terrain uses hard edges or blend
-        if (chunk.GetParent() != null
-            && chunk.GetParent() is MarchingTrianglesTerrain terrain
-            && terrain.TerrainSettings.BlendMode == 1)
-        {
-            // Hard edge mode uses same color as cell's top-left corner
-            return source(idx);
-        }
-
         // Smooth blend mode - lerp diagonal corners for smoother effect
         // TODO recycle ?
         Color[] colorArray = new Color[HexTerrainCell.VertexCount];
@@ -332,5 +320,6 @@ public class VertexColorHelper
         if (diag0.B > 0.99f || diag1.B > 0.99f || diag2.B > 0.99f) result.B = 1f;
         if (diag0.A > 0.99f || diag1.A > 0.99f || diag2.A > 0.99f) result.A = 1f;
         return result;
-    }
+        }
+
 }

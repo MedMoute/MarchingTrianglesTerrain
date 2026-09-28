@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using Godot.Collections;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
@@ -69,6 +71,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         {
             GenerateTerrain(true);
         }
+
         if (Mesh != null && GetParent() is MarchingTrianglesTerrain terrain)
         {
             Mesh.SurfaceSetMaterial(0, terrain.TerrainSettings.ShaderMaterial);
@@ -202,49 +205,30 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             _st.SetCustomFormat(2, SurfaceTool.CustomFormat.RgbaFloat);
             // Used for GeometryEditor
             _st.SetCustomFormat(3, SurfaceTool.CustomFormat.RgbaFloat);
-
         }
 
         //Free the lock so the thread workers can take it
-        ProcessCells(forceRegeneration);
+        ProcessGeometry(forceRegeneration);
         lock (_st)
         {
             _st.GenerateNormals();
             _st.GenerateTangents();
             _st.Index();
             Mesh = _st.Commit();
-            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain)
+            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain terrain)
             {
-                var terrain = GetParent() as MarchingTrianglesTerrain;
-                Mesh.SurfaceSetMaterial(0,terrain.TerrainSettings.ShaderMaterial);
+                Mesh.SurfaceSetMaterial(0, terrain.TerrainSettings.ShaderMaterial);
             }
         }
     }
 
-
-    public void ProcessCells(bool forceRebuild = false)
+    private void ProcessGeometry(bool forceRebuild = false)
     {
-        var tasks = new HashSet<Action>();
-        // Only process the complete hexagonal cells.
-        foreach (var hexagonCell in Underlying._terrainDualGrid.CompleteCells)
-        {
-            var reprocessHex = forceRebuild || Underlying.NeedUpdate.Any(
-                kvp => kvp.Value && 
-                       hexagonCell.DualCellsMapping.ContainsValue(kvp.Key));
+        var editor = new ChunkConformalEditor(Underlying);
 
-
-            tasks.Add(reprocessHex ? hexagonCell.PlanCellProcessing(this) : hexagonCell.CopyCellDataToPending(this));
-        }
-
-        // TODO batch processing with reuse of threads (FJP) otherwise its more costly to do in (//)
-        //Parallel.Invoke(tasks.ToArray());
-
-        foreach (var action in tasks)
-        { 
-            action.Invoke();
-        }
-
-        Underlying.NeedUpdate.Clear();
+        var data = Underlying.ProcessGeometry(forceRebuild);
+        //Step 4 : Copy the triangulation outputs to the mesh
+        CopyToMesh(data, editor);
     }
 
     public void ProcessPointsIntoMeshTriangles(HexTerrainCell cell)
@@ -279,30 +263,18 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         }
     }
 
-    public void AddPoint(Vector3 p, Vector2 _uv, HexTerrainCell cell)
+    private void CopyToMesh(
+        System.Collections.Generic.Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> trianglesPerCell,
+        ChunkConformalEditor chunkConformalEditor)
     {
-        //UV - used for ledge detection. X = closeness to top terrace, Y = closeness to bottom of terrace
-        //Walls will always have UV of 1, 1
-        Vector2 uv = cell.FloorMode ? _uv : Vector2.One;
-
-        Vector2 uv2 = cell.FloorMode
-            ? new Vector2(p.X, p.Z) / 1f / MathF.Sqrt(3)
-            : new Vector2(p.X, p.Y) + new Vector2(p.Z, p.Y);
-
-        var data = cell.TempDataArrays;
-
-        data.Pt.Add(p);
-        data.Uv.Add(uv);
-        data.Uv2.Add(uv2);
-        var colors = Underlying.BlendColors(this, cell, p, uv, true);
-        data.Custom1Value.Add(colors["custom_1_value"]);
-        data.Color0.Add(colors["color_0"]);
-        data.Color1.Add(colors["color_1"]);
-        // TODO : pack data in custom 3
-        data.Custom3Value.Add(new Color(0/255f,0,0,1));
-        data.MatBlend.Add(colors["mat_blend"]);
-        data.Floor.Add(cell.FloorMode);
-        
+        foreach (var cellularTriangulation in trianglesPerCell)
+        {
+            // Find the cell
+            var cell = cellularTriangulation.Key;
+            cell.ProcessTrianglesIntoPoints(cellularTriangulation.Value, chunkConformalEditor.Chunk);
+            ProcessPointsIntoMeshTriangles(cell);
+            cell.TempDataArrays.Clear();
+        }
     }
 }
 

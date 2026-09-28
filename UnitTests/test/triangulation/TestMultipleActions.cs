@@ -80,7 +80,7 @@ internal class TestMultipleActions
     [SetUp]
     public void Setup()
     {
-        t = new Triangulation([A, B, C], true, true);
+        t = new Triangulation([A, B, C], false, true);
     }
 
     [Test]

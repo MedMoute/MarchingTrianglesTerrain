@@ -36,8 +36,8 @@ public class AddTriangleFan : DelegatedTriangulationEditAction<int>
 
         if (t.SubEdges[_subEdge] > 1)
         {
-            throw new NotSupportedException("Adding a triangle fan to an edge that is not on the manifold border is not supported.");
-
+            throw new NotSupportedException(
+                "Adding a triangle fan to an edge that is not on the manifold border is not supported.");
         }
     }
 
@@ -56,7 +56,7 @@ public class AddTriangleFan : DelegatedTriangulationEditAction<int>
         if (!t.ReverseVertices.TryGetValue(_pos, out var newIdx))
         {
             //Register a new point
-             newIdx = t.Vertices.Count;
+            newIdx = t.Vertices.Count;
             t.Vertices.Add(newIdx, _pos);
             t.ReverseVertices.Add(_pos, newIdx);
         }

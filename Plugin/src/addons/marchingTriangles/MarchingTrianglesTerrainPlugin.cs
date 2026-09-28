@@ -86,7 +86,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
 
         CallDeferred(nameof(DeferredEnterTree));
         GD.PrintRich(
-            "Welcome to [color=MEDIUM_ORCHID]Yūgen[/color]'s Marching [s]Squares[/s] Triangles Terrain Authoring Toolkit - [color=ORANGE]HerrMyth[/color]'s Edition\n" +
+            "Welcome to Yūgen's Marching Squares Triangles Terrain Authoring Toolkit - HerrMyth's Edition\n" +
             "This plugin is under MIT license.");
     }
 

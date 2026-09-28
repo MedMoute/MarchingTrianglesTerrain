@@ -199,15 +199,15 @@ public class Triangulation
     {
         if (forceChecks || _extensiveVerification)
         {
-            // try
-            // {
+            try
+            {
                 DoExtensiveChecksOnTriangulation();
-            // }
-            // catch (Exception e)
-            // {
-            //     Debug("Exception Caught during Integrity checks : " + e.Message);
-            //     throw;
-            // }
+            }
+            catch (Exception e)
+            {
+                Debug("Exception Caught during Integrity checks : " + e.Message);
+                throw;
+            }
         }
     }
 
