@@ -3,6 +3,9 @@ using Godot;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
+/// <summary>
+/// Utility class for various triangle computations in 3D space
+/// </summary>
 public static class TriangleUtils
 {
 

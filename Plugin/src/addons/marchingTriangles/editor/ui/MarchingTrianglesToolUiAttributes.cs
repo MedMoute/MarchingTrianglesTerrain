@@ -901,10 +901,10 @@ public partial class MarchingTrianglesToolUiAttributes
                 curToolAttributes.VertexColorIndex = value.AsInt32();
                 return;
             case "texturePreset":
-                curToolAttributes.CurrentTexturePreset = value.Obj as MarchingTrianglesTexturesPreset;
+                throw new NotSupportedException("Legacy attribute value.");
                 return;
             case "quickPaintSelection":
-                curToolAttributes.CurrentQuickPaint = value.Obj as MarchingTrianglesTexturesPreset;
+                throw new NotSupportedException("Legacy attribute value.");
                 return;
             case "chunkManagement":
                 curToolAttributes.SelectedChunk = value.AsVector2I();
@@ -938,8 +938,8 @@ public partial class MarchingTrianglesToolUiAttributes
             case "maskMode": return curToolAttributes.MaskGrass;
             case "material": return curToolAttributes.VertexColorIndex;
             case "textureName":
-            case "texturePreset": return curToolAttributes.CurrentTexturePreset;
-            case "quickPaintSelection": return curToolAttributes.CurrentQuickPaint;
+            case "texturePreset": throw new NotSupportedException("Legacy attribute value."); ;
+            case "quickPaintSelection":  throw new NotSupportedException("Legacy attribute value.");
             case "chunkManagement": return curToolAttributes.SelectedChunk;
             case "paintWalls": return curToolAttributes.PaintWalls;
             case "terrainSettings": return curToolAttributes.TerrainSettings;
@@ -1006,31 +1006,6 @@ public partial class MarchingTrianglesToolUiAttributes
         if (toolAttributes.Falloff)
         {
             toolSettings.Add(Attributes.Falloff);
-        }
-
-        if (toolAttributes.Material)
-        {
-            toolSettings.Add(Attributes.Material);
-        }
-
-        if (toolAttributes.TextureName)
-        {
-            toolSettings.Add(Attributes.TextureName);
-        }
-
-        if (toolAttributes.TexturePreset)
-        {
-            toolSettings.Add(Attributes.TexturePreset);
-        }
-
-        if (toolAttributes.QuickPaintSelection)
-        {
-            toolSettings.Add(Attributes.QuickPaintSelection);
-        }
-
-        if (toolAttributes.PaintWalls)
-        {
-            toolSettings.Add(Attributes.PaintWalls);
         }
 
         if (toolAttributes.ChunkManagement)

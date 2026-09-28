@@ -9,7 +9,10 @@ using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
 /// <summary>
-/// Tool Attribute values. Those values are the ones actually used by the algorithm.
+/// Tool Attribute values.
+/// Those values are the ones actually used
+/// by the underlying algorithmic operation performed by the plugin.
+/// This attributes 
 /// </summary>
 public partial class TerrainToolAttributes : Node
 {
@@ -56,33 +59,6 @@ public partial class TerrainToolAttributes : Node
             SetVertexColorIndex(value);
         }
     }
-
-    private MarchingTrianglesTexturesPreset _preset = new();
-
-    public MarchingTrianglesTexturesPreset CurrentTexturePreset
-    {
-        get => _preset;
-        set
-        {
-            _preset = value;
-            CurrentQuickPaint = null;
-            if (!SyncFromTerrain)
-                SetNewTextures(value);
-        }
-    }
-
-    private void SetNewTextures(MarchingTrianglesTexturesPreset value)
-    {
-        if (_preset == null)
-        {
-            //FIXME => DEFAULT.Copy or smthg
-            _preset = new();
-            //FIXME : TODO
-            EmitSignal(nameof(TextureUpdated));
-        }
-    }
-
-    public MarchingTrianglesTexturesPreset CurrentQuickPaint { get; set; } = null;
 
     private void SetVertexColorIndex(int vertexColorIndex)
     {
@@ -166,85 +142,4 @@ public partial class TerrainToolAttributes : Node
 
     // Flag to prevent _set_new_textures() when syncing preset from terrain node
     public bool SyncFromTerrain = false;
-}
-
-[Tool]
-public partial class MarchingTrianglesTexturesPreset : Resource
-{
-    [Export] public String PresetName { get; set; }
-    [Export] public MarchingTrianglesTextureNames NewTexturesNames { get; set; } = new();
-    [Export] public MarchingTrianglesTextureList NewTextures { get; set; }
-    [Export] public Array<MarchingTrianglesQuickPaint> QuickPaints { get; set; }
-}
-
-public partial class MarchingTrianglesQuickPaint : Resource
-{
-    internal static MarchingTrianglesTextureNames TextureNames = new();
-
-    [Export] public String PaintName { get; set; } = "New Paint";
-
-    private int _wallTextureSlot = 0;
-    private int _groundTextureSlot = 0;
-
-    [ExportGroup("Textures")] [Export] public bool HasGrass = false;
-
-    public override Array<Dictionary> _GetPropertyList()
-    {
-        var properties = new Array<Dictionary>();
-        List<String> tmpList = new();
-        StringBuilder sb = new();
-        tmpList.AddRange(TextureNames.TextureNames);
-        tmpList.ForEach(name => sb.Append(name));
-        string textureNamesAsString = sb.ToString();
-        // Wall texture dropdown content
-        properties.Add(new Dictionary
-        {
-            { "name", "wall_texture_slot" },
-            { "type", (int)Variant.Type.Int },
-            { "hint", (int)PropertyHint.Enum },
-            { "hint_string", "," + textureNamesAsString },
-            { "usage", (int)PropertyUsageFlags.Default }
-        });
-
-        properties.Add(new Dictionary
-        {
-            { "name", "ground_texture_slot" },
-            { "type", (int)Variant.Type.Int },
-            { "hint", (int)PropertyHint.Enum },
-            { "hint_string", "," + textureNamesAsString },
-            { "usage", (int)PropertyUsageFlags.Default }
-        });
-        return properties;
-    }
-}
-
-/// <summary>
-/// Class listing the content properties of each of the 16 supported textures.
-/// </summary>
-public partial class MarchingTrianglesTextureList : Resource
-{
-    [Export] public Array<Texture2D> TerrainTextures =
-    [
-        new(), new(), new(), new(),
-        new(), new(), new(), new(),
-        new(), new(), new(), new(),
-        new(), new(), new(), new()
-    ];
-
-    [Export] public Array<float> TextureScales =
-    [
-        1f, 1f, 1f, 1f,
-        1f, 1f, 1f, 1f,
-        1f, 1f, 1f, 1f,
-        1f, 1f, 1f, 1f,
-    ];
-
-    [Export] public Array<bool> HasGrass =
-        [];
-
-    [Export] public Array<Texture2D> GrassTextures =
-        [];
-
-    [Export] public Array<Color> GrassColors =
-        [];
 }
