@@ -14,7 +14,5 @@
         <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12"/>
     </ItemGroup>
-    <ItemGroup>
-      <Folder Include="src\addons\marchingTriangles\editor\colors\" />
-    </ItemGroup>
+
 </Project>

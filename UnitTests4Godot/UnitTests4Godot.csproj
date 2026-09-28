@@ -44,7 +44,10 @@ https://github.com/godot-gdunit-labs/gdUnit4NetExamples/blob/master/Examples/Adv
         <Content Include="resources\Chunks\chunk_1_1\datastruct.tres" />
         <Content Include="resources\Chunks\chunk_1_1\metadata.tres" />
     </ItemGroup>
-    
+
+    <ItemGroup>
+        <Folder Include="addons\" />
+    </ItemGroup>
     <!--
    ============================================================
    SYMBOLIC LINK CREATION (Runs before MSBuild evaluation)

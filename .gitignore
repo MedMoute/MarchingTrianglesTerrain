@@ -94,6 +94,7 @@ out/
 
 # Integration Test module 
 # Symlinked folder - don't commit
-UnitTests4Godot/src  
+UnitTests4Godot/addons  
+Demo/addons  
 # Godot test  project temp files
 UnitTests4Godot/.godot 
