@@ -168,6 +168,7 @@ public partial class TerrainToolAttributes : Node
     public bool SyncFromTerrain = false;
 }
 
+[Tool]
 public partial class MarchingTrianglesTexturesPreset : Resource
 {
     [Export] public String PresetName { get; set; }

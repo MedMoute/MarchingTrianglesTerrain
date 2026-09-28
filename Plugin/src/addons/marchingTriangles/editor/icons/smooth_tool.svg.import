@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqhtaudi8v6os"
-path="res://.godot/imported/smooth_tool.svg-82ad9dba0c6044a6976c16ceab317300.ctex"
+path="res://.godot/imported/smooth_tool.svg-bd730c090a3eafe26aab3c4e5a35bffe.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://src/addons/marchingTriangles/editor/icons/smooth_tool.svg"
-dest_files=["res://.godot/imported/smooth_tool.svg-82ad9dba0c6044a6976c16ceab317300.ctex"]
+source_file="res://addons/marchingTriangles/editor/icons/smooth_tool.svg"
+dest_files=["res://.godot/imported/smooth_tool.svg-bd730c090a3eafe26aab3c4e5a35bffe.ctex"]
 
 [params]
 

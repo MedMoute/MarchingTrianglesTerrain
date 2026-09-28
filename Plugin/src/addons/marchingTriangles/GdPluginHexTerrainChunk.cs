@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using Godot.Collections;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
@@ -10,25 +12,18 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 [GlobalClass]
 public partial class GdPluginHexTerrainChunk : MeshInstance3D
 {
-    public HexagonalTerrainChunk Underlying { get; private set; }
+    public HexagonalTerrainChunk Underlying { get; }
 
     /// <summary>
     /// The default collision layer used for plugin editing. 
     /// </summary>
-    public static readonly uint DefaultCollisionLayer = 17;
+    public const uint DefaultCollisionLayer = 17;
 
-    internal ConcavePolygonShape3D _tempCollisionShape;
+    internal ConcavePolygonShape3D TempCollisionShape;
 
     private SurfaceTool _st = new();
 
-    public bool SkipSaveOnExit { get; set; } = false; // Set to true when chunk is removed temporarily (undo/redo)
-
-    public enum Mode
-    {
-        MODE_1 = 1,
-        MODE_2 = 2
-    }
-
+    public bool SkipSaveOnExit { get; set; } // Set to true when chunk is removed temporarily (undo/redo)
 
     /// <summary>
     /// Public constructor.
@@ -76,12 +71,13 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         {
             GenerateTerrain(true);
         }
+
         if (Mesh != null && GetParent() is MarchingTrianglesTerrain terrain)
         {
             Mesh.SurfaceSetMaterial(0, terrain.TerrainSettings.ShaderMaterial);
         }
 
-        _tempCollisionShape = CreateAndGetCollision();
+        TempCollisionShape = CreateAndGetCollision();
         ProcessCollisionShape();
         if (!Engine.IsEditorHint() && false) // No runtime baking atm.
         {
@@ -100,7 +96,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         }
 
         GenerateSurfaces(forceFullRebuild);
-        _tempCollisionShape = CreateAndGetCollision();
+        TempCollisionShape = CreateAndGetCollision();
         ProcessCollisionShape();
     }
 
@@ -150,7 +146,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
                 return;
             }
 
-            if (_tempCollisionShape == null)
+            if (TempCollisionShape == null)
             {
                 GD.PushError(string.Format("Chunk {0} has no pending shape. Aborting collision shape creation.",
                     Underlying.Coordinates));
@@ -176,7 +172,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
             var colShape = new CollisionShape3D();
             colShape.Name = "CollisionShape3D";
-            colShape.Shape = _tempCollisionShape;
+            colShape.Shape = TempCollisionShape;
             colShape.Visible = false;
             body.AddChild(colShape);
             AddChild(body);
@@ -207,48 +203,32 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             _st.SetCustomFormat(0, SurfaceTool.CustomFormat.RgbaFloat);
             _st.SetCustomFormat(1, SurfaceTool.CustomFormat.RgbaFloat);
             _st.SetCustomFormat(2, SurfaceTool.CustomFormat.RgbaFloat);
+            // Used for GeometryEditor
+            _st.SetCustomFormat(3, SurfaceTool.CustomFormat.RgbaFloat);
         }
 
         //Free the lock so the thread workers can take it
-        ProcessCells(forceRegeneration);
+        ProcessGeometry(forceRegeneration);
         lock (_st)
         {
             _st.GenerateNormals();
             _st.GenerateTangents();
             _st.Index();
             Mesh = _st.Commit();
-            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain)
+            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain terrain)
             {
-                var terrain = GetParent() as MarchingTrianglesTerrain;
-                Mesh.SurfaceSetMaterial(0,terrain.TerrainSettings.ShaderMaterial);
+                Mesh.SurfaceSetMaterial(0, terrain.TerrainSettings.ShaderMaterial);
             }
         }
     }
 
-
-    public void ProcessCells(bool forceRebuild = false)
+    private void ProcessGeometry(bool forceRebuild = false)
     {
-        var tasks = new HashSet<Action>();
-        // Only process the complete hexagonal cells.
-        foreach (var hexagonCell in Underlying._terrainDualGrid.CompleteCells)
-        {
-            var reprocessHex = forceRebuild || Underlying.NeedUpdate.Any(
-                kvp => kvp.Value && 
-                       hexagonCell.DualCellsMapping.ContainsValue(kvp.Key));
+        var editor = new ChunkConformalEditor(Underlying);
 
-
-            tasks.Add(reprocessHex ? hexagonCell.PlanCellProcessing(this) : hexagonCell.CopyCellDataToPending(this));
-        }
-
-        // TODO batch processing with reuse of threads (FJP) otherwise its more costly to do in (//)
-        //Parallel.Invoke(tasks.ToArray());
-
-        foreach (var action in tasks)
-        { 
-            action.Invoke();
-        }
-
-        Underlying.NeedUpdate.Clear();
+        var data = Underlying.ProcessGeometry(forceRebuild);
+        //Step 4 : Copy the triangulation outputs to the mesh
+        CopyToMesh(data, editor);
     }
 
     public void ProcessPointsIntoMeshTriangles(HexTerrainCell cell)
@@ -275,6 +255,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
                 _st.SetCustom(0, dataArray.Color1[i]);
                 _st.SetCustom(1, dataArray.Custom1Value[i]);
                 _st.SetCustom(2, dataArray.MatBlend[i]);
+                _st.SetCustom(3, dataArray.Custom3Value[i]);
                 _st.SetUV(dataArray.Uv[i]);
                 _st.SetUV2(dataArray.Uv2[i]);
                 _st.AddVertex(dataArray.Pt[i]);
@@ -282,28 +263,18 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         }
     }
 
-    public void AddPoint(Vector3 p, Vector2 _uv, HexTerrainCell cell)
+    private void CopyToMesh(
+        System.Collections.Generic.Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> trianglesPerCell,
+        ChunkConformalEditor chunkConformalEditor)
     {
-        //UV - used for ledge detection. X = closeness to top terrace, Y = closeness to bottom of terrace
-        //Walls will always have UV of 1, 1
-        Vector2 uv = cell.FloorMode ? _uv : Vector2.One;
-
-        Vector2 uv2 = cell.FloorMode
-            ? new Vector2(p.X, p.Z) / 1f / MathF.Sqrt(3)
-            : new Vector2(p.X, p.Y) + new Vector2(p.Z, p.Y);
-
-        var data = cell.TempDataArrays;
-
-        data.Pt.Add(p);
-        data.Uv.Add(uv);
-        data.Uv2.Add(uv2);
-        var colors = Underlying.BlendColors(this, cell, p, uv, true);
-        data.Custom1Value.Add(colors["custom_1_value"]);
-        data.Color0.Add(colors["color_0"]);
-        data.Color1.Add(colors["color_1"]);
-        data.MatBlend.Add(colors["mat_blend"]);
-        data.Floor.Add(cell.FloorMode);
-        
+        foreach (var cellularTriangulation in trianglesPerCell)
+        {
+            // Find the cell
+            var cell = cellularTriangulation.Key;
+            cell.ProcessTrianglesIntoPoints(cellularTriangulation.Value, chunkConformalEditor.Chunk);
+            ProcessPointsIntoMeshTriangles(cell);
+            cell.TempDataArrays.Clear();
+        }
     }
 }
 
