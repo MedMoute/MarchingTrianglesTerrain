@@ -66,11 +66,6 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         {
             _selectedMode = value;
             PluginHelper.ClearDrawPattern();
-            if (_selectedMode == TerrainToolMode.VertexPainting)
-            {
-                ToolAttributes.Flatten = false;
-                Ui.BrushMaterial.SetShaderParameter("FalloffVisible", false);
-            }
         }
     }
 
@@ -334,10 +329,8 @@ public enum TerrainToolMode
     Level = 1,
     Smooth = 2,
     Bridge = 3,
-    GrassMask = 4,
-    VertexPainting = 5,
-    DebugBrush = 6,
-    ChunkManagement = 7,
-    TerrainSettings = 8,
-    GeometryEdit = 9
+    DebugBrush = 4,
+    ChunkManagement = 5,
+    TerrainSettings = 6,
+    GeometryEdit = 7
 }

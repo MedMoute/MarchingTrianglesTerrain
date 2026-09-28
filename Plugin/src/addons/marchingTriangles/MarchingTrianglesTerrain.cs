@@ -186,11 +186,11 @@ public partial class MarchingTrianglesTerrain : Node3D
         };
     }
 
-    public void ForceRebuildTerrain()
+    public void ForceRebuildTerrain(string customShaderPath   ="")
     {
         foreach (var chunk in Chunks)
         {
-            chunk.Value.GenerateTerrain(true);
+            chunk.Value.GenerateTerrainMesh(true,customShaderPath);
         }
     }
 
@@ -260,11 +260,11 @@ public partial class MarchingTrianglesTerrain : Node3D
 
         foreach (var rebuiltChunks in chunksToRebuild)
         {
-            Chunks[rebuiltChunks].GenerateTerrain(false);
+            Chunks[rebuiltChunks].GenerateTerrainMesh(false);
         }
 
         //Rebuild the chunk if some parts were affected by the border
-        newChunk.GenerateTerrain(false);
+        newChunk.GenerateTerrainMesh(false);
     }
 
     internal GdPluginHexTerrainChunk AddChunkInternal(Vector2I coords)

@@ -68,7 +68,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
         if (regenerateMesh)
         {
-            GenerateTerrain(true);
+            GenerateTerrainMesh(true);
         }
 
         if (Mesh != null && GetParent() is MarchingTrianglesTerrain terrain)
@@ -84,17 +84,43 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         }
     }
 
-    public void GenerateTerrain(bool forceFullRebuild = true)
+    public void GenerateTerrainMesh(bool forceFullRebuild = true, string customShaderPath = "")
     {
-        if (Mesh != null && !forceFullRebuild)
+        if (GetParent() != null && GetParent() is MarchingTrianglesTerrain terrain)
         {
-            lock (_st)
+            Underlying.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(
+                terrain.TerrainSettings.ChunkBlendMode,
+                terrain.TerrainSettings.ChunkBlendModeFallBack);
+
+            Underlying.DefaultThreshold = new Tuple<float, ThresholdComputationMode>(
+                terrain.TerrainSettings.ThresholdValue,
+                terrain.TerrainSettings.ThresholdComputationMode);
+
+            if (Mesh != null && !forceFullRebuild)
             {
-                _st.CreateFrom(Mesh, 0);
+                lock (_st)
+                {
+                    _st.CreateFrom(Mesh, 0);
+                }
+            }
+
+            if (customShaderPath.Length > 0)
+            {
+                var customShaderMat = new ShaderMaterial();
+                customShaderMat.SetShader(FileUtils.Load<Shader>(customShaderPath));
+                GenerateSurfaces(customShaderMat, forceFullRebuild);
+            }
+            else
+            {
+                GenerateSurfaces(terrain.TerrainSettings.ShaderMaterial, forceFullRebuild);
             }
         }
+        else
+        {
+            throw new NotSupportedException(
+                "Cannot generate a terrain mesh for the chunk if there is no parent terrain.");
+        }
 
-        GenerateSurfaces(forceFullRebuild);
         TempCollisionShape = CreateAndGetCollision();
         ProcessCollisionShape();
     }
@@ -194,7 +220,8 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         }
     }
 
-    private void GenerateSurfaces(bool forceRegeneration = false)
+    private void GenerateSurfaces(ShaderMaterial? material,
+        bool forceRegeneration = false)
     {
         lock (_st)
         {
@@ -214,10 +241,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             _st.GenerateTangents();
             _st.Index();
             Mesh = _st.Commit();
-            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain terrain)
-            {
-                Mesh.SurfaceSetMaterial(0, terrain.TerrainSettings.ShaderMaterial);
-            }
+            Mesh.SurfaceSetMaterial(0, material);
         }
     }
 

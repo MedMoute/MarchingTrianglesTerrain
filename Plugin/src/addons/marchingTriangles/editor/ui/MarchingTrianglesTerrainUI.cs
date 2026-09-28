@@ -6,7 +6,7 @@ using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
 
 /// <summary>
-/// Component handling the Godot Editor's diisplay of the plugin.
+/// Component handling the Godot Editor's display of the plugin.
 /// </summary>
 /// <param name="plugin"></param>
 public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin plugin) : Node
@@ -65,7 +65,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         Toolbar = new MarchingTrianglesToolbar();
         Toolbar.ToolChanged += OnToolChanged;
         Toolbar.Hide();
-        
+
         UiToolAttributes.PluginSettingChanged += OnPluginSettingChanged;
         UiToolAttributes.TerrainSettingChanged += OnTerrainSettingChanged;
         UiToolAttributes.Hide();
@@ -103,7 +103,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
             UiToolAttributes.Show();
         }
     }
-    
+
     private void OnTerrainSettingChanged(string setting, Variant variant)
     {
         GD.Print("Terrain Settings Changed !");
@@ -113,7 +113,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
     {
         GD.Print("Plugin Settings Changed !");
 
-        UiToolAttributes.SetPluginAttributeValue(setting,value);
+        UiToolAttributes.SetPluginAttributeValue(setting, value);
     }
 
     //TODO : do not restart tool if same. also, this could be cleaner
@@ -134,8 +134,8 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
 
         //Grey out all tool attributes inn the terrain settings if there is at least onne chunk
         if ((TerrainToolMode)toolIndex == TerrainToolMode.TerrainSettings
-            && Plugin.CurTerrainNode!=null
-            && Plugin.CurTerrainNode.Chunks.Count>0)
+            && Plugin.CurTerrainNode != null
+            && Plugin.CurTerrainNode.Chunks.Count > 0)
         {
             // Since we cannot delete a chunk from this tool,the condition will remain true 
             UiToolAttributes.DisableEditToolAttributes();
@@ -143,12 +143,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
 
         if ((TerrainToolMode)toolIndex == TerrainToolMode.GeometryEdit)
         {
-            var tmpShaderMat = new ShaderMaterial();
-            tmpShaderMat.SetShader(FileUtils.Load<Shader>("res://addons/marchingTriangles/editor/resources/shaders/geometryBehaviour.gdshader"));
-            foreach (var chunk   in Plugin.CurTerrainNode.Chunks)
-            {
-                chunk.Value.Mesh._SurfaceSetMaterial(0,tmpShaderMat);
-            }
+            Plugin.CurTerrainNode?.ForceRebuildTerrain("res://addons/marchingTriangles/editor/resources/shaders/geometryBehaviour.gdshader");
         }
     }
 }

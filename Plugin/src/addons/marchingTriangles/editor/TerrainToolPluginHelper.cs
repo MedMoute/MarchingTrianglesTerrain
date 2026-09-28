@@ -155,7 +155,7 @@ public class TerrainToolPluginHelper
                 }
 
                 // Forcing Flatten values when needed
-                if (terrainToolMode == TerrainToolMode.DebugBrush
+                if (terrainToolMode is TerrainToolMode.DebugBrush
                     && _toolAttributes.Flatten)
                 {
                     // Disable flatten when painting vertices or debugging
@@ -201,9 +201,9 @@ public class TerrainToolPluginHelper
                     _curDrawPattern.Clear();
                 }
 
-                if (terrainToolMode is TerrainToolMode.Smooth)
+                if ( terrainToolMode is TerrainToolMode.Smooth)
                 {
-                    //Smoothing does not need to draw on release since the job is already done
+                    //Smoothing or Vertex painting dont need to draw on release since the job is already done
                     _curDrawPattern.Clear();
                 }
             }
@@ -348,7 +348,7 @@ public class TerrainToolPluginHelper
             if (drawAreaHovered && @event is InputEventMouseMotion)
             {
                 BrushPosition = drawPosition.Value;
-                if (Drawing && mode is TerrainToolMode.Smooth)
+                if (Drawing && mode is TerrainToolMode.Smooth )
                 {
                     CommitDrawnPattern(terrainNode);
                     _curDrawPattern.Clear();
@@ -432,7 +432,7 @@ public class TerrainToolPluginHelper
             .Append(hoveredChk);
 
         var chunkScale = new Vector2D(
-                             MarchingTrianglesTerrainPlugin.Instance.CurTerrainNode.TerrainSettings.ChunkDimensions.X,
+                            MarchingTrianglesTerrainPlugin.Instance.CurTerrainNode.TerrainSettings.ChunkDimensions.X,
                              MarchingTrianglesTerrainPlugin.Instance.CurTerrainNode.TerrainSettings.ChunkDimensions.Y) *
                          MarchingTrianglesTerrainPlugin.Instance.CurTerrainNode.TerrainSettings.CellScale;
         var trueTriCell = triSystem.CartesianToLocal.Invoke(xzPos);
@@ -459,69 +459,19 @@ public class TerrainToolPluginHelper
     }
 
     /// <summary>
-    /// Preprocesses and commits the action planed by the drawn pattern to Godot's undo/redo manager.
+    /// Commits the action planed by the drawn pattern to Godot's undo/redo manager.
     /// </summary>
     /// <param name="terrainNode"></param>
     /// <exception cref="NotImplementedException"></exception>
     private void CommitDrawnPattern(Node3D terrainNode)
     {
         var undoRedoManager = MarchingTrianglesTerrainPlugin.Instance.GetUndoRedo();
-        PreProcessPatternForApplication(terrainNode, out var pattern, out var restorePattern);
-  
-        var doPatternVariant =
-            new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
-                Godot.Collections.Dictionary<Vector3I, Variant>>>();
-        var undoPatternVariant =
-            new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
-                Godot.Collections.Dictionary<Vector3I, Variant>>>();
-        bool isQuickPaint = false; //TODO Not supported
-
-        if (isQuickPaint)
-        {
-            ProcessQuickPaintBrushPattern(
-                terrainNode as MarchingTrianglesTerrain,
-                pattern, restorePattern, out var doPattern, out var undoPattern);
-            doPatternVariant = doPattern;
-            undoPatternVariant = undoPattern;
-        }
-        else
-        {
-            ProcessBrushPattern(
-                pattern,
-                restorePattern,
-                out var doPattern,
-                out var undoPattern);
-            doPatternVariant = doPattern;
-            undoPatternVariant = undoPattern;
-        }
-
-        // Use delegate method since "this" helper is not a Godot object (but the plugin itself is)
-        undoRedoManager.CreateAction("Terrain height draw" + (isQuickPaint ? " with quick paint brush" : ""));
-        undoRedoManager.AddDoMethod(_parent, nameof(
-                MarchingTrianglesTerrainPlugin.DelegateCompositePatternAction),
-            terrainNode as MarchingTrianglesTerrain,
-            doPatternVariant);
-        undoRedoManager.AddUndoMethod(_parent, nameof(
-                MarchingTrianglesTerrainPlugin.DelegateCompositePatternAction),
-            terrainNode as MarchingTrianglesTerrain,
-            undoPatternVariant);
-        undoRedoManager.CommitAction();
-    }
-
-    /// <summary>
-    /// Pre-processes the current pattern data into chunk-indexed pattern dictionaries
-    /// </summary>
-    private void PreProcessPatternForApplication(
-        Node3D terrainNode,
-        out Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> pattern,
-        out Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> restorePattern)
-    {
         // WARNING : We're relying on godot's dictionaries from now on as the Undo-Redo manager needs
         // Variant compatible types (Godot's dico is one)
-        pattern = new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>();
+        var pattern = new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>();
         var patternCellCoords =
             new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Vector2I>>();
-        restorePattern =
+        var restorePattern =
             new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>();
         var restorePatternCellCoords =
             new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Vector2I>>();
@@ -553,10 +503,20 @@ public class TerrainToolPluginHelper
                     float sample = Mathf.Clamp(chunkDataDrawn[drawCellCoords], 0.001f, 0.999f); // why not 0 - 1 ?
                     float drawValue = 0f;
                     float restoreValue = 0f;
+                    Vector2I drawValueCC = Vector2I.Zero;
+                    Vector2I restoreValueCC = Vector2I.Zero;
 
                     switch (_parent.SelectedMode)
                     {
-                        case TerrainToolMode.Brush:
+                        case TerrainToolMode.Level:
+                            restoreValue = chunk.Underlying.GetHeightFromCartesianCoords(pos);
+                            drawValue = Mathf.Lerp(restoreValue, DrawHeight, sample);
+                            break;
+                        case TerrainToolMode.Smooth:
+                        case TerrainToolMode.Bridge:
+                        case TerrainToolMode.DebugBrush:
+                            break; // TODO
+                        default:
                             restoreValue = chunk.Underlying.GetHeightFromTriCellCoords(drawCellCoords);
                             if (_parent.ToolAttributes.Flatten)
                             {
@@ -569,22 +529,103 @@ public class TerrainToolPluginHelper
                             }
 
                             break;
-                        case TerrainToolMode.Level:
-                            restoreValue = chunk.Underlying.GetHeightFromCartesianCoords(pos);
-                            drawValue = Mathf.Lerp(restoreValue, DrawHeight, sample);
-                            break;
-                        case TerrainToolMode.DebugBrush:
-                            //NOOP
-                            break;
-                        case TerrainToolMode.Smooth:
-                        case TerrainToolMode.Bridge:
-                            throw new NotImplementedException();
-                        default:
-                            throw new NotSupportedException();
                     }
 
                     restorePattern[chunkCoord][drawCellCoords] = restoreValue;
                     pattern[chunkCoord][drawCellCoords] = drawValue;
+                    if (/*_parent.SelectedMode == TerrainToolMode.VertexPainting*/false)
+                    {
+                        restorePatternCellCoords[chunkCoord][drawCellCoords] = restoreValueCC;
+                        patternCellCoords[chunkCoord][drawCellCoords] = drawValueCC;
+                    }
+                }
+            }
+        }
+
+        //
+        switch (_parent.SelectedMode)
+        {
+            default: // Brush-based mode
+                bool isQuickPaint = false; //TODO Not supported
+                var doPatternVariant =
+                    new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
+                        Godot.Collections.Dictionary<Vector3I, Variant>>>();
+                var undoPatternVariant =
+                    new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
+                        Godot.Collections.Dictionary<Vector3I, Variant>>>();
+
+                if (isQuickPaint)
+                {
+                    ProcessQuickPaintBrushPattern(
+                        terrainNode as MarchingTrianglesTerrain,
+                        pattern, restorePattern, out var doPattern, out var undoPattern);
+                    doPatternVariant = doPattern;
+                    undoPatternVariant = undoPattern;
+                }
+                else
+                {
+                    ProcessBrushPattern(
+                        terrainNode as MarchingTrianglesTerrain,
+                        pattern,
+                        restorePattern,
+                        out var doPattern,
+                        out var undoPattern);
+                    doPatternVariant = doPattern;
+                    undoPatternVariant = undoPattern;
+                }
+
+                // Use delegate method since "this" helper is not a Godot object (but the plugin itself is)
+                undoRedoManager.CreateAction("Terrain height draw" + (isQuickPaint ? " with quick paint brush" : ""));
+                undoRedoManager.AddDoMethod(_parent, nameof(
+                        MarchingTrianglesTerrainPlugin.DelegateCompositePatternAction),
+                    terrainNode as MarchingTrianglesTerrain,
+                    doPatternVariant);
+                undoRedoManager.AddUndoMethod(_parent, nameof(
+                        MarchingTrianglesTerrainPlugin.DelegateCompositePatternAction),
+                    terrainNode as MarchingTrianglesTerrain,
+                    undoPatternVariant);
+                undoRedoManager.CommitAction();
+                break;
+        }
+    }
+
+    /// <summary>
+    /// -- DEPRECATED --
+    /// Duplicates the data already available in the neighbors' entries
+    /// that is bordering the provided chunk to the current chunk's entry.
+    /// If there is no entries, just go on.
+    /// </summary>
+    /// <param name="chunk"></param>
+    /// <param name="pattern"></param>
+    /// <exception cref="NotImplementedException"></exception>
+    private void DuplicateNeighborChunksBorderData(HexagonalTerrainChunk chunk,
+        Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> pattern)
+    {
+        HashSet<Vector2I> neighborsChunks =
+        [
+            chunk.Coordinates + Vector2I.Up,
+            chunk.Coordinates + Vector2I.Up + Vector2I.Left,
+            chunk.Coordinates + Vector2I.Up + Vector2I.Right,
+            chunk.Coordinates + Vector2I.Down,
+            chunk.Coordinates + Vector2I.Down + Vector2I.Left,
+            chunk.Coordinates + Vector2I.Down + Vector2I.Right,
+            chunk.Coordinates + Vector2I.Left,
+            chunk.Coordinates + Vector2I.Right
+        ];
+        foreach (var neighbor in neighborsChunks)
+        {
+            if (pattern.TryGetValue(neighbor, out var neighborDataDic))
+            {
+                var offset = (neighbor - chunk.Coordinates) * _parent.CurTerrainNode.TerrainSettings.ChunkDimensions;
+                var offset3D = new Vector3I(offset.X, offset.Y, 0);
+
+                var triCells = chunk.GetTriCellsTouchingNeighbour(neighbor);
+                foreach (var triCell in triCells)
+                {
+                    if (neighborDataDic.TryGetValue(triCell - offset3D, out var newCellData))
+                    {
+                        pattern[chunk.Coordinates][triCell] = newCellData;
+                    }
                 }
             }
         }
@@ -619,6 +660,7 @@ public class TerrainToolPluginHelper
     /// <param name="pattern"></param>
     /// <param name="restorePattern"></param>
     private void ProcessBrushPattern(
+        MarchingTrianglesTerrain terrainNode,
         Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> pattern,
         Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> restorePattern,
         out Godot.Collections.Dictionary<
@@ -636,6 +678,7 @@ public class TerrainToolPluginHelper
                     Vector3I,
                     Variant>>> undoPattern)
     {
+        //TODO wall Coloring
         doPattern = new();
         undoPattern = new();
 
@@ -659,7 +702,7 @@ public class TerrainToolPluginHelper
         {
             compositeDisabled = true;
         }
-
+        
 
         // map each string to a method and a type in an Ordered dico
         OrderedDictionary<string, Action<TerrainColorMaps, Vector3I, Variant>> actions = new();
@@ -689,11 +732,12 @@ public class TerrainToolPluginHelper
                 }
             }
         }
+        //TODO : Re-freeze the cell;
 
         //Regenerate mesh ONCE for each affected chunk
         foreach (var hexTerrainChunk in affectedChunks.Values)
         {
-            hexTerrainChunk.GenerateTerrain(false);
+            hexTerrainChunk.GenerateTerrainMesh(false);
         }
     }
 
