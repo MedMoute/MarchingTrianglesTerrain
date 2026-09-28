@@ -19,11 +19,6 @@ public partial class MarchingTrianglesToolAttributeSettings : Resource
         bool flatten = false,
         bool falloff = false,
         bool maskMode = false,
-        bool material = false,
-        bool textureName = false,
-        bool texturePreset = false,
-        bool quickPaintSelection = false,
-        bool paintWalls = false,
         bool chunkManagement = false,
         bool terrainSettings = false)
     {
@@ -35,11 +30,6 @@ public partial class MarchingTrianglesToolAttributeSettings : Resource
         Flatten = flatten;
         Falloff = falloff;
         MaskMode = maskMode;
-        Material = material;
-        TextureName = textureName;
-        TexturePreset = texturePreset;
-        QuickPaintSelection = quickPaintSelection;
-        PaintWalls = paintWalls;
         ChunkManagement = chunkManagement;
         TerrainSettings = terrainSettings;
     }
@@ -55,13 +45,6 @@ public partial class MarchingTrianglesToolAttributeSettings : Resource
 
 // Brush specific attributes
     [Export] public bool MaskMode;
-    [Export] public bool Material;
-    [Export] public bool TextureName;
-
-// Vertex painting-related special attributes
-    [Export] public bool TexturePreset;
-    [Export] public bool QuickPaintSelection;
-    [Export] public bool PaintWalls;
 
 // Non-brush attributes
     [Export] public bool ChunkManagement;
@@ -79,11 +62,6 @@ public partial class MarchingTrianglesToolAttributeSettings : Resource
             new("Flatten", Flatten),
             new("Falloff", Falloff),
             new("MaskMode", MaskMode),
-            new("Material", Material),
-            new("TextureName", TextureName),
-            new("TexturePreset", TexturePreset),
-            new("QuickPaintSelection", QuickPaintSelection),
-            new("PaintWalls", PaintWalls),
             new("ChunkManagement", ChunkManagement),
             new("TerrainSettings", TerrainSettings)
         };

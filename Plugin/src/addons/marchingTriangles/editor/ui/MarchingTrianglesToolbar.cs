@@ -27,7 +27,7 @@ public partial class MarchingTrianglesToolbar : VFlowContainer
     /// <summary>
     /// Position of the horizontal separators in the toolbar.
     /// </summary>
-    private readonly int[] _separatorIndexes = [0, 4, 6, 9];
+    private readonly int[] _separatorIndexes = [0, 4, 7];
 
     private readonly Func<int[], Queue<int>> _queueCreator = ints => new Queue<int>(ints);
 
@@ -97,8 +97,6 @@ public class MarchingTrianglesToolbox
         LevelTool,
         SmoothTool,
         BridgeTool,
-        GrassMaskTool,
-        VertexPaintTool,
         DebugBrushTool,
         ChunkManagerTool,
         TerrainSettingsTool,
@@ -126,8 +124,7 @@ public class MarchingTrianglesToolbox
                 brushType: true,
                 size: true,
                 flatten: true,
-                falloff: true,
-                quickPaintSelection: true));
+                falloff: true));
 
     private static readonly MarchingTrianglesTool LevelTool =
         new("res://addons/marchingTriangles/editor/icons/level_tool.svg",
@@ -142,8 +139,7 @@ public class MarchingTrianglesToolbox
                 brushType: true,
                 size: true,
                 height: true,
-                falloff: true,
-                quickPaintSelection: true));
+                falloff: true));
 
     private static readonly MarchingTrianglesTool SmoothTool =
         new("res://addons/marchingTriangles/editor/icons/smooth_tool.svg",
@@ -161,39 +157,7 @@ public class MarchingTrianglesToolbox
                  "[INFO]\n" +
                  "The bridge curve falloff can be set via the \"ease value\" attribute. \n" +
                  "For reference see the ease value cheatsheet in the documentation+ folder.",
-            new MarchingTrianglesToolAttributeSettings(brushType: true, size: true, easeValue: true,
-                quickPaintSelection: true)
-        );
-
-    //Terrain visuals tools
-    private static readonly MarchingTrianglesTool GrassMaskTool =
-        new("res://addons/marchingTriangles/editor/icons/grass_mask_tool.svg",
-            "Grass Mask", "[INACTIVE]\n" +
-                          "Grass Mask Tool\n" +
-                          "\n" +
-                          "Used to control where grass gets placed.",
-            new MarchingTrianglesToolAttributeSettings()
-            //new MarchingTrianglesToolAttributeSettings(brushType:true,size:true,maskMode:true)
-        );
-
-    private static readonly MarchingTrianglesTool VertexPaintTool =
-        new("res://addons/marchingTriangles/editor/icons/vertex_paint_tool.svg",
-            "Vector Paining", "[INACTIVE]\n" +
-                              "Vertex Paint Tool\n" +
-                              "\n" +
-                              "Used to paint textures onto the terrain.\n" +
-                              "\n" +
-                              "[INFO]\n" +
-                              "• There are 16 available textures.\n" +
-                              "    • 1 through 6 have grass sprites attached to them.\n" +
-                              "    • 16 is a void material making terrain invisible.\n" +
-                              "• Texture presets can be used to quickly swap between texture pallets.\n" +
-                              "    • They can be exported via the right hand panel at the bottom.\n" +
-                              "• \"Quick Paints\" are a way to quickly set textures while modelling the terrain.\n" +
-                              "    • You can make global or texture preset specific ones. \n" +
-                              "        • → Create a MarchingTriangleQuickPaint resource in their dedicated folders in the parent plugin folder.",
-            // new MarchingTrianglesToolAttributeSettings(brushType:true,size:true,material:true,textureName:true,texturePreset:true,paintWalls:true)
-            new MarchingTrianglesToolAttributeSettings()
+            new MarchingTrianglesToolAttributeSettings(brushType: true, size: true, easeValue: true)
         );
 
     // General tools

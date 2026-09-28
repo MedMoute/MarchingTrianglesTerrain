@@ -6,6 +6,11 @@ using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
+/// <summary>
+/// The plugin component.
+/// </summary>
+/// This class should use a singleton pattern to ensure only one instance is ever instantiated, but due to
+/// Godot's instantiating pattern we cant restrict the constructor's visibility. 
 [Tool]
 public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
 {
@@ -29,7 +34,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     public MarchingTrianglesTerrainUi Ui { get; private set; }
 
     /// <summary>
-    /// Component for computing physics-related information (raycast etc...
+    /// Component for computing physics-related information (raycast etc...)
     /// </summary>
     private readonly MarchingTrianglesPhysicsDelegate _physicsDelegate = new();
 
@@ -119,7 +124,6 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
                 //Sync plugin's preset from the selected terrain's saved preset
                 //This ensures each terrain keeps its own preset on selection/reload
                 ToolAttributes.SyncFromTerrain = true;
-                ToolAttributes.CurrentTexturePreset = terrain.CurrentTexturePreset;
                 ToolAttributes.SyncFromTerrain = false;
             }
         }
@@ -172,7 +176,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         }
 
         var terrainScript = FileUtils.Load("res://addons/marchingTriangles/MarchingTrianglesTerrain.cs") as Script;
-        var chunkScript = FileUtils.Load("res://addons/marchingTriangles/HexTerrainCell.cs") as Script;
+        var chunkScript = FileUtils.Load("res://addons/marchingTriangles/GdPluginHexTerrainChunk.cs") as Script;
 
         if (terrainScript != null && chunkScript != null)
         {

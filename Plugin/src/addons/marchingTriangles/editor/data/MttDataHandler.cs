@@ -964,7 +964,7 @@ public abstract class MttDataHandler
 
         if (success)
         {
-            GD.Print("MttDataHandler : Loaded chunk " + coords);
+            logger.LogInformation("MttDataHandler : Loaded chunk " + coords);
         }
 
         return success;
