@@ -551,7 +551,7 @@ public class TerrainToolPluginHelper
             case TerrainToolMode.GrassMask:
                 throw new NotImplementedException();
             default: // Brush-based mode
-                bool isQuickPaint = _parent.ToolAttributes.CurrentQuickPaint != null;
+                bool isQuickPaint = false; //TODO Not supported
                 var doPatternVariant =
                     new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
                         Godot.Collections.Dictionary<Vector3I, Variant>>>();
@@ -703,7 +703,7 @@ public class TerrainToolPluginHelper
         var affectedChunks = new Dictionary<Vector2I, GdPluginHexTerrainChunk>();
 
         var compositeDisabled = false;
-        if (_parent.SelectedMode == TerrainToolMode.Smooth && _parent.ToolAttributes.CurrentQuickPaint == null)
+        if (_parent.SelectedMode == TerrainToolMode.Smooth)
         {
             compositeDisabled = true;
         }

@@ -9,6 +9,9 @@ using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
+/// <summary>
+/// Instance of a 3D Terrain.
+/// </summary>
 [Tool]
 public partial class MarchingTrianglesTerrain : Node3D
 {
@@ -145,8 +148,6 @@ public partial class MarchingTrianglesTerrain : Node3D
     // Tracks the mode used during the last successful save for reporting purposes.
     [Export] public StorageMode LastWorkingStorageMode { get; set; } = StorageMode.Baked;
 
-    [Export] public MarchingTrianglesTexturesPreset CurrentTexturePreset { get; set; }
-
     [Signal]
     public delegate void LoadFinishedEventHandler();
 
@@ -159,9 +160,7 @@ public partial class MarchingTrianglesTerrain : Node3D
             FileUtils.Load<ShaderMaterial>(
                     "res://addons/marchingTriangles/editor/resources/plugin_materials/mst_terrain_shader.tres")
                 .Duplicate(true) as ShaderMaterial);
-
-        CurrentTexturePreset = new MarchingTrianglesTexturesPreset();
-
+        
         _neighborChunkProviderProvider =
             BuildNeighborChunkProvider(i => _chunks.TryGetValue(i, out var chk) ? chk.Underlying : null);
     }
@@ -446,13 +445,6 @@ public partial class MarchingTrianglesTerrain : Node3D
         // TERRAIN MATERIAL - Core parameters
         TerrainSettings.ShaderMaterial.SetShaderParameter("chunk_size", TerrainSettings.ChunkDimensions);
         TerrainSettings.ShaderMaterial.SetShaderParameter("cell_size", TerrainSettings.CellScale);
-
-        // TODO : TERRAIN MATERIAL - Ground Textures
-        GD.Print(" TODO : Set vc_tex_rr properties");
-        // TODO TERRAIN MATERIAL - Ground Colors (used for both floor and wall in unified system)
-        GD.Print(" TODO : Set tex_albedo_1=>6 properties");
-        // TODO TERRAIN MATERIAL - Per-Texture UV Scales
-        GD.Print(" TODO : Set tex_scale_1=>15 properties");
     }
 
     private void _InitDataDirectory()

@@ -15,8 +15,6 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
 
     public MarchingTrianglesToolUiAttributes UiToolAttributes { get; private set; } = new(plugin);
 
-    public MarchingTrianglesTextureSettings TextureSettings { get; private set; } = new(plugin);
-
     public MarchingTrianglesToolbar Toolbar { get; set; }
 
     public MarchingTrianglesTerrainPlugin Plugin { get; set; } = plugin;
@@ -72,24 +70,17 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         UiToolAttributes.TerrainSettingChanged += OnTerrainSettingChanged;
         UiToolAttributes.Hide();
 
-        TextureSettings = new MarchingTrianglesTextureSettings(Plugin);
-        TextureSettings.TextureSettingChanged += OnTextureSettingChanged;
-        TextureSettings.Hide();
-
         Plugin.AddControlToContainer(EditorPlugin.CustomControlContainer.SpatialEditorSideLeft, Toolbar);
-        Plugin.AddControlToContainer(EditorPlugin.CustomControlContainer.SpatialEditorSideRight, TextureSettings);
         Plugin.AddControlToContainer(EditorPlugin.CustomControlContainer.SpatialEditorBottom, UiToolAttributes);
     }
 
     public override void _ExitTree()
     {
         Plugin.RemoveControlFromContainer(EditorPlugin.CustomControlContainer.SpatialEditorSideLeft, Toolbar);
-        Plugin.RemoveControlFromContainer(EditorPlugin.CustomControlContainer.SpatialEditorSideRight, TextureSettings);
         Plugin.RemoveControlFromContainer(EditorPlugin.CustomControlContainer.SpatialEditorBottom, UiToolAttributes);
 
         Toolbar.QueueFree();
         UiToolAttributes.QueueFree();
-        TextureSettings.QueueFree();
     }
 
     public void SetVisible(bool isVisible)
@@ -97,7 +88,6 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         _isVisible = isVisible;
         Toolbar.SetVisible(isVisible);
         UiToolAttributes.SetVisible((isVisible));
-        TextureSettings.SetVisible(isVisible);
 
         if (isVisible)
         {
@@ -113,12 +103,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
             UiToolAttributes.Show();
         }
     }
-
-    private void OnTextureSettingChanged(string setting, Variant value)
-    {
-       GD.Print("Texture Settings Changed !");
-    }
-
+    
     private void OnTerrainSettingChanged(string setting, Variant variant)
     {
         GD.Print("Terrain Settings Changed !");
@@ -126,6 +111,8 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
 
     private void OnPluginSettingChanged(string setting, Variant value)
     {
+        GD.Print("Plugin Settings Changed !");
+
         UiToolAttributes.SetPluginAttributeValue(setting,value);
     }
 
@@ -133,18 +120,6 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
     private void OnToolChanged(int toolIndex)
     {
         _activeTool = toolIndex;
-
-        if ((TerrainToolMode)toolIndex == TerrainToolMode.VertexPainting) // VertexPainting
-        {
-            // FIXME => Should probably be to in the Settings itself 
-            TextureSettings.Show();
-            TextureSettings.AddTextureSettings();
-        }
-        else
-        {
-            // FIXME => Should probably be to in the Settings itself 
-            TextureSettings.Hide();
-        }
 
         if ((TerrainToolMode)toolIndex == TerrainToolMode.Bridge) // BridgeTool
         {
@@ -176,39 +151,4 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
             }
         }
     }
-}
-
-public partial class MarchingTrianglesTextureSettings(MarchingTrianglesTerrainPlugin plugin) : ScrollContainer
-{
-    [Signal]
-    public delegate void TextureSettingChangedEventHandler(string setting, Variant value);
-
-    private readonly List<Dictionary<String, Variant>> VarNames = [[]];
-
-    public void AddTextureSettings()
-    {
-        throw new NotImplementedException("TextureSettings.gd => ll.99-> 280");
-    }
-
-    public override void _Ready()
-    {
-        SetCustomMinimumSize(new Vector2(195, 0));
-        AddThemeConstantOverride("separation", 5);
-        AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
-        HorizontalScrollMode = ScrollMode.ShowNever;
-    }
-
-    public void OnTextureSettingChanged(string settingName, Variant value)
-    {
-        EmitSignal(nameof(TextureSettingChanged), settingName, value);
-    }
-
-    public void OnSliderDragEnded(bool ended)
-    {
-        foreach (var chunk in plugin.CurTerrainNode.Chunks.Values)
-        {
-            // chunk.GrassPlanter.RegenerateAll();
-        }
-    }
-    
 }
