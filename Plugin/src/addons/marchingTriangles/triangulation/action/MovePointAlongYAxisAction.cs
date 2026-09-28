@@ -45,7 +45,6 @@ public class MovePointAlongYAxisAction : DelegatedTriangulationEditAction<int>
         {
             t.Vertices.TryAdd(_editedVertexI, newVertex);
         }
-        //TODO :  support edge and triiangle deletion here by re adressingg the content
         return t.ReverseVertices[newVertex];
     }
 }

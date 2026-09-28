@@ -4,10 +4,8 @@ using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
-[Tool]
 public class BrushPatternCalculator
 {
-    //TODO : unit test this ?
     /// <summary>
     /// Computes the theoretical global bounding boxes for the plugin's brush
     /// </summary>
@@ -79,7 +77,7 @@ public class BrushPatternCalculator
             case 1: //Square Brush
                 return 2 * brushSize/2 * brushSize/2;
             default:
-                throw new NotImplementedException("Brush Index Not supported");
+                throw new NotSupportedException("Brush Index Not supported");
         }
     }
 
@@ -133,7 +131,7 @@ public class BrushPatternCalculator
                 t = 1f - Mathf.Clamp(d, 0.2f, 1.0f);
                 break;
             default:
-                throw new NotImplementedException("Brush Index Not supported");
+                throw new NotSupportedException("Brush Index Not supported");
         }
 
         return falloffCurve.Sample(Mathf.Clamp(t, 0.001f, 0.999f));

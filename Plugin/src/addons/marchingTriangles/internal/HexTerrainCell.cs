@@ -95,7 +95,6 @@ public class HexTerrainCell
 
     internal CellDataArrays TempDataArrays { get; }
 
-    // TODO support object[]
     public Func<int, float>? GetVertexData;
 
     public bool FloorMode { get; private set; }

@@ -16,18 +16,6 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 /// </summary>
 public partial class TerrainToolAttributes : Node
 {
-    [Signal]
-    public delegate void TexturesUpdatedEventHandler();
-
-    public event TexturesUpdatedEventHandler TextureUpdated
-    {
-        add => Connect(nameof(TexturesUpdatedEventHandler),
-            Callable.From(() => { throw new NotImplementedException(); }));
-        remove => Disconnect(nameof(TexturesUpdatedEventHandler),
-            Callable.From(() => { throw new NotImplementedException(); }));
-    }
-
-
     public int BrushIndex { get; set; } = 0;
     public double BrushSize { get; set; } = 5D;
     public double EaseValue { get; set; } = -1; // No ease

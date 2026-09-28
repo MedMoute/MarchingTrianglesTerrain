@@ -8,7 +8,6 @@ using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
-/// TODO : split local computation and mesh / plugin stuff
 [GlobalClass]
 public partial class GdPluginHexTerrainChunk : MeshInstance3D
 {
@@ -79,7 +78,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
         TempCollisionShape = CreateAndGetCollision();
         ProcessCollisionShape();
-        if (!Engine.IsEditorHint() && false) // No runtime baking atm.
+        if (!Engine.IsEditorHint()) // No runtime baking atm.
         {
             throw new NotImplementedException();
         }

@@ -188,7 +188,10 @@ public partial class MarchingTrianglesTerrain : Node3D
 
     public void ForceRebuildTerrain()
     {
-        throw new NotImplementedException();
+        foreach (var chunk in Chunks)
+        {
+            chunk.Value.GenerateTerrain(true);
+        }
     }
 
     /// <summary>

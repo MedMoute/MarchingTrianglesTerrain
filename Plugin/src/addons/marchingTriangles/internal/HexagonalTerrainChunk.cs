@@ -82,7 +82,7 @@ public class HexagonalTerrainChunk
     /// </summary>
     public bool Dirty { get; set; }
 
-    // TODO : Marching triangle properties should be encapsulated
+    // TODO : use GeometryModeParameters
     /// <summary>
     /// Property for the threshold value for which a
     /// new geometry may be created along an edge of the terrain.

@@ -84,10 +84,6 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         Instance = this;
         Ui = new MarchingTrianglesTerrainUi(Instance);
         PluginHelper = new TerrainToolPluginHelper(_physicsDelegate, ToolAttributes, GizmoPlugin, Ui, Instance);
-        if (CurTerrainNode != null)
-        {
-            ToolAttributes.TextureUpdated += CurTerrainNode.ForceRebuildTerrain;
-        }
 
         CallDeferred(nameof(DeferredEnterTree));
         GD.PrintRich(
