@@ -66,8 +66,8 @@ https://github.com/godot-gdunit-labs/gdUnit4NetExamples/blob/master/Examples/Adv
     <Target Name="CreateSymlinks">
         <PropertyGroup>
             <!-- Define source and target paths for both symlinks -->
-            <SrcSource>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../Plugin/src'))</SrcSource>
-            <SrcTarget>$(MSBuildProjectDirectory)/src</SrcTarget>
+            <SrcSource>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../Plugin/src/addons'))</SrcSource>
+            <SrcTarget>$(MSBuildProjectDirectory)/addons</SrcTarget>
         </PropertyGroup>
 
         <!-- Windows: Create symlinks -->

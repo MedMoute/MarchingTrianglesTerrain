@@ -53,8 +53,8 @@ internal static class FileUtils
     /// <returns></returns>
     public static string ApplyCustomDirectoryPath(string path)
     {
-        if (ProjectSettings.HasSetting("dotnet/project/use_custom_folder_path") &&
-            (bool)ProjectSettings.GetSetting("dotnet/project/use_custom_folder_path"))
+        Console.Write("FileUtils : "+path);
+        if (ProjectSettings.HasSetting("dotnet/project/use_custom_folder_path"))
         {
             var folder = ProjectSettings.GetSetting("dotnet/project/custom_folder_path").AsString();
             if (folder.Length == 0)
@@ -63,12 +63,16 @@ internal static class FileUtils
                     "Can't find custom folder path property : the \"dotnet/project/custom_folder_path\" property is empty ");
             }
 
+            var x = path.Replace("res://", folder);
+            Console.WriteLine("=> "+x);
+
             return !folder.StartsWith("res://")
                 ? throw new Exception(
                     "The custom folder path property \"dotnet/project/custom_folder_path\" is invalid." +
                     " It must start with \"res://\" ")
-                : path.Replace("res://", folder);
+                : x;
         }
+        Console.WriteLine("=> "+path);
 
         return path;
     }
