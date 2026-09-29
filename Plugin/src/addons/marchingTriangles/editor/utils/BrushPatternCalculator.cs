@@ -4,7 +4,7 @@ using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
-public class BrushPatternCalculator
+public static class BrushPatternCalculator
 {
     /// <summary>
     /// Computes the theoretical global bounding boxes for the plugin's brush

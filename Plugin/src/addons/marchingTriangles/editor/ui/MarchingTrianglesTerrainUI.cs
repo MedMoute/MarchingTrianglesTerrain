@@ -144,6 +144,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         if ((TerrainToolMode)toolIndex == TerrainToolMode.GeometryEdit)
         {
             Plugin.CurTerrainNode?.ForceRebuildTerrain("res://addons/marchingTriangles/editor/resources/shaders/geometryBehaviour.gdshader");
+            
         }
     }
 }

@@ -231,6 +231,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             _st.SetCustomFormat(2, SurfaceTool.CustomFormat.RgbaFloat);
             // Used for GeometryEditor
             _st.SetCustomFormat(3, SurfaceTool.CustomFormat.RgbaFloat);
+
         }
 
         //Free the lock so the thread workers can take it

@@ -366,7 +366,7 @@ public class HexagonalTerrainChunk
     {
         //UV - used for ledge detection. X = closeness to top terrace, Y = closeness to bottom of terrace
         //Walls will always have UV of 1, 1
-        Vector2 uv = cell.FloorMode ? _uv : Vector2.One;
+        Vector2 uv =  _uv ;
 
         Vector2 uv2 = cell.FloorMode
             ? new Vector2(p.X, p.Z) / 1f / MathF.Sqrt(3)
@@ -381,11 +381,28 @@ public class HexagonalTerrainChunk
         data.Custom1Value.Add(colors["custom_1_value"]);
         data.Color0.Add(colors["color_0"]);
         data.Color1.Add(colors["color_1"]);
+        // Pack two colors in a single channel using half-precision (16 bits)
+        //
         var parameters = cell.ParametersOverride ?? GeometryModeParameters;
-        // TODO : pack data in custom 3
-        data.Custom3Value.Add((cell.GeometryModesOverride??DefaultGeometryModes).Item1.GetModePalette()(
+        var color1 = (cell.GeometryModesOverride ?? DefaultGeometryModes).Item1.GetModePalette()(
             parameters.Item1.Item1,
-            parameters.Item1.Item2));
+            parameters.Item1.Item2);
+        var color2 = (cell.GeometryModesOverride ?? DefaultGeometryModes).Item2.GetModePalette()(
+            parameters.Item1.Item1,
+            parameters.Item1.Item2);
+
+        var bytesR = BitConverter.GetBytes((Half)color1.R).Concat(BitConverter.GetBytes((Half)color2.R)).ToArray();
+        var bytesG = BitConverter.GetBytes((Half)color1.G).Concat(BitConverter.GetBytes((Half)color2.G)).ToArray();
+        var bytesB = BitConverter.GetBytes((Half)color1.B).Concat(BitConverter.GetBytes((Half)color2.B)).ToArray();
+        var bytesA = BitConverter.GetBytes((Half)color1.A).Concat(BitConverter.GetBytes((Half)color2.A)).ToArray();
+
+        var PackedColors = new Color(
+            BitConverter.ToSingle(bytesR),
+            BitConverter.ToSingle(bytesG),
+            BitConverter.ToSingle(bytesB),
+            BitConverter.ToSingle(bytesA));
+        data.Custom3Value.Add(PackedColors);
+
         data.MatBlend.Add(colors["mat_blend"]);
         data.Floor.Add(cell.FloorMode);
     }
@@ -426,14 +443,14 @@ public static class ThresholdComputationModeExtensions
 
 public enum GeometryMode
 {
-    FlatHexagons = 1,
-    FlatTriangles = 2,
-    SmoothLinear = 3,
-    Foothill = 4,
-    Plateau = 5,
-    BendingEdge = 6,
-    FlatHexagonsNoFans = 7,
-    FlatTrianglesNoFans = 8
+    FlatHexagons = 0,
+    FlatTriangles = 1,
+    SmoothLinear = 2,
+    Foothill = 3,
+    Plateau = 4,
+    BendingEdge = 5,
+    FlatHexagonsNoFans = 6,
+    FlatTrianglesNoFans = 7
 }
 
 /// <summary>

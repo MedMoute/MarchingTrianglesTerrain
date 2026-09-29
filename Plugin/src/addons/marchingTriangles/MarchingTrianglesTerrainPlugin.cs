@@ -19,8 +19,6 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     /// </summary>
     public static MarchingTrianglesTerrainPlugin Instance { get; set; }
 
-    private BrushPatternCalculator _patternCalculator = new();
-
     /// <summary>
     /// Gizmo Plugin instance.
     ///
@@ -41,7 +39,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     /// <summary>
     /// The terrain currently being edited by this plugin.
     /// </summary>
-    public MarchingTrianglesTerrain CurTerrainNode { get; private set; }
+    public MarchingTrianglesTerrain? CurTerrainNode { get; private set; }
 
     /// <summary>
     /// Global plugin initialization flag.
@@ -49,10 +47,13 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     private static bool _init;
 
     /// <summary>
-    /// Initialization Error hint.
+    /// Internal initialization Error hint.
     /// </summary>
     private string _initError;
 
+    /// <summary>
+    /// Current selected moode for the plugin.
+    /// </summary>
     private TerrainToolMode _selectedMode = TerrainToolMode.Brush;
 
     public TerrainToolAttributes ToolAttributes { get; } = new();
