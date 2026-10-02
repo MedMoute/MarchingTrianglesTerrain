@@ -128,7 +128,9 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         }
         _activeTool = toolIndex;
 
-        if ((TerrainToolMode)toolIndex == TerrainToolMode.Bridge) // BridgeTool
+        if (toolIndex
+            is (int)TerrainToolMode.Bridge // BridgeTool
+            or (int)TerrainToolMode.GeometryEdit) 
         {
             // FIXME => Should probably be to in the Settings itself 
             Plugin.ToolAttributes.Falloff = false;

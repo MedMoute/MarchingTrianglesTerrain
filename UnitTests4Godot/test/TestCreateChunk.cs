@@ -18,7 +18,7 @@ public class TestCreateChunk
         
         Assert.DoesNotThrow(() =>
         {
-            AddNode(new MarchingTrianglesTerrainPlugin());
+            plugin = AddNode(new MarchingTrianglesTerrainPlugin());
             terrain = AddNode(new MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain());
         });
         AssertThat(terrain.GetChildCount()).IsEqual(0);
