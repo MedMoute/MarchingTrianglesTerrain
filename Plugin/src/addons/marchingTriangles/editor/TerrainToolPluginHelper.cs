@@ -562,7 +562,7 @@ public class TerrainToolPluginHelper
                             break;
                         case TerrainToolMode.GeometryEdit:
                             var cell = chunk.Underlying._terrainDualGrid.CompleteCells
-                                .FirstOrDefault(c => c.CellCoordsImplicit == cellCoord);
+                                .FirstOrDefault(c => c.Visits.ContainsKey(new Vector3I(cellCoord.X,cellCoord.Y,0)));
                             if (cell is null)
                             {
                                 restoreValue = null;
