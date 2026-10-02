@@ -21,7 +21,7 @@ public class HexagonalTerrainChunk
     /// Coordinates of the current chunk in the global plane frame
     /// </summary>
     public Vector2I Coordinates { get; set; }
-    
+
     public ((int, int), (int, int)) GeometryModeParameters;
 
 
@@ -92,7 +92,7 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// Default geometry mode value 
     /// </summary>
-    public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes;
+    public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes { get; set; }
 
     /// <summary>
     /// Default threshold computation method and value
@@ -366,7 +366,7 @@ public class HexagonalTerrainChunk
     {
         //UV - used for ledge detection. X = closeness to top terrace, Y = closeness to bottom of terrace
         //Walls will always have UV of 1, 1
-        Vector2 uv =  _uv ;
+        Vector2 uv = _uv;
 
         Vector2 uv2 = cell.FloorMode
             ? new Vector2(p.X, p.Z) / 1f / MathF.Sqrt(3)
@@ -468,14 +468,42 @@ public static class GeometryModeExtensions
     //Saturation margin
     private static float saturationMargin = 0.3f;
 
+    public static bool SupportsParameter(this GeometryMode gMode,int parameterIdx)
+    {
+        bool supportsParameter;
+        if (parameterIdx >= 2)
+        {
+            throw new NotSupportedException();
+        }
+        switch (gMode)
 
+        {
+            case GeometryMode.FlatHexagonsNoFans:
+            case GeometryMode.FlatTrianglesNoFans:
+            case GeometryMode.FlatTriangles:
+            case GeometryMode.FlatHexagons:
+            case GeometryMode.SmoothLinear:
+                supportsParameter = false;
+                break;
+            case GeometryMode.Foothill:
+            case GeometryMode.Plateau:
+            case GeometryMode.BendingEdge:
+                supportsParameter = true;
+                break;
+            default:
+                throw new NotSupportedException();
+        }
+        return supportsParameter;
+    }
+    
     /// <summary>
-    /// Returns the the palette method (a double parametered float function)
+    /// Returns the palette method (a double parametered float function)
     /// for a given GeometryMode.
     /// The input range for the resulting function is [0,1]
     /// </summary>
     /// <param name="gMode"></param>
     /// <returns></returns>
+    //TODO : Use Color.FromOkHSl when fixed on Godot lib
     public static Func<float?, float?, Color> GetModePalette(this GeometryMode gMode)
     {
         //We quantize the HSL space into as many quadrants as there are GeometryModes.
@@ -484,7 +512,7 @@ public static class GeometryModeExtensions
 
         var count = enumArray.Length;
         var idx = (int)gMode;
-        if (idx < 1 || idx >= count)
+        if (idx < 0 || idx > count)
         {
             throw new Exception("This is not supported");
         }
@@ -493,45 +521,13 @@ public static class GeometryModeExtensions
         var hueMax = (float)idx / count;
         var hueMid = (hueMax + hueMin) / 2;
         var lMid = (lMin + lMax) / 2;
+        var sDefault = 0.8f;
 
-        bool supportsParameter1, supportsParameter2;
-        switch (gMode)
-
-        {
-            case GeometryMode.FlatHexagonsNoFans:
-            case GeometryMode.FlatTrianglesNoFans:
-            case GeometryMode.FlatTriangles:
-            case GeometryMode.FlatHexagons:
-            case GeometryMode.SmoothLinear:
-                supportsParameter1 = false;
-                break;
-            case GeometryMode.Foothill:
-            case GeometryMode.Plateau:
-            case GeometryMode.BendingEdge:
-                supportsParameter1 = true;
-                break;
-            default:
-                throw new NotSupportedException();
-        }
-
-        switch (gMode)
-
-        {
-            case GeometryMode.FlatHexagonsNoFans:
-            case GeometryMode.FlatTrianglesNoFans:
-            case GeometryMode.FlatTriangles:
-            case GeometryMode.FlatHexagons:
-            case GeometryMode.SmoothLinear:
-                supportsParameter2 = false;
-                break;
-            case GeometryMode.Foothill:
-            case GeometryMode.Plateau:
-            case GeometryMode.BendingEdge:
-                supportsParameter2 = true;
-                break;
-            default:
-                throw new NotSupportedException();
-        }
+        var v = (float s, float l) => l + s * Math.Min(l, 1 - l);
+        var vMid = v(sDefault, lMid);
+        // Parameter #1 handling
+        bool supportsParameter1 = SupportsParameter(gMode, 0);
+        bool supportsParameter2 = SupportsParameter(gMode,1);
 
         if (supportsParameter2)
         {
@@ -557,9 +553,13 @@ public static class GeometryModeExtensions
                     throw new ArgumentOutOfRangeException(nameof(p2));
                 }
 
-                return Color.FromOkHsl(hueMid,
+                var x = Color.FromHsv(hueMid,
                     Mathf.Lerp(saturationMargin, 1 - saturationMargin, p1.Value),
-                    Mathf.Lerp(lMin, lMax, p2.Value));
+                    v(
+                        Mathf.Lerp(saturationMargin, 1 - saturationMargin, p1.Value),
+                        Mathf.Lerp(lMin, lMax, p2.Value))
+                );
+                return x;
             };
         }
 
@@ -574,13 +574,19 @@ public static class GeometryModeExtensions
                     throw new ArgumentOutOfRangeException(nameof(p1));
                 }
 
-                return Color.FromOkHsl(hueMid,
+                var x = Color.FromHsv(hueMid,
                     Mathf.Lerp(saturationMargin, 1 - saturationMargin, p1.Value),
-                    lMid);
+                    vMid);
+                return x;
             };
         }
 
         //Constant
-        return (_, _) => Color.FromOkHsl(hueMid, 0.8f, lMid);
+        return (_, _) =>
+        {
+            // https://github.com/godotengine/godot/issues/118138 : Cannot use Color.FromOkHsl on linux
+            var x = Color.FromHsv(hueMid, sDefault, vMid);
+            return x;
+        };
     }
 }

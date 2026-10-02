@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
@@ -86,6 +87,15 @@ public class TerrainColorMaps(
         EnsureRange(cell,parent.Dimensions);
         parent.DataGrid.Data[cell] = yValue;
     }
+    
+    public void SetDualCellGeometryMode(Vector3I cellDataIdx, Vector2I value)
+    {
+        EnsureRange(cellDataIdx,parent.Dimensions);
+        foreach (var hexTerrainCell in parent._terrainDualGrid.CompleteCells.Where(cell=> cell.Visits.ContainsKey(cellDataIdx)))
+        {
+            hexTerrainCell.GeometryModesOverride = new Tuple<GeometryMode, GeometryMode>((GeometryMode)value.X, (GeometryMode)value.Y);
+        }
+    }
 
     public void SetWallColor1(Vector3I cellCoords, Color value)
     {
@@ -103,6 +113,13 @@ public class TerrainColorMaps(
     public void DrawHeight(Vector3I cell, float yValue)
     {
         SetHeight(cell, yValue);
+        parent.Dirty = true;
+        NotifySelfAndNeighborsForUpdate(cell);
+    }
+    
+    public void DrawNewGeometryMode(Vector3I cell, Vector2I newGeometryModes)
+    {
+        SetDualCellGeometryMode(cell, newGeometryModes);
         parent.Dirty = true;
         NotifySelfAndNeighborsForUpdate(cell);
     }
@@ -151,4 +168,6 @@ public class TerrainColorMaps(
 
         return true;
     }
+
+
 }

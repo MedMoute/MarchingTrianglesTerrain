@@ -119,6 +119,13 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
     //TODO : do not restart tool if same. also, this could be cleaner
     private void OnToolChanged(int toolIndex)
     {
+        if ((TerrainToolMode)toolIndex == TerrainToolMode.GeometryEdit)
+        {
+            Plugin.CurTerrainNode?.RebuildTerrain("res://addons/marchingTriangles/editor/resources/shaders/geometryBehaviour.gdshader");
+        }  else
+        {
+            Plugin.CurTerrainNode?.RebuildTerrain();
+        }
         _activeTool = toolIndex;
 
         if ((TerrainToolMode)toolIndex == TerrainToolMode.Bridge) // BridgeTool
@@ -141,10 +148,6 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
             UiToolAttributes.DisableEditToolAttributes();
         }
 
-        if ((TerrainToolMode)toolIndex == TerrainToolMode.GeometryEdit)
-        {
-            Plugin.CurTerrainNode?.ForceRebuildTerrain("res://addons/marchingTriangles/editor/resources/shaders/geometryBehaviour.gdshader");
-            
-        }
+
     }
 }

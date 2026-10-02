@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.gizmo;
@@ -33,13 +34,17 @@ public class TerrainToolPluginHelper
 
     private GdPluginHexTerrainChunk? _currentSelectedChunk;
 
+    /// <summary>
+    /// The chunk currently selected by the UI.
+    /// </summary>
     public GdPluginHexTerrainChunk? CurrentSelectedChunk
     {
         get => _currentSelectedChunk;
         set
         {
             _currentSelectedChunk = value;
-            _toolAttributes.SelectedChunk = value==null ? Vector2I.Zero : value.Underlying.Coordinates;
+            _ui.UiToolAttributes.SelectedChunk = value;
+            _toolAttributes.SelectedChunk = value == null ? Vector2I.Zero : value.Underlying.Coordinates;
         }
     }
 
@@ -193,8 +198,11 @@ public class TerrainToolPluginHelper
             if (Drawing)
             {
                 Drawing = false;
-                if (terrainToolMode is TerrainToolMode.Level || terrainToolMode is TerrainToolMode.Bridge ||
-                    terrainToolMode is TerrainToolMode.DebugBrush)
+                if (terrainToolMode
+                    is TerrainToolMode.Level
+                    or TerrainToolMode.Bridge
+                    or TerrainToolMode.DebugBrush
+                    or TerrainToolMode.GeometryEdit)
                 {
                     // Draw the complete pattern before selection 
                     CommitDrawnPattern(node3D);
@@ -310,6 +318,7 @@ public class TerrainToolPluginHelper
             case TerrainToolMode.Bridge:
             case TerrainToolMode.Level:
             case TerrainToolMode.Smooth:
+            case TerrainToolMode.GeometryEdit:
                 return PerformRaycastAndProcessHoverPoint();
             default:
                 throw new NotSupportedException($"Mouse Events are not handled for {mode} mode.");
@@ -503,7 +512,6 @@ public class TerrainToolPluginHelper
         // Process the pattern entries
         foreach (var chunkCoord in CurrentDrawPattern.Keys)
         {
-
             pattern[chunkCoord] = new();
             patternCellCoords[chunkCoord] = new();
             restorePattern[chunkCoord] = new();
@@ -520,14 +528,14 @@ public class TerrainToolPluginHelper
                     var pos = chunk.Underlying.DataGrid.OrientationSystem.GetCellCentroid(cellCoord, polyIdx);
 
                     float sample = Mathf.Clamp(chunkDataDrawn[drawCellCoords], 0.001f, 0.999f); // why not 0 - 1 ?
-                    float drawValue = 0f;
-                    float restoreValue = 0f;
+                    Variant? drawValue = 0f;
+                    Variant? restoreValue = 0f;
 
                     switch (_parent.SelectedMode)
                     {
                         case TerrainToolMode.Level:
                             restoreValue = chunk.Underlying.GetHeightFromCartesianCoords(pos);
-                            drawValue = Mathf.Lerp(restoreValue, DrawHeight, sample);
+                            drawValue = Mathf.Lerp(restoreValue.Value.AsSingle(), DrawHeight, sample);
                             break;
                         case TerrainToolMode.Smooth:
                         case TerrainToolMode.Bridge:
@@ -538,24 +546,46 @@ public class TerrainToolPluginHelper
                             restoreValue = chunk.Underlying.GetHeightFromTriCellCoords(drawCellCoords);
                             if (_parent.ToolAttributes.Flatten)
                             {
-                                drawValue = Mathf.Lerp(restoreValue, BrushPosition.Y, sample);
+                                drawValue = Mathf.Lerp(restoreValue.Value.AsSingle(), BrushPosition.Y, sample);
                             }
                             else
                             {
                                 float heightDiff = BrushPosition.Y - DrawHeight;
-                                drawValue = Mathf.Lerp(restoreValue, restoreValue + heightDiff, sample);
+                                drawValue = Mathf.Lerp(restoreValue.Value.AsSingle(),
+                                    restoreValue.Value.AsSingle() + heightDiff,
+                                    sample);
                             }
 
                             break;
                         case TerrainToolMode.ChunkManagement:
                         case TerrainToolMode.TerrainSettings:
                             break;
+                        case TerrainToolMode.GeometryEdit:
+                            var cell = chunk.Underlying._terrainDualGrid.CompleteCells
+                                .FirstOrDefault(c => c.CellCoordsImplicit == cellCoord);
+                            if (cell is null)
+                            {
+                                restoreValue = null;
+                                drawValue = null;
+                                break;
+                            }
+
+                            var cellValue = cell.GeometryModesOverride;
+                            restoreValue = cellValue is not null
+                                ? new Vector2I((int)cellValue.Item1, (int)cellValue.Item2)
+                                : new Vector2I((int)chunk.Underlying.DefaultGeometryModes.Item1,
+                                    (int)chunk.Underlying.DefaultGeometryModes.Item2);
+                            drawValue = _parent.ToolAttributes.GeometryModes;
+                            break;
                         default:
                             throw new NotSupportedException($"Behavior not implemented for {_parent.SelectedMode}");
                     }
 
-                    restorePattern[chunkCoord][drawCellCoords] = restoreValue;
-                    pattern[chunkCoord][drawCellCoords] = drawValue;
+                    if (restoreValue != null && drawValue != null)
+                    {
+                        restorePattern[chunkCoord][drawCellCoords] = restoreValue.Value;
+                        pattern[chunkCoord][drawCellCoords] = drawValue.Value;
+                    }
                 }
             }
         }
@@ -580,7 +610,7 @@ public class TerrainToolPluginHelper
         else
         {
             ProcessBrushPattern(
-                terrainNode as MarchingTrianglesTerrain,
+                _parent.SelectedMode,
                 pattern,
                 restorePattern,
                 out var doPattern,
@@ -632,7 +662,7 @@ public class TerrainToolPluginHelper
     /// <param name="pattern"></param>
     /// <param name="restorePattern"></param>
     private void ProcessBrushPattern(
-        MarchingTrianglesTerrain terrainNode,
+        TerrainToolMode operationMode,
         Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> pattern,
         Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> restorePattern,
         out Godot.Collections.Dictionary<
@@ -650,12 +680,20 @@ public class TerrainToolPluginHelper
                     Vector3I,
                     Variant>>> undoPattern)
     {
-        //TODO wall Coloring
         doPattern = new();
         undoPattern = new();
 
-        doPattern["height"] = pattern;
-        undoPattern["height"] = restorePattern;
+        switch (operationMode)
+        {
+            case TerrainToolMode.GeometryEdit:
+                doPattern["geometryMode"] = pattern;
+                undoPattern["geometryMode"] = restorePattern;
+                break;
+            default:
+                doPattern["height"] = pattern;
+                undoPattern["height"] = restorePattern;
+                break;
+        }
     }
 
     public void ApplyCompositePatternAction(MarchingTrianglesTerrain terrain,
@@ -679,6 +717,7 @@ public class TerrainToolPluginHelper
         // map each string to a method and a type in an Ordered dico
         OrderedDictionary<string, Action<TerrainColorMaps, Vector3I, Variant>> actions = new()
         {
+            ["geometryMode"] = (input, v, data) => input.DrawNewGeometryMode(v, data.AsVector2I()),
             // Apply wall colors before height changes that can create ridge vertices
             ["wall_color_0"] = (input, v, data) => input.DrawWallColor0(v, data.AsColor()),
             ["wall_color_1"] = (input, v, data) => input.DrawWallColor1(v, data.AsColor()),
@@ -711,7 +750,14 @@ public class TerrainToolPluginHelper
         //Regenerate mesh ONCE for each affected chunk
         foreach (var hexTerrainChunk in affectedChunks.Values)
         {
-            hexTerrainChunk.GenerateTerrainMesh(false);
+            if (hexTerrainChunk.GetActiveMaterial(0) is ShaderMaterial mat)
+            {
+                hexTerrainChunk.GenerateTerrainMesh(false,mat.Shader.ResourcePath);
+            }
+            else
+            {
+                hexTerrainChunk.GenerateTerrainMesh(false);
+            }
         }
     }
 

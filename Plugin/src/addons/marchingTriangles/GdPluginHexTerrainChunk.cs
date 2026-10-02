@@ -88,7 +88,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     {
         if (GetParent() != null && GetParent() is MarchingTrianglesTerrain terrain)
         {
-            Underlying.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(
+            Underlying.DefaultGeometryModes ??= new Tuple<GeometryMode, GeometryMode>(
                 terrain.TerrainSettings.ChunkBlendMode,
                 terrain.TerrainSettings.ChunkBlendModeFallBack);
 

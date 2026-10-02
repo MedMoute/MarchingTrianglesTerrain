@@ -7,6 +7,7 @@ using System.Text;
 using Godot;
 using Godot.Collections;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using Microsoft.VisualBasic.CompilerServices;
 using Array = Godot.Collections.Array;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
@@ -41,9 +42,11 @@ public partial class MarchingTrianglesToolUiAttributes
     public static MarchingTriangleTerrainToolAttributesList Attributes { get; } = new();
 
     private SettingType _lastSettingType = SettingType.Error;
-    public GdPluginHexTerrainChunk SelectedChunk { get; set; }
+    public GdPluginHexTerrainChunk? SelectedChunk { get; set; }
 
     private readonly List<GdPluginHexTerrainChunk> _currentAvailableChunks = [];
+
+    private static StringName newChunk = "New Chunk";
 
     /// <summary>
     ///  The container for the tool settings
@@ -193,15 +196,154 @@ public partial class MarchingTrianglesToolUiAttributes
                 //ProcessQuickPaintSetting(savedSettingValue, toolSettingParameters);
                 break;
             case SettingType.Chunk:
-                ProcessChunkSetting(savedSettingValue, toolSettingParameters);
+                ProcessChunkSetting();
                 break;
             case SettingType.Terrain:
                 ProcessTerrainSettings();
+                break;
+            case SettingType.GeometryModePicker:
+                ProcessGeometryModePickerSetting();
+                break;
+            case SettingType.GeometryModeParameterEditor:
+                ProcessGeometryModeParameterSetting();
                 break;
             case SettingType.Error:
                 GD.PushError("Couldn't load tool attributes setting");
                 break;
         }
+    }
+
+    private void ProcessGeometryModeParameterSetting()
+    {
+        int maxSupportedGeometryParameters = 2;
+        GeometryMode[] modes = new GeometryMode[2];
+        modes[0] = (GeometryMode)_terrainPlugin.ToolAttributes.GeometryModes.X;
+        modes[1] = (GeometryMode)_terrainPlugin.ToolAttributes.GeometryModes.Y;
+        var vBoxContainer = new VBoxContainer();
+        
+        EditorSpinSlider?[,] sliderArray= new EditorSpinSlider[2,2];
+
+        for (int i = 0; i < 2; i++)
+        {
+            GeometryMode mode = modes[i];
+            var cont = new HBoxContainer();
+            for (int j = 0; j < maxSupportedGeometryParameters; j++)
+            {
+                var subCont = new HBoxContainer();
+
+                Label label = new();
+                label.Text = $"Parameter {j}";
+                if (mode>=0 && mode.SupportsParameter(j))
+                {
+                    EditorSpinSlider value = new();
+                    sliderArray[i, j] = value;
+                    value.EditingInteger = false;
+                    value.MinValue = 0f;
+                    value.MaxValue = 1f;
+                    value.SetCustomMinimumSize(new Vector2(50, 35));
+                    subCont.AddChild(value);
+                }
+                else
+                {
+                    sliderArray[i, j] = null;
+
+                    Label unsupported = new();
+                    unsupported.Text = "No parameter";
+                    subCont.AddChild(unsupported);
+                }
+                cont.AddChild(label);
+                cont.AddChild(subCont);
+            }
+
+
+            vBoxContainer.AddChild(cont);
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            for (int j = 0; j < maxSupportedGeometryParameters; j++)
+            {
+                if (sliderArray [i,j] != null)
+                {
+                    sliderArray[i, j].ValueChanged += (val) =>
+                    {
+                        Vector4 result = new Vector4();
+                        for (int k = 0; k < 2; k++)
+                        {
+                            for (int l = 0; l < maxSupportedGeometryParameters; l++)
+                            {
+                                result[2 * k + l] = (float)(sliderArray[k, l] == null
+                                    ? -1f
+                                    : sliderArray[k, l].Value);
+                            }
+                        }
+
+                        result[2 * i + j] = (float)val;
+                        OnSettingChanged("GeometryModeParameters", result);
+                    };
+                }
+            }
+            
+        }
+        _hboxContainer.AddChild(vBoxContainer, true);
+
+    }
+
+    private void ProcessGeometryModePickerSetting()
+    {
+        const int iconSize = 16;
+
+        //Add behavior selector buttons
+        var optionButton = OptionButton(iconSize);
+        var overThresholdOptionButton = OptionButton(iconSize);
+
+        var cont = new CenterContainer();
+        cont.AddChild(optionButton, true);
+        var cont2 = new CenterContainer();
+
+        cont2.AddChild(overThresholdOptionButton, true);
+        var vBoxContainer = new VBoxContainer();
+
+        cont.SetCustomMinimumSize(new Vector2(85, 35));
+        vBoxContainer.AddChild(cont);
+        vBoxContainer.AddChild(cont2);
+
+        _hboxContainer.AddChild(vBoxContainer, true);
+
+        // -1 for NOOP offset;
+        optionButton.ItemSelected += val => OnSettingChanged(
+            "GeometryMode",
+            new Vector2I((int)val - 1, overThresholdOptionButton.Selected - 1));
+
+        overThresholdOptionButton.ItemSelected += val => OnSettingChanged(
+            "GeometryMode",
+            new Vector2I(optionButton.Selected - 1, (int)val - 1));
+
+
+        OptionButton OptionButton(int _iconSize)
+        {
+            OptionButton button = new();
+            button.SetCustomMinimumSize(new Vector2(65, 35));
+            button.SetFlat(true);
+            var texture = EngineUtils.Resize2DTexture("res://addons/marchingTriangles/editor/icons/empty_texture.png",
+                _iconSize, _iconSize);
+            button.AddIconItem(texture, "Noop");
+            foreach (GeometryMode mode in Enum.GetValues(typeof(GeometryMode)))
+            {
+                var gradient = new Gradient();
+                gradient.SetColors([mode.GetModePalette()(0f, 0f)]);
+                var gradTexture = new GradientTexture2D();
+                gradTexture.SetGradient(gradient);
+                gradTexture.SetHeight(_iconSize);
+                gradTexture.SetWidth(_iconSize);
+                button.AddIconItem(gradTexture, mode.ToString()); // +1 is offset due
+            }
+
+            return button;
+        }
+
+        optionButton.Select(_terrainPlugin.ToolAttributes.GeometryModes.X+1);
+        overThresholdOptionButton.Select(_terrainPlugin.ToolAttributes.GeometryModes.Y+1);
     }
 
     /// <summary>
@@ -399,7 +541,9 @@ public partial class MarchingTrianglesToolUiAttributes
                     }
 
                     optionButton.Selected =
-                        (editorSetting.Key == "extraCollisionLayer" ? pluginSettingValue.AsInt32()-9 : pluginSettingValue.AsInt32());
+                        (editorSetting.Key == "extraCollisionLayer"
+                            ? pluginSettingValue.AsInt32() - 9
+                            : pluginSettingValue.AsInt32());
                     optionButton.ItemSelected += (val) =>
                     {
                         OnTerrainPropertyChanged(editorSetting.Key, val,
@@ -586,42 +730,32 @@ public partial class MarchingTrianglesToolUiAttributes
     /// <summary>
     /// Processes the UI elements' settings for the Chunk Management Tool mode.
     /// </summary>
-    /// <param name="savedSetting"> previously saved value for the setting</param>
-    /// <param name="toolParameters">internal parameters of the UI setting</param>
-    private void ProcessChunkSetting(Variant savedSetting,
-        Godot.Collections.Dictionary<string, Variant> toolParameters)
+    private void ProcessChunkSetting()
     {
-        /*
-        if (_terrainPlugin.CurTerrainNode.GetChildCount() == 0)
+        //Create the chunk selectors
+        var xSelectorButton = new OptionButton();
+        xSelectorButton.SetFlat(true);
+        xSelectorButton.Text = "Chunk X coordinate";
+        xSelectorButton.AddItem(newChunk, int.MinValue);
+        foreach (var x in _terrainPlugin.CurTerrainNode.Chunks.Keys.Select(v => v.X).Distinct())
         {
-            return;
-        }
-        */
-
-        _currentAvailableChunks.Clear();
-        var chunkButton = new OptionButton();
-        Array<Node> children = _terrainPlugin.CurTerrainNode.GetChildren();
-        foreach (Node node in children)
-        {
-            if (node is GdPluginHexTerrainChunk chunk)
-            {
-                chunkButton.AddItem("Chunk" + chunk.Underlying.Coordinates);
-                _currentAvailableChunks.Add(chunk);
-            }
+            xSelectorButton.AddItem(x.ToString());
         }
 
-        var selectedChunkIdx =
-            _currentAvailableChunks.FindIndex((chk) => chk == _terrainPlugin.PluginHelper.CurrentSelectedChunk);
-        int safeSelectedChunkIdx =
-            (_currentAvailableChunks.Count != 0 && _terrainPlugin.PluginHelper.CurrentSelectedChunk != null)
-                ? selectedChunkIdx
-                : -1;
-        chunkButton.Selected = safeSelectedChunkIdx;
-        if (_currentAvailableChunks.Count != 0 || _terrainPlugin.PluginHelper.CurrentSelectedChunk != null)
+        xSelectorButton.SetCustomMinimumSize(new Vector2(65, 35));
+
+        var zSelectorButton = new OptionButton();
+        zSelectorButton.SetFlat(true);
+        zSelectorButton.Text = "Chunk Z coordinate";
+        zSelectorButton.AddItem(newChunk, int.MinValue);
+        foreach (var z in _terrainPlugin.CurTerrainNode.Chunks.Keys.Select(v => v.Y).Distinct())
         {
-            SelectedChunk = _terrainPlugin.PluginHelper.CurrentSelectedChunk;
+            zSelectorButton.AddItem(z.ToString());
         }
 
+        zSelectorButton.SetCustomMinimumSize(new Vector2(65, 35));
+
+        //Add behavior selector buttons
         OptionButton optionButton = new();
         optionButton.SetCustomMinimumSize(new Vector2(65, 35));
         optionButton.SetFlat(true);
@@ -630,20 +764,198 @@ public partial class MarchingTrianglesToolUiAttributes
             optionButton.AddItem(mode.ToString());
         }
 
-        optionButton.Selected =
-            (_currentAvailableChunks.Count != 0 && _terrainPlugin.PluginHelper.CurrentSelectedChunk != null)
-                ? _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.MergeMode
-                : -1;
-        optionButton.ItemSelected += (chunk) => OnChunkSelected(optionButton, chunkButton.GetItemText((int)chunk));
-        chunkButton.SetCustomMinimumSize(new Vector2(65, 35));
 
-        // TODO support multiple choice 
-        // marching_squares_too_attributes => ll.375 - 400
+        OptionButton overThresholdOptionButton = new();
+        overThresholdOptionButton.SetCustomMinimumSize(new Vector2(65, 35));
+        overThresholdOptionButton.SetFlat(true);
+        foreach (GeometryMode mode in Enum.GetValues(typeof(GeometryMode)))
+        {
+            overThresholdOptionButton.AddItem(mode.ToString());
+        }
 
-        var container = new CenterContainer();
-        container.SetCustomMinimumSize(new Vector2(65, 35));
-        container.AddChild(optionButton, true);
-        _hboxContainer.AddChild(container, true);
+        //Add the update strategy for selected :
+        // changing the value updates the list of provided chunks in the other button 
+        // it also updates the 
+        xSelectorButton.ItemSelected += index =>
+        {
+            var selectedChunk = UpdateValuesOfImpactedButton(
+                xSelectorButton, index, zSelectorButton,
+                v => v.Y,
+                p => p.Item1.X == p.Item2,
+                (a, b) => new Vector2I(a, b));
+            if (selectedChunk == null)
+            {
+                optionButton.Select((int)_terrainPlugin.CurTerrainNode.TerrainSettings.ChunkBlendMode);
+                overThresholdOptionButton.Select((int)_terrainPlugin.CurTerrainNode.TerrainSettings
+                    .ChunkBlendModeFallBack);
+            }
+            else
+            {
+                optionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item1);
+                overThresholdOptionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item2);
+            }
+        };
+        zSelectorButton.ItemSelected += index =>
+        {
+            var selectedChunk = UpdateValuesOfImpactedButton(
+                zSelectorButton, index, xSelectorButton,
+                v => v.X,
+                p => p.Item1.Y == p.Item2,
+                (a, b) => new Vector2I(b, a));
+            if (selectedChunk == null)
+            {
+                optionButton.Select((int)_terrainPlugin.CurTerrainNode.TerrainSettings.ChunkBlendMode);
+                overThresholdOptionButton.Select((int)_terrainPlugin.CurTerrainNode.TerrainSettings
+                    .ChunkBlendModeFallBack);
+            }
+            else
+            {
+                optionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item1);
+                overThresholdOptionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item2);
+            }
+        };
+
+        var terrain = _terrainPlugin.CurTerrainNode;
+
+        if (terrain.Chunks.Count > 0)
+        {
+            _terrainPlugin.PluginHelper.CurrentSelectedChunk = terrain.Chunks.First().Value;
+        }
+
+        overThresholdOptionButton.ItemSelected += item => OnChunkUpdated(
+            ((GeometryMode)optionButton.Selected, (GeometryMode)item),
+            SelectedChunk);
+
+        optionButton.ItemSelected += item => OnChunkUpdated(
+            ((GeometryMode)item, (GeometryMode)overThresholdOptionButton.Selected),
+            SelectedChunk);
+
+
+        WrapInVBox([xSelectorButton, zSelectorButton], "Chunk Selection");
+        WrapInVBox([optionButton, overThresholdOptionButton], "Chunk Geometry Behaviour");
+        return;
+
+        // Local function that is called on row/column selection.
+        // This method computes the matching chunk and updates the UI selection of the chunk
+        GdPluginHexTerrainChunk? UpdateValuesOfImpactedButton(
+            OptionButton updatedButton,
+            long index,
+            OptionButton impactedButton,
+            Func<Vector2I, int> selector,
+            Predicate<(Vector2I, int)> filter,
+            Func<int, int, Vector2I> builder)
+        {
+            Vector2I? tmpChunkSelected;
+
+            var impactedPreviouslyWasChunk = int.TryParse(
+                impactedButton.GetItemText(impactedButton.Selected),
+                out var impactedSelectedValue);
+
+
+            var selectedText = updatedButton.GetItemText((int)index);
+            var updatedIsChunk = int.TryParse(selectedText, out var selectedValue);
+
+            var terrain = _terrainPlugin.CurTerrainNode;
+            //Computed values for the affected button
+            List<int> impactedButtonChunkValues;
+
+            int? computedImpactedButtonSelection;
+
+            if (updatedIsChunk) //We selected an existing chunk row/column
+            {
+                impactedButtonChunkValues = terrain.Chunks.Keys.Where(v => filter((v, selectedValue)))
+                    .Select(selector)
+                    .Distinct().Order().ToList();
+                if (impactedPreviouslyWasChunk) // The impacted button was previously a chunk, we keep the value 
+                {
+                    tmpChunkSelected = builder(selectedValue, impactedSelectedValue);
+                }
+                else // The impacted button was not set, we will select the firs value
+                {
+                    tmpChunkSelected = builder(selectedValue, impactedButtonChunkValues.First());
+                }
+
+                computedImpactedButtonSelection = selector(tmpChunkSelected.Value);
+            }
+            else //We explicitly selected a non-existing chunk row/column, we set the other to non-existing as well and 
+            {
+                // The values are not filtered
+                impactedButtonChunkValues = terrain.Chunks.Keys.Select(selector)
+                    .Distinct().Order().ToList();
+                tmpChunkSelected = null;
+                computedImpactedButtonSelection = null;
+            }
+
+            impactedButton.Clear();
+            impactedButton.AddItem(newChunk, int.MinValue);
+            foreach (var chunkValue in impactedButtonChunkValues)
+            {
+                if (chunkValue == -1) //Avoid id = -1 (https://github.com/godotengine/godot/issues/124037)
+                {
+                    impactedButton.AddItem(chunkValue.ToString(), int.MinValue + 1);
+                }
+                else
+                {
+                    //We set the chunk values as Idx to find them later
+                    impactedButton.AddItem(chunkValue.ToString(), chunkValue);
+                }
+            }
+
+            //Avoid id = -1
+            int? impactedSelectionIndex = computedImpactedButtonSelection == null
+                ? null
+                : impactedButton.GetItemIndex(
+                    computedImpactedButtonSelection.Value == -1
+                        ? int.MinValue + 1
+                        : computedImpactedButtonSelection.Value);
+            if (impactedSelectionIndex < 0)
+            {
+                throw new InvalidOperationException();
+            }
+
+            //We reupdate the selection of the affected button 
+            if (impactedSelectionIndex is not null)
+            {
+                impactedButton.Select(impactedSelectionIndex.Value);
+            }
+
+            Console.WriteLine("Selected index : " + index + " [chunkValue = " + selectedValue + "] => " +
+                              "Impacted selection index :" + impactedSelectionIndex
+                              + " [chunkValue = " + computedImpactedButtonSelection + "]");
+
+            Console.WriteLine("Selected  chunk : " + (tmpChunkSelected is null
+                ? "NONE"
+                : terrain.Chunks[tmpChunkSelected.Value].Underlying.Coordinates
+                  + " => Geometry state : < " +
+                  terrain.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes.Item1 + " ; " +
+                  terrain.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes.Item2 + " >"));
+
+            _terrainPlugin.PluginHelper.CurrentSelectedChunk =
+                tmpChunkSelected == null ? null : terrain.Chunks[tmpChunkSelected.Value];
+
+            return _terrainPlugin.PluginHelper.CurrentSelectedChunk;
+        }
+
+        void WrapInVBox(List<Control> buttons, string vBoxText = "")
+        {
+            var vBox = new VBoxContainer();
+            if (vBoxText != "")
+            {
+                var textZone = new Label();
+                textZone.Text = vBoxText;
+                vBox.AddChild(textZone);
+            }
+
+            foreach (var button in buttons)
+            {
+                var container = new CenterContainer();
+                container.SetCustomMinimumSize(new Vector2(85, 35));
+                container.AddChild(button, true);
+                vBox.AddChild(container, true);
+            }
+
+            _hboxContainer.AddChild(vBox, true);
+        }
     }
 
     // private void ProcessQuickPaintSetting(Variant savedSetting,
@@ -841,16 +1153,28 @@ public partial class MarchingTrianglesToolUiAttributes
         EmitSignal(nameof(PluginSettingChanged), settingName, value);
     }
 
-    public void OnChunkSelected(OptionButton button, string chunkDesc)
+    //TODO : Use signal to help making UI structure-agnostic.
+    public void OnChunkUpdated((GeometryMode, GeometryMode) state, GdPluginHexTerrainChunk? chunk)
     {
-        GdPluginHexTerrainChunk chunk =
-            _terrainPlugin.CurTerrainNode.FindChild(chunkDesc) as GdPluginHexTerrainChunk;
+        if (chunk == null)
+        {
+            //Update the plugin UI default geometry mode value for all modes
+            _terrainPlugin.ToolAttributes.GeometryModes=new Vector2I((int)state.Item1, (int)state.Item2);
+        }
+        else
+        {
+            chunk.Underlying.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(state.Item1, state.Item2);
+            _terrainPlugin.PluginHelper.CurrentSelectedChunk = chunk;
+            chunk.GenerateTerrainMesh();
+            _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
+        }
 
-        button.Selected = chunk.Underlying.MergeMode;
-        SelectedChunk = _terrainPlugin.CurTerrainNode.FindChild(chunkDesc) as GdPluginHexTerrainChunk;
-        _terrainPlugin.PluginHelper.CurrentSelectedChunk = SelectedChunk;
-
-        _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
+        Console.WriteLine("Updated  chunk : " + (_terrainPlugin.PluginHelper.CurrentSelectedChunk is null
+            ? "NONE"
+            : _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.Coordinates
+              + " => Geometry state : < " +
+              _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.DefaultGeometryModes.Item1 + " ; " +
+              _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.DefaultGeometryModes.Item2 + " >"));
     }
 
     public void SetPluginAttributeValue(String settingName, Variant value)
@@ -879,7 +1203,7 @@ public partial class MarchingTrianglesToolUiAttributes
             case "falloff":
                 curToolAttributes.Falloff = value.AsBool();
                 return;
-            
+
             case "maskMode":
             case "material":
             case "texturePreset":
@@ -894,6 +1218,12 @@ public partial class MarchingTrianglesToolUiAttributes
                 return;
             case "terrainSettings":
                 curToolAttributes.TerrainSettings = value;
+                return;
+            case "GeometryMode":
+                curToolAttributes.GeometryModes = value.AsVector2I();
+                return;
+            case "GeometryModeParameters":
+                curToolAttributes.GeometryModesParameters = value.AsVector4();
                 return;
             default:
                 GD.PushError(
@@ -915,14 +1245,16 @@ public partial class MarchingTrianglesToolUiAttributes
             case "strength": return curToolAttributes.Strength;
             case "flatten": return curToolAttributes.Flatten;
             case "falloff": return curToolAttributes.Falloff;
-            case "maskMode": 
-            case "material": 
+            case "maskMode":
+            case "material":
             case "textureName":
-            case "texturePreset": 
+            case "texturePreset":
             case "quickPaintSelection": throw new NotSupportedException("Legacy attribute value.");
             case "chunkManagement": return curToolAttributes.SelectedChunk;
             case "paintWalls": return curToolAttributes.PaintWalls;
             case "terrainSettings": return curToolAttributes.TerrainSettings;
+            case "geometryMode": return curToolAttributes.GeometryModes;
+            case "geometryModeParameterEditor" : return curToolAttributes.GeometryModesParameters;
             default:
                 GD.PushError(
                     "Couldn't find the plugin's tool attributes value from the provided attribute setting name : " +
@@ -998,6 +1330,16 @@ public partial class MarchingTrianglesToolUiAttributes
             toolSettings.Add(Attributes.TerrainSettings);
         }
 
+        if (toolAttributes.GeometryMode)
+        {
+            toolSettings.Add(Attributes.GeometryModePicker);
+        }
+
+        if (toolAttributes.GeometryModeParameterEditors)
+        {
+            toolSettings.Add(Attributes.GeometryModeParameterEditor);
+        }
+
         foreach (var toolSettingAttributes in toolSettings)
         {
             Godot.Collections.Dictionary<string, Variant> settingDictionary = toolSettingAttributes;
@@ -1045,7 +1387,9 @@ public enum SettingType
     Terrain,
     Preset,
     QuickPaint,
-    Error
+    Error,
+    GeometryModePicker,
+    GeometryModeParameterEditor
 }
 
 /// <summary>

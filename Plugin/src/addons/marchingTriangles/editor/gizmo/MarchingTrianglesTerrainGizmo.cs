@@ -118,7 +118,6 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             AddDebugStatementAboutDrawnPattern(patternDrawCalls, sb);
             GD.Print(sb.ToString());
         }
-
     }
 
     private static void AddDebugStatementAboutDrawnPattern(Dictionary<Vector2I, int> patternDrawCalls, StringBuilder sb)
@@ -351,7 +350,6 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
     private void DrawBrush(Vector3 pos, MarchingTrianglesTerrain terrain,
         StringBuilder sb)
     {
-
         Material brushMat = FetchMaterial(nameof(MarchingTrianglesGizmoPlugin.BrushMesh));
 
         // Step 1 : Visualization of the brush radius
@@ -359,17 +357,18 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             Vector3.Right * (float)_terrainPlugin.ToolAttributes.BrushSize,
             Vector3.Up,
             Vector3.Back * (float)_terrainPlugin.ToolAttributes.BrushSize, pos);
-        
+
         //Draw the brush's mask
         if (_terrainPlugin.SelectedMode != TerrainToolMode.Smooth &&
-                 _terrainPlugin.SelectedMode != TerrainToolMode.DebugBrush)
+            _terrainPlugin.SelectedMode != TerrainToolMode.DebugBrush)
         {
             sb.Append(" | Brush rad. drawn at: " + TerrainToolPluginHelper.FormatVector3(brushTransform.Origin));
             sb.Append(" [G. tri Cell] : " +
                       TerrainSettings.OrientationSystem.GetCell(new Vector2D(brushTransform.Origin.X,
                           brushTransform.Origin.Z)));
 
-            AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null, brushTransform);
+            AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null,
+                brushTransform);
         }
 
 
@@ -456,8 +455,8 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                                 Vector3.Up * sample,
                                 Vector3.Back * sample, drawPos);
 
-                                // Only draw Brush cell if not in wall painting mode
-                                AddMesh(MarchingTrianglesGizmoPlugin.BrushMesh, brushMat, drawTransform);
+                            // Only draw Brush cell if not in wall painting mode
+                            AddMesh(MarchingTrianglesGizmoPlugin.BrushMesh, brushMat, drawTransform);
 
                             //Save to the currently drawn pattern
                             if (_terrainPlugin.PluginHelper.Drawing)

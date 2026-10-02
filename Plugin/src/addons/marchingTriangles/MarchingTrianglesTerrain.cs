@@ -219,6 +219,13 @@ public partial class MarchingTrianglesTerrain : Node3D
         };
     }
 
+    public void RebuildTerrain(string customShaderPath = "")
+    {
+        foreach (var chunk in Chunks)
+        {
+            chunk.Value.GenerateTerrainMesh(false, customShaderPath);
+        }
+    }
     public void ForceRebuildTerrain(string customShaderPath = "")
     {
         foreach (var chunk in Chunks)

@@ -73,6 +73,20 @@ public class MarchingTriangleTerrainToolAttributesList
         { UiAttributeKey.Type, (int)SettingType.Terrain },
         { UiAttributeKey.Label, "Terrain Settings" }
     };
+    
+    public Godot.Collections.Dictionary<string, Variant> GeometryModePicker => new()
+    {
+        { UiAttributeKey.Name, "geometryMode" },
+        { UiAttributeKey.Type, (int)SettingType.GeometryModePicker },
+        { UiAttributeKey.Label, "Geometry Mode" }
+    };
+    
+    public Godot.Collections.Dictionary<string, Variant> GeometryModeParameterEditor => new()
+    {
+        { UiAttributeKey.Name, "geometryModeParameterEditor" },
+        { UiAttributeKey.Type, (int)SettingType.GeometryModeParameterEditor },
+        { UiAttributeKey.Label, "Geometry Mode Parameters" }
+    };
 }
 
 public static class UiAttributeKey

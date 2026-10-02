@@ -22,6 +22,11 @@ public partial class TerrainToolAttributes : Node
     public double Height { get; set; } = 0;
     public bool Flatten { get; set; } = true;
     public bool Falloff { get; set; } = true;
+    
+    public Vector2I GeometryModes { get; set; } = Vector2I.Zero;
+    
+    public Vector4 GeometryModesParameters { get; set; } = new(-1f,-1f,-1f,-1f);
+
 
     public bool MaskGrass { get; set; } = false;
     
@@ -31,7 +36,10 @@ public partial class TerrainToolAttributes : Node
     // 3D point whe the tool dragging started
     public Vector3 DragBasePosition { get; set; }
 
-    public Vector2I SelectedChunk { get; set; } = new Vector2I();
+    /// <summary>
+    /// The coordinates of the chunk currently selected by the UI
+    /// </summary>
+    public Vector2I SelectedChunk { get; set; }
 
     // Only relevant for vertex painting
     public bool PaintWalls { get; set; } = false;
