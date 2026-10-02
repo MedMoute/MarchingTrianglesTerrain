@@ -72,27 +72,22 @@ public partial class TerrainSettings(
         }
     }
 
-    private int _blendValue = 0;
+    private GeometryMode _defaultChunkGeometryMode = GeometryMode.SmoothLinear;
 
-    [Export(PropertyHint.Range, "0,2,1")]
-    public int BlendMode
+    [Export]
+    public GeometryMode ChunkBlendMode
     {
-        get => _blendValue;
-        set
-        {
-            _blendValue = value;
-            if (value == 1 || value == 2)
-            {
-                shaderMaterial.SetShaderParameter("UseHardTextures", true);
-            }
-            else
-            {
-                shaderMaterial.SetShaderParameter("UseHardTextures", false);
-            }
+        get => _defaultChunkGeometryMode;
+        set => _defaultChunkGeometryMode = value;
+    }
+    
+    private GeometryMode _defaultChunkGeometryModeOverThreshold = GeometryMode.FlatTriangles;
 
-            shaderMaterial.SetShaderParameter("BlendMode", _blendValue);
-            parent.ForceRebuildTerrain();
-        }
+    [Export]
+    public GeometryMode ChunkBlendModeFallBack
+    {
+        get => _defaultChunkGeometryModeOverThreshold;
+        set => _defaultChunkGeometryModeOverThreshold = value;
     }
 
     private int _collisionLayerIdx = 9;
@@ -108,49 +103,21 @@ public partial class TerrainSettings(
         }
     }
 
-    private double _wallThreshold = 0.0;
-
+    private ThresholdComputationMode _defaultThresholdComputationMode = ThresholdComputationMode.Angle;
+    
     [Export]
-    public double WallThreshold
+    public ThresholdComputationMode ThresholdComputationMode
     {
-        get => _wallThreshold;
-        set
-        {
-            _wallThreshold = value;
-            shaderMaterial.SetShaderParameter("WallThreshold", value);
-        }
+        get => _defaultThresholdComputationMode;
+        set => _defaultThresholdComputationMode = value;
     }
     
-    private double _ledgeThreshold = 1.0;
-
-    [Export]
-    public double LedgeThreshold
-    {
-        get => _ledgeThreshold;
-        set
-        {
-            _ledgeThreshold = value;
-            shaderMaterial.SetShaderParameter("LedgeThreshold", value);
-        }
-    }
+    private float _defaultThresholdValue = MathF.PI/4;
     
-    private double _ridgeThreshold = 1.0;
-
     [Export]
-    public double RidgeThreshold
+    public float ThresholdValue
     {
-        get => _ridgeThreshold;
-        set
-        {
-            _ridgeThreshold = value;
-            shaderMaterial.SetShaderParameter("RidgeThreshold", value);
-        }
-    }
-    
-    [Export] public int DefaultWallTexture { get; set; } = 5;
-
-    public ShaderMaterial GetMaterial()
-    {
-        return shaderMaterial;
+        get => _defaultThresholdValue;
+        set => _defaultThresholdValue = value;
     }
 }

@@ -7,6 +7,7 @@ using System.Text;
 using Godot;
 using Godot.Collections;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using Microsoft.VisualBasic.CompilerServices;
 using Array = Godot.Collections.Array;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
@@ -26,60 +27,30 @@ public partial class MarchingTrianglesToolUiAttributes
 
     private readonly MarchingTrianglesTerrainPlugin _terrainPlugin;
 
-    // FIXME : move to correct path
-    private string _defaultTexturesPath = "res://addons/marchingTriangles/resources/texture_presets/";
-    private string _defaultQuickPaintPath = "res://addons/marchingTriangles/resources/quick_paints/global/";
 
-    private readonly System.Collections.Generic.Dictionary<string, SettingType> _typeMap = new()
+    private readonly System.Collections.Generic.Dictionary<string, UiSettingType> _terrainSettingsData = new()
     {
-        { "slider", SettingType.Slider },
-        { "checkbox", SettingType.Checkbox },
-        { "option", SettingType.Option },
-        { "text", SettingType.Text },
-        { "chunk", SettingType.Chunk },
-        { "terrain", SettingType.Terrain },
-        { "preset", SettingType.Preset },
-        { "quick_paint", SettingType.QuickPaint }
-    };
-
-    private enum SettingType
-    {
-        Checkbox,
-        Slider,
-        Option,
-        Text,
-        Chunk,
-        Terrain,
-        Preset,
-        QuickPaint,
-        Error
-    }
-
-    private readonly System.Collections.Generic.Dictionary<string, string> _terrainSettingsData = new()
-    {
-        { "ChunkDimensions", "Vector2i" },
-        { "CellScale", "EditorSpinSlider" },
-        { "BlendMode", "OptionButton" },
-
-        //{ "noise_hmap", "EditorResourcePicker" },
-        //{ "default_wall_texture", "OptionButton" },
-
-        { "CollisionLayer", "OptionButton" },
-        // //Special texture settings
-        //{ "use_ridge_texture", "CheckBox" },
-        //{ "use_ledge_texture", "CheckBox" },
-
-        { "RidgeThreshold", "EditorSpinSlider" },
-        { "LedgeThreshold", "EditorSpinSlider" }
+        { nameof(TerrainSettings.ChunkDimensions), UiSettingType.Vector2i },
+        { nameof(TerrainSettings.CellScale), UiSettingType.EditorSpinSlider },
+        { nameof(TerrainSettings.ChunkBlendMode), UiSettingType.OptionButton },
+        { nameof(TerrainSettings.ChunkBlendModeFallBack), UiSettingType.OptionButton },
+        { nameof(TerrainSettings.ThresholdComputationMode), UiSettingType.OptionButton },
+        { nameof(TerrainSettings.ThresholdValue), UiSettingType.EditorSpinSlider },
+        { nameof(TerrainSettings.CollisionLayer), UiSettingType.OptionButton }
     };
 
     public static MarchingTriangleTerrainToolAttributesList Attributes { get; } = new();
 
     private SettingType _lastSettingType = SettingType.Error;
-    public GdPluginHexTerrainChunk SelectedChunk { get; set; }
+    public GdPluginHexTerrainChunk? SelectedChunk { get; set; }
 
     private readonly List<GdPluginHexTerrainChunk> _currentAvailableChunks = [];
 
+    private static StringName newChunk = "New Chunk";
+
+    /// <summary>
+    ///  The container for the tool settings
+    /// </summary>
     private HBoxContainer _hboxContainer;
 
     public MarchingTrianglesToolUiAttributes(MarchingTrianglesTerrainPlugin terrainPlugin)
@@ -123,7 +94,7 @@ public partial class MarchingTrianglesToolUiAttributes
             return;
         }
 
-        MarchingTrianglesTool tool = MarchingTrianglesToolbox.Tools[toolIdx];
+        MarchingTrianglesTool tool = MarchingTrianglesToolbox.Tools[(TerrainToolMode)toolIdx];
 
         MarchingTrianglesToolAttributeSettings settings = tool.AttributeSettings;
 
@@ -149,10 +120,10 @@ public partial class MarchingTrianglesToolUiAttributes
         foreach (var toolAttribute in toolAttributes)
         {
             // Find the setting's UI type and map it to the relevant SettingType
-            if (toolAttribute.ContainsKey("type") && toolAttribute["type"].VariantType == Variant.Type.String)
+            if (toolAttribute.ContainsKey(UiAttributeKey.Type) &&
+                toolAttribute[UiAttributeKey.Type].VariantType == Variant.Type.Int)
             {
-                toolAttribute["type"] =
-                    (int)_typeMap.GetValueOrDefault((string)toolAttribute["type"], SettingType.Error);
+                toolAttribute[UiAttributeKey.Type] = (int)toolAttribute[UiAttributeKey.Type];
             }
 
             AddToolSetting(toolAttribute);
@@ -168,10 +139,10 @@ public partial class MarchingTrianglesToolUiAttributes
     /// </summary>
     private void AddToolSetting(Godot.Collections.Dictionary<string, Variant> toolSettingParameters)
     {
-        string settingName = (String)toolSettingParameters.GetValueOrDefault("name", "");
-        Enum.TryParse((string)toolSettingParameters.GetValueOrDefault("type", (int)SettingType.Error),
+        string settingName = (String)toolSettingParameters.GetValueOrDefault(UiAttributeKey.Name, "");
+        Enum.TryParse((string)toolSettingParameters.GetValueOrDefault(UiAttributeKey.Type, (int)SettingType.Error),
             out SettingType settingType);
-        string labelText = (String)toolSettingParameters.GetValueOrDefault("label", "");
+        string labelText = (String)toolSettingParameters.GetValueOrDefault(UiAttributeKey.Label, "");
 
         if (_lastSettingType != SettingType.Error)
         {
@@ -221,18 +192,158 @@ public partial class MarchingTrianglesToolUiAttributes
                 ProcessTexturePresetSetting(savedSettingValue, toolSettingParameters);
                 break;
             case SettingType.QuickPaint:
-                ProcessQuickPaintSetting(savedSettingValue, toolSettingParameters);
+                throw new NotSupportedException("Quickpaint not supported");
+                //ProcessQuickPaintSetting(savedSettingValue, toolSettingParameters);
                 break;
             case SettingType.Chunk:
-                ProcessChunkSetting(savedSettingValue, toolSettingParameters);
+                ProcessChunkSetting();
                 break;
             case SettingType.Terrain:
                 ProcessTerrainSettings();
+                break;
+            case SettingType.GeometryModePicker:
+                ProcessGeometryModePickerSetting();
+                break;
+            case SettingType.GeometryModeParameterEditor:
+                ProcessGeometryModeParameterSetting();
                 break;
             case SettingType.Error:
                 GD.PushError("Couldn't load tool attributes setting");
                 break;
         }
+    }
+
+    private void ProcessGeometryModeParameterSetting()
+    {
+        int maxSupportedGeometryParameters = 2;
+        GeometryMode[] modes = new GeometryMode[2];
+        modes[0] = (GeometryMode)_terrainPlugin.ToolAttributes.GeometryModes.X;
+        modes[1] = (GeometryMode)_terrainPlugin.ToolAttributes.GeometryModes.Y;
+        var vBoxContainer = new VBoxContainer();
+        
+        EditorSpinSlider?[,] sliderArray= new EditorSpinSlider[2,2];
+
+        for (int i = 0; i < 2; i++)
+        {
+            GeometryMode mode = modes[i];
+            var cont = new HBoxContainer();
+            for (int j = 0; j < maxSupportedGeometryParameters; j++)
+            {
+                var subCont = new HBoxContainer();
+
+                Label label = new();
+                label.Text = $"Parameter {j}";
+                if (mode>=0 && mode.SupportsParameter(j))
+                {
+                    EditorSpinSlider value = new();
+                    sliderArray[i, j] = value;
+                    value.EditingInteger = false;
+                    value.MinValue = 0f;
+                    value.MaxValue = 1f;
+                    value.SetCustomMinimumSize(new Vector2(50, 35));
+                    subCont.AddChild(value);
+                }
+                else
+                {
+                    sliderArray[i, j] = null;
+
+                    Label unsupported = new();
+                    unsupported.Text = "No parameter";
+                    subCont.AddChild(unsupported);
+                }
+                cont.AddChild(label);
+                cont.AddChild(subCont);
+            }
+
+
+            vBoxContainer.AddChild(cont);
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            for (int j = 0; j < maxSupportedGeometryParameters; j++)
+            {
+                if (sliderArray [i,j] != null)
+                {
+                    sliderArray[i, j].ValueChanged += (val) =>
+                    {
+                        Vector4 result = new Vector4();
+                        for (int k = 0; k < 2; k++)
+                        {
+                            for (int l = 0; l < maxSupportedGeometryParameters; l++)
+                            {
+                                result[2 * k + l] = (float)(sliderArray[k, l] == null
+                                    ? -1f
+                                    : sliderArray[k, l].Value);
+                            }
+                        }
+
+                        result[2 * i + j] = (float)val;
+                        OnSettingChanged("GeometryModeParameters", result);
+                    };
+                }
+            }
+            
+        }
+        _hboxContainer.AddChild(vBoxContainer, true);
+
+    }
+
+    private void ProcessGeometryModePickerSetting()
+    {
+        const int iconSize = 16;
+
+        //Add behavior selector buttons
+        var optionButton = OptionButton(iconSize);
+        var overThresholdOptionButton = OptionButton(iconSize);
+
+        var cont = new CenterContainer();
+        cont.AddChild(optionButton, true);
+        var cont2 = new CenterContainer();
+
+        cont2.AddChild(overThresholdOptionButton, true);
+        var vBoxContainer = new VBoxContainer();
+
+        cont.SetCustomMinimumSize(new Vector2(85, 35));
+        vBoxContainer.AddChild(cont);
+        vBoxContainer.AddChild(cont2);
+
+        _hboxContainer.AddChild(vBoxContainer, true);
+
+        // -1 for NOOP offset;
+        optionButton.ItemSelected += val => OnSettingChanged(
+            "GeometryMode",
+            new Vector2I((int)val - 1, overThresholdOptionButton.Selected - 1));
+
+        overThresholdOptionButton.ItemSelected += val => OnSettingChanged(
+            "GeometryMode",
+            new Vector2I(optionButton.Selected - 1, (int)val - 1));
+
+
+        OptionButton OptionButton(int _iconSize)
+        {
+            OptionButton button = new();
+            button.SetCustomMinimumSize(new Vector2(65, 35));
+            button.SetFlat(true);
+            var texture = EngineUtils.Resize2DTexture("res://addons/marchingTriangles/editor/icons/empty_texture.png",
+                _iconSize, _iconSize);
+            button.AddIconItem(texture, "Noop");
+            foreach (GeometryMode mode in Enum.GetValues(typeof(GeometryMode)))
+            {
+                var gradient = new Gradient();
+                gradient.SetColors([mode.GetModePalette()(0f, 0f)]);
+                var gradTexture = new GradientTexture2D();
+                gradTexture.SetGradient(gradient);
+                gradTexture.SetHeight(_iconSize);
+                gradTexture.SetWidth(_iconSize);
+                button.AddIconItem(gradTexture, mode.ToString()); // +1 is offset due
+            }
+
+            return button;
+        }
+
+        optionButton.Select(_terrainPlugin.ToolAttributes.GeometryModes.X+1);
+        overThresholdOptionButton.Select(_terrainPlugin.ToolAttributes.GeometryModes.Y+1);
     }
 
     /// <summary>
@@ -260,18 +371,15 @@ public partial class MarchingTrianglesToolUiAttributes
         // Pre-check on the existence of the expected fields in the terrain Node
         foreach (var editorSetting in _terrainSettingsData)
         {
-            if (_terrainPlugin.CurTerrainNode.Get(editorSetting.Key).VariantType == Variant.Type.Nil)
+            // It should be in the TerrainSettings field
+            if (_terrainPlugin.CurTerrainNode.TerrainSettings.Get(editorSetting.Key).VariantType ==
+                Variant.Type.Nil)
             {
-                // It may be in the TerrainSettings field
-                if (_terrainPlugin.CurTerrainNode.TerrainSettings.Get(editorSetting.Key).VariantType ==
-                    Variant.Type.Nil)
-                {
-                    missingProperties.Add(editorSetting.Key);
-                }
-                else
-                {
-                    propertyInSettings.Add(editorSetting.Key);
-                }
+                missingProperties.Add(editorSetting.Key);
+            }
+            else
+            {
+                propertyInSettings.Add(editorSetting.Key);
             }
         }
 
@@ -288,9 +396,24 @@ public partial class MarchingTrianglesToolUiAttributes
                                           + " class does not expose the following properties : [ " + sb + "]");
         }
 
+        var settingsType = typeof(TerrainSettings);
+        var properties = settingsType.GetProperties(
+            BindingFlags.DeclaredOnly |
+            BindingFlags.Instance |
+            BindingFlags.Static |
+            BindingFlags.Public);
+        var enumSettings = new System.Collections.Generic.Dictionary<string, Type>();
+
+        foreach (var pInfo in properties)
+        {
+            if (pInfo.PropertyType.IsEnum)
+            {
+                enumSettings.Add(pInfo.Name, pInfo.PropertyType);
+            }
+        }
+
         foreach (var editorSetting in _terrainSettingsData)
         {
-            string pluginSettingType = editorSetting.Value;
             Variant pluginSettingValue = propertyInSettings.Contains(editorSetting.Key)
                 ? _terrainPlugin.CurTerrainNode.TerrainSettings.Get(editorSetting.Key)
                 : _terrainPlugin.CurTerrainNode.Get(editorSetting.Key);
@@ -312,21 +435,19 @@ public partial class MarchingTrianglesToolUiAttributes
             spacer.SizeFlagsHorizontal = SizeFlags.ExpandFill;
             hBox.AddChild(spacer);
 
-            Control terrainSettingsControl;
-
-            switch (pluginSettingType) // Process every sub-control depending on its type
+            switch (editorSetting.Value) // Process every sub-control depending on its type
             {
-                case "Vector2i":
-                case "Vector3i":
-                case "Vector2":
-                case "Vector3":
+                case UiSettingType.Vector2i:
+                case UiSettingType.Vector3i:
+                case UiSettingType.Vector2:
+                case UiSettingType.Vector3:
                     var editor = _CreateVectorEditorContainer(
                         pluginSettingValue,
                         editorSetting,
                         propertyInSettings.Contains(editorSetting.Key));
                     NestChildControl(editor, hBox);
                     break;
-                case "SpinBox":
+                case UiSettingType.SpinBox:
                     SpinBox spinBox = new();
                     spinBox.Value = pluginSettingValue.AsDouble();
                     spinBox.ValueChanged += (val) =>
@@ -337,7 +458,7 @@ public partial class MarchingTrianglesToolUiAttributes
                     spinBox.SetCustomMinimumSize(new Vector2(25, 25));
                     NestChildControl(spinBox, hBox);
                     break;
-                case "EditorSpinSlider":
+                case UiSettingType.EditorSpinSlider:
                     EditorSpinSlider spinSlider = new();
                     spinSlider.SetFlat(true);
                     spinSlider.SetMin(0);
@@ -352,10 +473,11 @@ public partial class MarchingTrianglesToolUiAttributes
                     spinSlider.SetCustomMinimumSize(new Vector2(105, 25));
                     NestChildControl(spinSlider, hBox);
                     break;
-                case "EditorResourcePicker":
+                case UiSettingType.EditorResourcePicker:
                     EditorResourcePicker picker = new();
                     picker.SetBaseType(editorSetting.Key == "noiseHmap" ? "Noise" : "Texture2D");
-                    picker.EditedResource = (Resource)_terrainPlugin.CurTerrainNode.Get(editorSetting.Key);
+                    picker.EditedResource =
+                        (Resource)_terrainPlugin.CurTerrainNode.TerrainSettings.Get(editorSetting.Key);
                     if (picker.GetChild(0) is Button button) button.Visible = false;
                     picker.ResourceChanged += val =>
                     {
@@ -365,9 +487,10 @@ public partial class MarchingTrianglesToolUiAttributes
                     picker.SetCustomMinimumSize(new Vector2(100, 25));
                     NestChildControl(picker, hBox);
                     break;
-                case "ColorPickerButton":
+                case UiSettingType.ColorPickerButton:
                     ColorPickerButton colorPickerButton = new();
-                    colorPickerButton.Color = _terrainPlugin.CurTerrainNode.Get(editorSetting.Key).AsColor();
+                    colorPickerButton.Color =
+                        _terrainPlugin.CurTerrainNode.TerrainSettings.Get(editorSetting.Key).AsColor();
                     colorPickerButton.ColorChanged += val =>
                     {
                         OnTerrainPropertyChanged(editorSetting.Key, val,
@@ -376,10 +499,11 @@ public partial class MarchingTrianglesToolUiAttributes
                     colorPickerButton.SetCustomMinimumSize(new Vector2(100, 25));
                     NestChildControl(colorPickerButton, hBox);
                     break;
-                case "Checkbox":
+                case UiSettingType.Checkbox:
                     CheckBox checkBox = new();
                     checkBox.SetFlat(true);
-                    checkBox.ButtonPressed = _terrainPlugin.CurTerrainNode.Get(editorSetting.Key).AsBool();
+                    checkBox.ButtonPressed =
+                        _terrainPlugin.CurTerrainNode.TerrainSettings.Get(editorSetting.Key).AsBool();
                     checkBox.Toggled += val =>
                     {
                         OnTerrainPropertyChanged(editorSetting.Key, val,
@@ -388,23 +512,19 @@ public partial class MarchingTrianglesToolUiAttributes
                     checkBox.SetCustomMinimumSize(new Vector2(25, 25));
                     NestChildControl(checkBox, hBox);
                     break;
-                case "OptionButton":
+                case UiSettingType.OptionButton:
                     OptionButton optionButton = new();
                     optionButton.SetFlat(true);
-                    if (editorSetting.Key == "defaultWallTexture")
+                    //Try parsing as an enum
+                    if (enumSettings.TryGetValue(editorSetting.Key, out var setting))
                     {
-                        // Populate with texture names
-                        foreach (var textureName in Attributes.VpTexturePaints.TextureNames)
+                        var values = Enum.GetNames(setting);
+                        foreach (var value in values)
                         {
-                            optionButton.AddItem(textureName);
+                            optionButton.AddItem(value);
                         }
                     }
-                    else if (editorSetting.Key == "BlendMode")
-                    {
-                        optionButton.AddItem(("Smoothed Triangles"));
-                        optionButton.AddItem("Hard Squares");
-                        optionButton.AddItem("Hard Triangles");
-                    }
+                    //Special case for layers
                     else if (editorSetting.Key == "CollisionLayer")
                     {
                         for (int i = 0; i < 24; i++)
@@ -415,12 +535,15 @@ public partial class MarchingTrianglesToolUiAttributes
                     else
                     {
                         throw new ArgumentOutOfRangeException(string.Format(
-                            "Unsupported Option type {0} , suppported option types are [defaultWallTexture,blendMode,extraCollisionLayer]",
+                            "Unsupported Option type {0} , supported option types are " +
+                            "enums and \"extraCollisionLayer\" .",
                             editorSetting.Key));
                     }
 
-                    optionButton.Selected = _terrainPlugin.CurTerrainNode.Get(editorSetting.Key).AsInt32() -
-                                            (editorSetting.Key == "extraCollisionLayer" ? 0 : 9);
+                    optionButton.Selected =
+                        (editorSetting.Key == "extraCollisionLayer"
+                            ? pluginSettingValue.AsInt32() - 9
+                            : pluginSettingValue.AsInt32());
                     optionButton.ItemSelected += (val) =>
                     {
                         OnTerrainPropertyChanged(editorSetting.Key, val,
@@ -429,10 +552,10 @@ public partial class MarchingTrianglesToolUiAttributes
                     optionButton.SetCustomMinimumSize(new Vector2(100, 35));
                     NestChildControl(optionButton, hBox);
                     break;
-                case "LineEdit":
+                case UiSettingType.LineEdit:
                     LineEdit lineEdit = new();
                     lineEdit.SetFlat(true);
-                    lineEdit.Text = _terrainPlugin.CurTerrainNode.Get(editorSetting.Key).ToString();
+                    lineEdit.Text = _terrainPlugin.CurTerrainNode.TerrainSettings.Get(editorSetting.Key).ToString();
                     lineEdit.PlaceholderText = "(AutoGenerated - Scene relative)";
                     lineEdit.TextSubmitted += (val) =>
                     {
@@ -442,13 +565,14 @@ public partial class MarchingTrianglesToolUiAttributes
                     lineEdit.SetCustomMinimumSize(new Vector2(200, 25));
                     NestChildControl(lineEdit, hBox);
                     break;
-                case "FolderPicker":
+                case UiSettingType.FolderPicker:
                     HBoxContainer folderHBox = new HBoxContainer();
                     folderHBox.AddThemeConstantOverride("separation", 4);
                     //Folder LineEdit
                     LineEdit folderLineEdit = new();
                     folderLineEdit.SetFlat(true);
-                    folderLineEdit.Text = _terrainPlugin.CurTerrainNode.Get(editorSetting.Key).ToString();
+                    folderLineEdit.Text =
+                        _terrainPlugin.CurTerrainNode.TerrainSettings.Get(editorSetting.Key).ToString();
                     folderLineEdit.PlaceholderText = "(AutoGenerated - Scene relative)";
                     folderLineEdit.TextSubmitted += (val) =>
                     {
@@ -510,7 +634,8 @@ public partial class MarchingTrianglesToolUiAttributes
     }
 
 
-    private HBoxContainer _CreateVectorEditorContainer(Variant previousValue, KeyValuePair<string, string> setting,
+    private HBoxContainer _CreateVectorEditorContainer(Variant previousValue,
+        KeyValuePair<string, UiSettingType> setting,
         bool propertyInSettings)
     {
         var container = new HBoxContainer();
@@ -605,40 +730,32 @@ public partial class MarchingTrianglesToolUiAttributes
     /// <summary>
     /// Processes the UI elements' settings for the Chunk Management Tool mode.
     /// </summary>
-    /// <param name="savedSetting"> previously saved value for the setting</param>
-    /// <param name="toolParameters">internal parameters of the UI setting</param>
-    private void ProcessChunkSetting(Variant savedSetting,
-        Godot.Collections.Dictionary<string, Variant> toolParameters)
+    private void ProcessChunkSetting()
     {
-        if (_terrainPlugin.CurTerrainNode.GetChildCount() == 0)
+        //Create the chunk selectors
+        var xSelectorButton = new OptionButton();
+        xSelectorButton.SetFlat(true);
+        xSelectorButton.Text = "Chunk X coordinate";
+        xSelectorButton.AddItem(newChunk, int.MinValue);
+        foreach (var x in _terrainPlugin.CurTerrainNode.Chunks.Keys.Select(v => v.X).Distinct())
         {
-            return;
+            xSelectorButton.AddItem(x.ToString());
         }
 
-        _currentAvailableChunks.Clear();
-        var chunkButton = new OptionButton();
-        Array<Node> children = _terrainPlugin.CurTerrainNode.GetChildren();
-        foreach (Node node in children)
+        xSelectorButton.SetCustomMinimumSize(new Vector2(65, 35));
+
+        var zSelectorButton = new OptionButton();
+        zSelectorButton.SetFlat(true);
+        zSelectorButton.Text = "Chunk Z coordinate";
+        zSelectorButton.AddItem(newChunk, int.MinValue);
+        foreach (var z in _terrainPlugin.CurTerrainNode.Chunks.Keys.Select(v => v.Y).Distinct())
         {
-            if (node is GdPluginHexTerrainChunk chunk)
-            {
-                chunkButton.AddItem("Chunk" + chunk.Underlying.Coordinates);
-                _currentAvailableChunks.Add(chunk);
-            }
+            zSelectorButton.AddItem(z.ToString());
         }
 
-        var selectedChunkIdx =
-            _currentAvailableChunks.FindIndex((chk) => chk == _terrainPlugin.PluginHelper.CurrentSelectedChunk);
-        int safeSelectedChunkIdx =
-            (_currentAvailableChunks.Count != 0 && _terrainPlugin.PluginHelper.CurrentSelectedChunk != null)
-                ? selectedChunkIdx
-                : -1;
-        chunkButton.Selected = safeSelectedChunkIdx;
-        if (_currentAvailableChunks.Count != 0 || _terrainPlugin.PluginHelper.CurrentSelectedChunk != null)
-        {
-            SelectedChunk = _terrainPlugin.PluginHelper.CurrentSelectedChunk;
-        }
+        zSelectorButton.SetCustomMinimumSize(new Vector2(65, 35));
 
+        //Add behavior selector buttons
         OptionButton optionButton = new();
         optionButton.SetCustomMinimumSize(new Vector2(65, 35));
         optionButton.SetFlat(true);
@@ -647,51 +764,229 @@ public partial class MarchingTrianglesToolUiAttributes
             optionButton.AddItem(mode.ToString());
         }
 
-        optionButton.Selected =
-            (_currentAvailableChunks.Count != 0 && _terrainPlugin.PluginHelper.CurrentSelectedChunk != null)
-                ? _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.MergeMode
-                : -1;
-        optionButton.ItemSelected += (chunk) => OnChunkSelected(optionButton, chunkButton.GetItemText((int)chunk));
-        chunkButton.SetCustomMinimumSize(new Vector2(65, 35));
 
-        // TODO support multiple choice 
-        // marching_squares_too_attributes => ll.375 - 400
-
-        var container = new CenterContainer();
-        container.SetCustomMinimumSize(new Vector2(65, 35));
-        container.AddChild(optionButton, true);
-        _hboxContainer.AddChild(container, true);
-    }
-
-    private void ProcessQuickPaintSetting(Variant savedSetting,
-        Godot.Collections.Dictionary<string, Variant> toolParameters)
-    {
-        OptionButton quickPaint = new();
-        quickPaint.AddItem("None");
-        quickPaint.SetItemMetadata(0, new Variant());
-        // 1. Load GLOBAL quick paints from folder (always available)
-        var dir = DirAccess.Open(_defaultQuickPaintPath);
-        if (dir != null)
+        OptionButton overThresholdOptionButton = new();
+        overThresholdOptionButton.SetCustomMinimumSize(new Vector2(65, 35));
+        overThresholdOptionButton.SetFlat(true);
+        foreach (GeometryMode mode in Enum.GetValues(typeof(GeometryMode)))
         {
-            dir.ListDirBegin();
-            var fileName = dir.GetNext();
-            while (fileName != "")
-            {
-                if (fileName.EndsWith(".tres") || fileName.EndsWith(".res"))
-                {
-                    // TODO implement => tool_attributes ll.300 -> 350
-                    GD.PushError("Found a .(t)res in the quick pain preset, not doing anything with it");
-                }
-
-                fileName = dir.GetNext();
-            }
+            overThresholdOptionButton.AddItem(mode.ToString());
         }
 
-        var container = new CenterContainer();
-        container.SetCustomMinimumSize(new Vector2(65, 35));
-        container.AddChild(quickPaint, true);
-        _hboxContainer.AddChild(container, true);
+        //Add the update strategy for selected :
+        // changing the value updates the list of provided chunks in the other button 
+        // it also updates the 
+        xSelectorButton.ItemSelected += index =>
+        {
+            var selectedChunk = UpdateValuesOfImpactedButton(
+                xSelectorButton, index, zSelectorButton,
+                v => v.Y,
+                p => p.Item1.X == p.Item2,
+                (a, b) => new Vector2I(a, b));
+            if (selectedChunk == null)
+            {
+                optionButton.Select((int)_terrainPlugin.CurTerrainNode.TerrainSettings.ChunkBlendMode);
+                overThresholdOptionButton.Select((int)_terrainPlugin.CurTerrainNode.TerrainSettings
+                    .ChunkBlendModeFallBack);
+            }
+            else
+            {
+                optionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item1);
+                overThresholdOptionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item2);
+            }
+        };
+        zSelectorButton.ItemSelected += index =>
+        {
+            var selectedChunk = UpdateValuesOfImpactedButton(
+                zSelectorButton, index, xSelectorButton,
+                v => v.X,
+                p => p.Item1.Y == p.Item2,
+                (a, b) => new Vector2I(b, a));
+            if (selectedChunk == null)
+            {
+                optionButton.Select((int)_terrainPlugin.CurTerrainNode.TerrainSettings.ChunkBlendMode);
+                overThresholdOptionButton.Select((int)_terrainPlugin.CurTerrainNode.TerrainSettings
+                    .ChunkBlendModeFallBack);
+            }
+            else
+            {
+                optionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item1);
+                overThresholdOptionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item2);
+            }
+        };
+
+        var terrain = _terrainPlugin.CurTerrainNode;
+
+        if (terrain.Chunks.Count > 0)
+        {
+            _terrainPlugin.PluginHelper.CurrentSelectedChunk = terrain.Chunks.First().Value;
+        }
+
+        overThresholdOptionButton.ItemSelected += item => OnChunkUpdated(
+            ((GeometryMode)optionButton.Selected, (GeometryMode)item),
+            SelectedChunk);
+
+        optionButton.ItemSelected += item => OnChunkUpdated(
+            ((GeometryMode)item, (GeometryMode)overThresholdOptionButton.Selected),
+            SelectedChunk);
+
+
+        WrapInVBox([xSelectorButton, zSelectorButton], "Chunk Selection");
+        WrapInVBox([optionButton, overThresholdOptionButton], "Chunk Geometry Behaviour");
+        return;
+
+        // Local function that is called on row/column selection.
+        // This method computes the matching chunk and updates the UI selection of the chunk
+        GdPluginHexTerrainChunk? UpdateValuesOfImpactedButton(
+            OptionButton updatedButton,
+            long index,
+            OptionButton impactedButton,
+            Func<Vector2I, int> selector,
+            Predicate<(Vector2I, int)> filter,
+            Func<int, int, Vector2I> builder)
+        {
+            Vector2I? tmpChunkSelected;
+
+            var impactedPreviouslyWasChunk = int.TryParse(
+                impactedButton.GetItemText(impactedButton.Selected),
+                out var impactedSelectedValue);
+
+
+            var selectedText = updatedButton.GetItemText((int)index);
+            var updatedIsChunk = int.TryParse(selectedText, out var selectedValue);
+
+            var terrain = _terrainPlugin.CurTerrainNode;
+            //Computed values for the affected button
+            List<int> impactedButtonChunkValues;
+
+            int? computedImpactedButtonSelection;
+
+            if (updatedIsChunk) //We selected an existing chunk row/column
+            {
+                impactedButtonChunkValues = terrain.Chunks.Keys.Where(v => filter((v, selectedValue)))
+                    .Select(selector)
+                    .Distinct().Order().ToList();
+                if (impactedPreviouslyWasChunk) // The impacted button was previously a chunk, we keep the value 
+                {
+                    tmpChunkSelected = builder(selectedValue, impactedSelectedValue);
+                }
+                else // The impacted button was not set, we will select the firs value
+                {
+                    tmpChunkSelected = builder(selectedValue, impactedButtonChunkValues.First());
+                }
+
+                computedImpactedButtonSelection = selector(tmpChunkSelected.Value);
+            }
+            else //We explicitly selected a non-existing chunk row/column, we set the other to non-existing as well and 
+            {
+                // The values are not filtered
+                impactedButtonChunkValues = terrain.Chunks.Keys.Select(selector)
+                    .Distinct().Order().ToList();
+                tmpChunkSelected = null;
+                computedImpactedButtonSelection = null;
+            }
+
+            impactedButton.Clear();
+            impactedButton.AddItem(newChunk, int.MinValue);
+            foreach (var chunkValue in impactedButtonChunkValues)
+            {
+                if (chunkValue == -1) //Avoid id = -1 (https://github.com/godotengine/godot/issues/124037)
+                {
+                    impactedButton.AddItem(chunkValue.ToString(), int.MinValue + 1);
+                }
+                else
+                {
+                    //We set the chunk values as Idx to find them later
+                    impactedButton.AddItem(chunkValue.ToString(), chunkValue);
+                }
+            }
+
+            //Avoid id = -1
+            int? impactedSelectionIndex = computedImpactedButtonSelection == null
+                ? null
+                : impactedButton.GetItemIndex(
+                    computedImpactedButtonSelection.Value == -1
+                        ? int.MinValue + 1
+                        : computedImpactedButtonSelection.Value);
+            if (impactedSelectionIndex < 0)
+            {
+                throw new InvalidOperationException();
+            }
+
+            //We reupdate the selection of the affected button 
+            if (impactedSelectionIndex is not null)
+            {
+                impactedButton.Select(impactedSelectionIndex.Value);
+            }
+
+            Console.WriteLine("Selected index : " + index + " [chunkValue = " + selectedValue + "] => " +
+                              "Impacted selection index :" + impactedSelectionIndex
+                              + " [chunkValue = " + computedImpactedButtonSelection + "]");
+
+            Console.WriteLine("Selected  chunk : " + (tmpChunkSelected is null
+                ? "NONE"
+                : terrain.Chunks[tmpChunkSelected.Value].Underlying.Coordinates
+                  + " => Geometry state : < " +
+                  terrain.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes.Item1 + " ; " +
+                  terrain.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes.Item2 + " >"));
+
+            _terrainPlugin.PluginHelper.CurrentSelectedChunk =
+                tmpChunkSelected == null ? null : terrain.Chunks[tmpChunkSelected.Value];
+
+            return _terrainPlugin.PluginHelper.CurrentSelectedChunk;
+        }
+
+        void WrapInVBox(List<Control> buttons, string vBoxText = "")
+        {
+            var vBox = new VBoxContainer();
+            if (vBoxText != "")
+            {
+                var textZone = new Label();
+                textZone.Text = vBoxText;
+                vBox.AddChild(textZone);
+            }
+
+            foreach (var button in buttons)
+            {
+                var container = new CenterContainer();
+                container.SetCustomMinimumSize(new Vector2(85, 35));
+                container.AddChild(button, true);
+                vBox.AddChild(container, true);
+            }
+
+            _hboxContainer.AddChild(vBox, true);
+        }
     }
+
+    // private void ProcessQuickPaintSetting(Variant savedSetting,
+    //     Godot.Collections.Dictionary<string, Variant> toolParameters)
+    // {
+    //     OptionButton quickPaint = new();
+    //     quickPaint.AddItem("None");
+    //     quickPaint.SetItemMetadata(0, new Variant());
+    //     // 1. Load GLOBAL quick paints from folder (always available)
+    //     var dir = DirAccess.Open(_defaultQuickPaintPath);
+    //     if (dir != null)
+    //     {
+    //         dir.ListDirBegin();
+    //         var fileName = dir.GetNext();
+    //         while (fileName != "")
+    //         {
+    //             if (fileName.EndsWith(".tres") || fileName.EndsWith(".res"))
+    //             {
+    //                 // TODO implement => tool_attributes ll.300 -> 350
+    //                 GD.PushError("Found a .(t)res in the quick pain preset, not doing anything with it");
+    //             }
+    //
+    //             fileName = dir.GetNext();
+    //         }
+    //     }
+    //
+    //     var container = new CenterContainer();
+    //     container.SetCustomMinimumSize(new Vector2(65, 35));
+    //     container.AddChild(quickPaint, true);
+    //     _hboxContainer.AddChild(container, true);
+    // }
 
     /// <summary>
     /// Process a UI setting that will take shape of a TexturePreset selection in the Editor
@@ -710,7 +1005,8 @@ public partial class MarchingTrianglesToolUiAttributes
         string settingName = toolParameters.GetValueOrDefault("name", "").AsString();
         LineEdit lineEdit = new();
         lineEdit.ExpandToTextLength = true;
-        lineEdit.PlaceholderText = toolParameters.GetValueOrDefault("default", "New text here...").AsString();
+        lineEdit.PlaceholderText =
+            toolParameters.GetValueOrDefault(UiAttributeKey.Default, "New text here...").AsString();
         lineEdit.TextSubmitted += (txt) => OnSettingChanged(settingName, txt);
         lineEdit.TextSubmitted += (_) => lineEdit.Clear();
         lineEdit.SetCustomMinimumSize(new Vector2(25, 25));
@@ -857,15 +1153,28 @@ public partial class MarchingTrianglesToolUiAttributes
         EmitSignal(nameof(PluginSettingChanged), settingName, value);
     }
 
-    public void OnChunkSelected(OptionButton button, string chunkDesc)
+    //TODO : Use signal to help making UI structure-agnostic.
+    public void OnChunkUpdated((GeometryMode, GeometryMode) state, GdPluginHexTerrainChunk? chunk)
     {
-        GdPluginHexTerrainChunk chunk = _terrainPlugin.CurTerrainNode.FindChild(chunkDesc) as GdPluginHexTerrainChunk;
+        if (chunk == null)
+        {
+            //Update the plugin UI default geometry mode value for all modes
+            _terrainPlugin.ToolAttributes.GeometryModes=new Vector2I((int)state.Item1, (int)state.Item2);
+        }
+        else
+        {
+            chunk.Underlying.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(state.Item1, state.Item2);
+            _terrainPlugin.PluginHelper.CurrentSelectedChunk = chunk;
+            chunk.GenerateTerrainMesh();
+            _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
+        }
 
-        button.Selected = chunk.Underlying.MergeMode;
-        SelectedChunk = _terrainPlugin.CurTerrainNode.FindChild(chunkDesc) as GdPluginHexTerrainChunk;
-        _terrainPlugin.PluginHelper.CurrentSelectedChunk = SelectedChunk;
-
-        _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
+        Console.WriteLine("Updated  chunk : " + (_terrainPlugin.PluginHelper.CurrentSelectedChunk is null
+            ? "NONE"
+            : _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.Coordinates
+              + " => Geometry state : < " +
+              _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.DefaultGeometryModes.Item1 + " ; " +
+              _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.DefaultGeometryModes.Item2 + " >"));
     }
 
     public void SetPluginAttributeValue(String settingName, Variant value)
@@ -894,15 +1203,10 @@ public partial class MarchingTrianglesToolUiAttributes
             case "falloff":
                 curToolAttributes.Falloff = value.AsBool();
                 return;
+
             case "maskMode":
-                curToolAttributes.MaskGrass = value.AsBool();
-                return;
             case "material":
-                curToolAttributes.VertexColorIndex = value.AsInt32();
-                return;
             case "texturePreset":
-                throw new NotSupportedException("Legacy attribute value.");
-                return;
             case "quickPaintSelection":
                 throw new NotSupportedException("Legacy attribute value.");
                 return;
@@ -914,6 +1218,12 @@ public partial class MarchingTrianglesToolUiAttributes
                 return;
             case "terrainSettings":
                 curToolAttributes.TerrainSettings = value;
+                return;
+            case "GeometryMode":
+                curToolAttributes.GeometryModes = value.AsVector2I();
+                return;
+            case "GeometryModeParameters":
+                curToolAttributes.GeometryModesParameters = value.AsVector4();
                 return;
             default:
                 GD.PushError(
@@ -935,14 +1245,16 @@ public partial class MarchingTrianglesToolUiAttributes
             case "strength": return curToolAttributes.Strength;
             case "flatten": return curToolAttributes.Flatten;
             case "falloff": return curToolAttributes.Falloff;
-            case "maskMode": return curToolAttributes.MaskGrass;
-            case "material": return curToolAttributes.VertexColorIndex;
+            case "maskMode":
+            case "material":
             case "textureName":
-            case "texturePreset": throw new NotSupportedException("Legacy attribute value."); ;
-            case "quickPaintSelection":  throw new NotSupportedException("Legacy attribute value.");
+            case "texturePreset":
+            case "quickPaintSelection": throw new NotSupportedException("Legacy attribute value.");
             case "chunkManagement": return curToolAttributes.SelectedChunk;
             case "paintWalls": return curToolAttributes.PaintWalls;
             case "terrainSettings": return curToolAttributes.TerrainSettings;
+            case "geometryMode": return curToolAttributes.GeometryModes;
+            case "geometryModeParameterEditor" : return curToolAttributes.GeometryModesParameters;
             default:
                 GD.PushError(
                     "Couldn't find the plugin's tool attributes value from the provided attribute setting name : " +
@@ -966,13 +1278,13 @@ public partial class MarchingTrianglesToolUiAttributes
         {
             child.QueueFree();
         }
-        
+
         if (_terrainPlugin.Ui.Toolbar?.ToolBox == null)
         {
             return;
         }
 
-        var tool = MarchingTrianglesToolbox.Tools[toolIndex];
+        var tool = MarchingTrianglesToolbox.Tools[(TerrainToolMode)toolIndex];
         MarchingTrianglesToolAttributeSettings toolAttributes = tool.AttributeSettings;
 
         List<Godot.Collections.Dictionary<string, Variant>> toolSettings = new();
@@ -1018,13 +1330,23 @@ public partial class MarchingTrianglesToolUiAttributes
             toolSettings.Add(Attributes.TerrainSettings);
         }
 
+        if (toolAttributes.GeometryMode)
+        {
+            toolSettings.Add(Attributes.GeometryModePicker);
+        }
+
+        if (toolAttributes.GeometryModeParameterEditors)
+        {
+            toolSettings.Add(Attributes.GeometryModeParameterEditor);
+        }
+
         foreach (var toolSettingAttributes in toolSettings)
         {
             Godot.Collections.Dictionary<string, Variant> settingDictionary = toolSettingAttributes;
-            var result = settingDictionary.GetValueOrDefault("type");
-            if (result.VariantType != Variant.Type.Nil && result.VariantType == Variant.Type.String)
+            var result = settingDictionary.GetValueOrDefault(UiAttributeKey.Type);
+            if (result.VariantType != Variant.Type.Nil && result.VariantType == Variant.Type.Int)
             {
-                settingDictionary["type"] = (int)_typeMap.GetValueOrDefault(result.AsString(), SettingType.Error);
+                settingDictionary[UiAttributeKey.Type] = result;
             }
 
             AddToolSetting(settingDictionary);
@@ -1050,4 +1372,41 @@ public partial class MarchingTrianglesToolUiAttributes
             }
         }
     }
+}
+
+/// <summary>
+/// Supported types for top-level UI settings
+/// </summary>
+public enum SettingType
+{
+    Checkbox,
+    Slider,
+    Option,
+    Text,
+    Chunk,
+    Terrain,
+    Preset,
+    QuickPaint,
+    Error,
+    GeometryModePicker,
+    GeometryModeParameterEditor
+}
+
+/// <summary>
+/// Enum of the supported types for low-level UI attributes.
+/// </summary>
+public enum UiSettingType
+{
+    Vector2i,
+    Vector2,
+    Vector3i,
+    Vector3,
+    SpinBox,
+    EditorSpinSlider,
+    EditorResourcePicker,
+    ColorPickerButton,
+    Checkbox,
+    OptionButton,
+    LineEdit,
+    FolderPicker
 }

@@ -58,4 +58,11 @@ public class EngineUtils
             return 1;
         }
     }
+    
+    public static Texture2D Resize2DTexture(string imagePath,int targetX,int targetY)
+    {
+        var image = Image.LoadFromFile(FileUtils.ApplyCustomDirectoryPath(imagePath));
+        image.Resize(targetX,targetY);
+        return ImageTexture.CreateFromImage(image);
+    }
 }

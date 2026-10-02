@@ -198,16 +198,6 @@ public class HexagonGrid
             }
 
             grid.CompleteCells.Add(cell);
-
-            // Done in the cell constructor
-            // for (int j = 0; j < 6; j++)
-            // {
-            //     var cellMappingVector = new Vector3I(
-            //         dataStructFullCellMappings[3 * (6 * i + j)],
-            //         dataStructFullCellMappings[3 * (6 * i + j) + 1],
-            //         dataStructFullCellMappings[3 * (6 * i + j) + 2]);
-            //     cell.DualCellsMapping.Add(j, cellMappingVector);
-            // }
         }
 
         for (int i = 0; i < dataStructPendingCellIndices.Length / 2; i++)

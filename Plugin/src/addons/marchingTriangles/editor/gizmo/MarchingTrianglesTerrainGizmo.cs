@@ -89,6 +89,10 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         sb.Append("[Gizmo Redraw Debug]");
 
         var terrain = _terrainPlugin.CurTerrainNode;
+        if (terrain == null)
+        {
+            return;
+        }
 
         if (_terrainPlugin.SelectedMode == TerrainToolMode.ChunkManagement)
         {
@@ -98,11 +102,9 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         var pos = ProcessBrushAndPattern(terrain, sb);
 
         //The size of the brush cell mesh is adjusted dynamically before drawing :
-        if (MarchingTrianglesGizmoPlugin.BrushMesh != null && _terrainPlugin.CurTerrainNode!=null)
-        {
-            MarchingTrianglesGizmoPlugin.BrushMesh.Size =
-                Vector2.One * _terrainPlugin.CurTerrainNode.TerrainSettings.CellScale / 2;
-        }
+        //TODO use a signal to do this safely
+        MarchingTrianglesGizmoPlugin.BrushMesh.Size =
+            Vector2.One * terrain.TerrainSettings.CellScale / 2;
 
         if (_terrainPlugin.PluginHelper.TerrainHovered)
         {
@@ -116,7 +118,6 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             AddDebugStatementAboutDrawnPattern(patternDrawCalls, sb);
             GD.Print(sb.ToString());
         }
-
     }
 
     private static void AddDebugStatementAboutDrawnPattern(Dictionary<Vector2I, int> patternDrawCalls, StringBuilder sb)
@@ -213,6 +214,12 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         }
     }
 
+    /// <summary>
+    /// Processes the pre-existing gizmo related information before drawing the frame's gizmo 
+    /// </summary>
+    /// <param name="terrain">The terrain instance for which the gizmo is drawn</param>
+    /// <param name="sb">Gizmo logging string</param>
+    /// <returns>The drawing position of the gizmo</returns>
     private Vector3 ProcessBrushAndPattern(MarchingTrianglesTerrain terrain, StringBuilder sb)
     {
         // Brush & brush pattern processing
@@ -220,7 +227,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         var cursorChunkCoords = new Vector2I();
         var cursorCellCoords = new Vector3I();
 
-        if (_terrainPlugin.PluginHelper.HeightDragging && !_terrainPlugin.PluginHelper.HeightSet)
+        if (_terrainPlugin.PluginHelper is { HeightDragging: true, HeightSet: false })
         {
             _terrainPlugin.PluginHelper.HeightSet = true;
 
@@ -270,7 +277,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             }
         }
 
-        if (_terrainPlugin.PluginHelper.Drawing && !_terrainPlugin.PluginHelper.HeightSet)
+        if (_terrainPlugin.PluginHelper is { Drawing: true, HeightSet: false })
         {
             _terrainPlugin.PluginHelper.DrawHeight = pos.Y;
             _terrainPlugin.PluginHelper.HeightSet = true;
@@ -283,8 +290,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
     {
         Dictionary<Vector2I, int> res = new();
         // Check if we're in wall painting mode
-        var isWallPainting = _terrainPlugin.PluginHelper.WallPainting &&
-                             _terrainPlugin.SelectedMode == TerrainToolMode.VertexPainting;
+        var isWallPainting = false;
         Material brushMat = FetchMaterial(nameof(MarchingTrianglesGizmoPlugin.BrushMesh));
         float heightDiff = 0;
         if (_terrainPlugin.PluginHelper.HeightDragging && _terrainPlugin.PluginHelper.HeightSet)
@@ -335,13 +341,15 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
         return res;
     }
 
+    /// <summary>
+    /// Gizmo's delegated Brush Drawing action
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <param name="terrain"></param>
+    /// <param name="sb"></param>
     private void DrawBrush(Vector3 pos, MarchingTrianglesTerrain terrain,
         StringBuilder sb)
     {
-        // Check if we're in wall painting mode
-        var isWallPainting = _terrainPlugin.PluginHelper.WallPainting &&
-                             _terrainPlugin.SelectedMode == TerrainToolMode.VertexPainting;
-
         Material brushMat = FetchMaterial(nameof(MarchingTrianglesGizmoPlugin.BrushMesh));
 
         // Step 1 : Visualization of the brush radius
@@ -350,57 +358,17 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             Vector3.Up,
             Vector3.Back * (float)_terrainPlugin.ToolAttributes.BrushSize, pos);
 
-        if (isWallPainting)
-        {
-            //Try to determine the 3D world position of the intersection the mouse's ray 
-            var viewport = EditorInterface.Singleton.GetEditorViewport3D();
-            var editorCamera = viewport.GetCamera3D();
-            Vector2 mousePosition = viewport.GetMousePosition();
-
-            Vector3 mouseRayOrigin = editorCamera.ProjectRayOrigin(mousePosition);
-            Vector3 mouseRayNormal = editorCamera.ProjectRayNormal(mousePosition);
-
-            var space = editorCamera.GetWorld3D().DirectSpaceState;
-
-            var rayLength = 10_000f;
-            var endOOfRay = mouseRayOrigin + rayLength * mouseRayNormal;
-
-            var query = PhysicsRayQueryParameters3D.Create(
-                mouseRayOrigin,
-                endOOfRay);
-            query.CollideWithAreas = false;
-            query.CollideWithBodies = false;
-            var hitResult = space.IntersectRay(query);
-            var wallNormal = hitResult != null ? hitResult["normal"].AsVector3() : Vector3.Back;
-
-            var basis = _CreateBrushBasis(wallNormal, (float)_terrainPlugin.ToolAttributes.BrushSize);
-
-            if (wallNormal.Y > 0.5) // TODO : why this threshold??
-            {
-                basis.Z = Vector3.Zero;
-            }
-
-            brushTransform = new Transform3D(basis, pos);
-        }
-
-        if (_terrainPlugin.SelectedMode == TerrainToolMode.VertexPainting)
-        {
-            if (_terrainPlugin.PluginHelper.WallPainting)
-            {
-                sb.Append(" | Brush radius drawn at pos : " + brushTransform.Origin);
-                AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null, brushTransform);
-            }
-        }
-        else if (_terrainPlugin.SelectedMode != TerrainToolMode.Smooth &&
-                 _terrainPlugin.SelectedMode != TerrainToolMode.GrassMask &&
-                 _terrainPlugin.SelectedMode != TerrainToolMode.DebugBrush)
+        //Draw the brush's mask
+        if (_terrainPlugin.SelectedMode != TerrainToolMode.Smooth &&
+            _terrainPlugin.SelectedMode != TerrainToolMode.DebugBrush)
         {
             sb.Append(" | Brush rad. drawn at: " + TerrainToolPluginHelper.FormatVector3(brushTransform.Origin));
             sb.Append(" [G. tri Cell] : " +
                       TerrainSettings.OrientationSystem.GetCell(new Vector2D(brushTransform.Origin.X,
                           brushTransform.Origin.Z)));
 
-            AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null, brushTransform);
+            AddMesh(MarchingTrianglesTerrainUi.BrushData[_terrainPlugin.ToolAttributes.BrushIndex].Item1, null,
+                brushTransform);
         }
 
 
@@ -486,11 +454,9 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
                                 Vector3.Right * sample,
                                 Vector3.Up * sample,
                                 Vector3.Back * sample, drawPos);
-                            if (!isWallPainting)
-                            {
-                                // Only draw cell Brush if NOT in wall painting mode{
-                                AddMesh(MarchingTrianglesGizmoPlugin.BrushMesh, brushMat, drawTransform);
-                            }
+
+                            // Only draw Brush cell if not in wall painting mode
+                            AddMesh(MarchingTrianglesGizmoPlugin.BrushMesh, brushMat, drawTransform);
 
                             //Save to the currently drawn pattern
                             if (_terrainPlugin.PluginHelper.Drawing)

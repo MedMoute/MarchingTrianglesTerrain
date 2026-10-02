@@ -16,7 +16,7 @@ public class TriangleGrid
 
     public RegularUniformFrame OrientationSystem { get;}
 
-    //TODO : move from float to object[] or smtgh
+    //TODO : move from float to object[] or smth
     public Dictionary<Vector3I, float>.KeyCollection Points => _data.Keys;
 
     public Dictionary<Vector3I, float> Data => _data;

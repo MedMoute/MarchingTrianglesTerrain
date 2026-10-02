@@ -19,8 +19,6 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     /// </summary>
     public static MarchingTrianglesTerrainPlugin Instance { get; set; }
 
-    private BrushPatternCalculator _patternCalculator = new();
-
     /// <summary>
     /// Gizmo Plugin instance.
     ///
@@ -41,7 +39,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     /// <summary>
     /// The terrain currently being edited by this plugin.
     /// </summary>
-    public MarchingTrianglesTerrain CurTerrainNode { get; private set; }
+    public MarchingTrianglesTerrain? CurTerrainNode { get; private set; }
 
     /// <summary>
     /// Global plugin initialization flag.
@@ -49,10 +47,13 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     private static bool _init;
 
     /// <summary>
-    /// Initialization Error hint.
+    /// Internal initialization Error hint.
     /// </summary>
     private string _initError;
 
+    /// <summary>
+    /// Current selected moode for the plugin.
+    /// </summary>
     private TerrainToolMode _selectedMode = TerrainToolMode.Brush;
 
     public TerrainToolAttributes ToolAttributes { get; } = new();
@@ -66,11 +67,6 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         {
             _selectedMode = value;
             PluginHelper.ClearDrawPattern();
-            if (_selectedMode == TerrainToolMode.VertexPainting)
-            {
-                ToolAttributes.Flatten = false;
-                Ui.BrushMaterial.SetShaderParameter("FalloffVisible", false);
-            }
         }
     }
 
@@ -84,10 +80,6 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         Instance = this;
         Ui = new MarchingTrianglesTerrainUi(Instance);
         PluginHelper = new TerrainToolPluginHelper(_physicsDelegate, ToolAttributes, GizmoPlugin, Ui, Instance);
-        if (CurTerrainNode != null)
-        {
-            ToolAttributes.TextureUpdated += CurTerrainNode.ForceRebuildTerrain;
-        }
 
         CallDeferred(nameof(DeferredEnterTree));
         GD.PrintRich(
@@ -338,10 +330,8 @@ public enum TerrainToolMode
     Level = 1,
     Smooth = 2,
     Bridge = 3,
-    GrassMask = 4,
-    VertexPainting = 5,
-    DebugBrush = 6,
-    ChunkManagement = 7,
-    TerrainSettings = 8,
-    GeometryEdit = 9
+    DebugBrush = 4,
+    ChunkManagement = 5,
+    TerrainSettings = 6,
+    GeometryEdit = 7
 }

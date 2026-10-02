@@ -274,6 +274,7 @@ public class ChunkConformalEditor
         int thresholdMask = ComputeLocalMask(localVertexIndexing, chunkThreshold, neighborCells);
 
         Dictionary<Vector2I, GeometryMode> requestedGeometryOperation = new();
+        
         Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations = new();
 
         for (int i = 0; i < localVertexIndexing.Count; i++)
@@ -304,17 +305,35 @@ public class ChunkConformalEditor
             // LOWEST ORDINAL will have priority. That operation will be applied on the edge bordering the two
             // cells for BOTH of the triangulations (on each side of the edge). 
         {
-            appliedGeometryOperations = ProcessCellGeometryOperations();
+            appliedGeometryOperations = ProcessCellGeometryOperations(requestedGeometryOperation,localTriangulations.Keys);
         }
 
         editor.RegisterLocalVertexAction(appliedGeometryOperations, localTriangulations);
     }
 
-    private static Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> ProcessCellGeometryOperations()
+    private static Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> ProcessCellGeometryOperations(
+        Dictionary<Vector2I, GeometryMode> requestedGeometryOperation,
+        IEnumerable<ValueTuple<int, HexTerrainCell>> neighborCells)
     {
-        throw new NotImplementedException();
-    }
+        Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations = new();
+        int level = int.MaxValue;
+        
 
+        foreach (var cellAndVertexIndex in neighborCells)
+        {
+            if ((int)requestedGeometryOperation[cellAndVertexIndex.Item2.CellCoordsImplicit] < level)
+            {
+                level = (int)requestedGeometryOperation[cellAndVertexIndex.Item2.CellCoordsImplicit];
+            }
+        }
+
+        foreach (var cellAndVertexIndex in neighborCells)
+        {
+            appliedGeometryOperations.Add(cellAndVertexIndex, new Tuple<GeometryMode,GeometryMode?>((GeometryMode)level,(GeometryMode)level));
+        }
+        return appliedGeometryOperations;
+    }
+    
     private static int ComputeLocalMask(
         List<(Vector2I, int)> localVertexIndexing,
         Tuple<float, ThresholdComputationMode> chunkThreshold,

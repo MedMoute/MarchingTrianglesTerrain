@@ -95,7 +95,6 @@ public class HexTerrainCell
 
     internal CellDataArrays TempDataArrays { get; }
 
-    // TODO support object[]
     public Func<int, float>? GetVertexData;
 
     public bool FloorMode { get; private set; }
@@ -385,6 +384,7 @@ internal class CellDataArrays(Vector2I cellCoord)
     public readonly List<Color> Color1 = new();
     public readonly List<Color> Custom1Value = new();
     public readonly List<Color> Custom3Value = new();
+
     public readonly List<Color> MatBlend = new();
     public readonly List<bool> Floor = new();
 

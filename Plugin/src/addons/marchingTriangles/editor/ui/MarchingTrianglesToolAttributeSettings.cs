@@ -20,7 +20,9 @@ public partial class MarchingTrianglesToolAttributeSettings : Resource
         bool falloff = false,
         bool maskMode = false,
         bool chunkManagement = false,
-        bool terrainSettings = false)
+        bool terrainSettings = false,
+        bool geometryMode = false,
+        bool geometryModeParameterEditors=false)
     {
         BrushType = brushType;
         Size = size;
@@ -32,6 +34,8 @@ public partial class MarchingTrianglesToolAttributeSettings : Resource
         MaskMode = maskMode;
         ChunkManagement = chunkManagement;
         TerrainSettings = terrainSettings;
+        GeometryMode = geometryMode;
+        GeometryModeParameterEditors = geometryModeParameterEditors;
     }
 
 // General brush attributes
@@ -49,21 +53,27 @@ public partial class MarchingTrianglesToolAttributeSettings : Resource
 // Non-brush attributes
     [Export] public bool ChunkManagement;
     [Export] public bool TerrainSettings;
+    [Export] public bool GeometryMode;
+    [Export] public bool GeometryModeParameterEditors;
+
 
     public List<Tuple<string, bool>> GetPropertiesFlagList()
     {
         var res = new List<Tuple<string, bool>>
         {
-            new("BrushType", BrushType),
-            new("Size", Size),
-            new("EaseValue", EaseValue),
-            new("Height", Height),
-            new("Strength", Strength),
-            new("Flatten", Flatten),
-            new("Falloff", Falloff),
-            new("MaskMode", MaskMode),
-            new("ChunkManagement", ChunkManagement),
-            new("TerrainSettings", TerrainSettings)
+            new(nameof(BrushType), BrushType),
+            new(nameof(Size), Size),
+            new(nameof(EaseValue), EaseValue),
+            new(nameof(Height), Height),
+            new(nameof(Strength), Strength),
+            new(nameof(Flatten), Flatten),
+            new(nameof(Falloff), Falloff),
+            new(nameof(MaskMode), MaskMode),
+            new(nameof(ChunkManagement), ChunkManagement),
+            new(nameof(TerrainSettings), TerrainSettings),
+            new(nameof(GeometryMode), GeometryMode),
+            new(nameof(GeometryModeParameterEditors), GeometryModeParameterEditors)
+
         };
         return res;
     }
