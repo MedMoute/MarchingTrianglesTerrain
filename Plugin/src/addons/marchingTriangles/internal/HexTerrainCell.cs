@@ -194,7 +194,7 @@ public class HexTerrainCell
 
             var i0 = borderVertexIndices[0];
             var i1 = borderVertexIndices[1];
-            if (mod(i0 + 1, VertexCount) == i1)
+            if (Mod(i0 + 1, VertexCount) == i1)
             {
                 return i0;
             }
@@ -232,7 +232,7 @@ public class HexTerrainCell
 
         GetEdgeAvgHeight = i =>
         {
-            if (GetVertexData != null) return (GetVertexData(i) + GetVertexData(mod(i + 1, VertexCount))) / 2f;
+            if (GetVertexData != null) return (GetVertexData(i) + GetVertexData(Mod(i + 1, VertexCount))) / 2f;
             return float.NaN;
         };
     }
@@ -347,7 +347,7 @@ public class HexTerrainCell
             {
                 if (EdgeBorderFlags[i])
                 {
-                    res.Add(new Tuple<Vector3, Vector3>(Points[mod(i, 3)], Points[mod(i + 1, 3)]));
+                    res.Add(new Tuple<Vector3, Vector3>(Points[Mod(i, 3)], Points[Mod(i + 1, 3)]));
                 }
             }
 
@@ -360,7 +360,7 @@ public class HexTerrainCell
 
             for (int i = 0; i <= 2; i++)
             {
-                res.Add(new Tuple<Vector3, Vector3>(Points[mod(i - 1, 3)], Points[mod(i, 3)]));
+                res.Add(new Tuple<Vector3, Vector3>(Points[Mod(i - 1, 3)], Points[Mod(i, 3)]));
             }
 
             return res;

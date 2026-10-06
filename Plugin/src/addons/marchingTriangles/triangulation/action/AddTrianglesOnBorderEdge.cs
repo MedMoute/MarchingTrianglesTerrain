@@ -151,7 +151,7 @@ public class AddTrianglesOnBorderEdge : DelegatedTriangulationEditAction<int>
             for (int i = 0; i < triangle.Count; i++)
             {
                 //Reduce edge count for the triangle's edges
-                t.SubEdges[(triangle[i], triangle[EngineUtils.mod(i + 1, triangle.Count)])]--;
+                t.SubEdges[(triangle[i], triangle[EngineUtils.Mod(i + 1, triangle.Count)])]--;
             }
 
             //Remove triangle

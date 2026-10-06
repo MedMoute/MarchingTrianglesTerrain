@@ -123,7 +123,7 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
             // And remove an occurence of all if its edges in the Edge dictionary
             for (int i = 0; i < removedVertexes.Count; i++)
             {
-                var removedEdge = (removedVertexes[i], removedVertexes[EngineUtils.mod(i + 1, 3)]);
+                var removedEdge = (removedVertexes[i], removedVertexes[EngineUtils.Mod(i + 1, 3)]);
                 var subEdgeExists = t.SubEdges.TryGetValue(removedEdge, out int count);
                 if (!subEdgeExists)
                 {
@@ -166,7 +166,7 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
             t.TrianglesByVertices.Add(affectedTriangle, indexes);
             for (var i = 0; i < 3; i++)
             {
-                var implicitEdge = (indexes[i], indexes[EngineUtils.mod(i + 1, 3)]);
+                var implicitEdge = (indexes[i], indexes[EngineUtils.Mod(i + 1, 3)]);
                 t.SubEdges.TryAdd(implicitEdge, 0);
                 t.SubEdges[implicitEdge]++;
                 //If the sub-edge was previously removed, register its new index
@@ -183,7 +183,7 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
             t.TrianglesByVertices.Add(t.TrianglesByVertices.Count, [oppositeVertex, idx, _endIdx]);
             for (var i = 0; i < 3; i++)
             {
-                var implicitEdge = (indexes[i], indexes[EngineUtils.mod(i + 1, 3)]);
+                var implicitEdge = (indexes[i], indexes[EngineUtils.Mod(i + 1, 3)]);
                 t.SubEdges.TryAdd(implicitEdge, 0);
                 t.SubEdges[implicitEdge]++;
                 //If the sub-edge was previously removed, register its new index

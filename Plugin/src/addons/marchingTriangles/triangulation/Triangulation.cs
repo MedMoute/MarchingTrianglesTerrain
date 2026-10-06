@@ -86,7 +86,7 @@ public class Triangulation
         {
             Vertices.Add(i, triangle[i]);
             ReverseVertices.Add(triangle[i], i);
-            (int, int) implicitEdge = (i, mod(i + 1, 3));
+            (int, int) implicitEdge = (i, Mod(i + 1, 3));
             SubEdges.TryAdd(implicitEdge, 1);
             Edges[i] = new LinkedList<int>();
             Edges[i].AddFirst(SubEdges.IndexOf(implicitEdge));
@@ -106,10 +106,10 @@ public class Triangulation
             {
                 edgeDico.TryAdd(
                     (TrianglesByVertices[j][k],
-                        TrianglesByVertices[j][mod(k + 1, 3)]), 0);
+                        TrianglesByVertices[j][Mod(k + 1, 3)]), 0);
                 edgeDico[(
                     TrianglesByVertices[j][k],
-                    TrianglesByVertices[j][mod(k + 1, 3)])]++;
+                    TrianglesByVertices[j][Mod(k + 1, 3)])]++;
             }
         }
 
@@ -158,10 +158,10 @@ public class Triangulation
             {
                 edgeDico.TryAdd(
                     (TrianglesByVertices[j][k],
-                        TrianglesByVertices[j][mod(k + 1, 3)]), 0);
+                        TrianglesByVertices[j][Mod(k + 1, 3)]), 0);
                 edgeDico[(
                     TrianglesByVertices[j][k],
-                    TrianglesByVertices[j][mod(k + 1, 3)])]++;
+                    TrianglesByVertices[j][Mod(k + 1, 3)])]++;
             }
         }
 
@@ -226,11 +226,11 @@ public class Triangulation
         for (int i = 0; i < 3; i++)
         {
             var firstSubEdge = Edges[i].First!.Value;
-            var lastSubEdgeOfPrevEdge = Edges[mod(i - 1, 3)].Last!.Value;
+            var lastSubEdgeOfPrevEdge = Edges[Mod(i - 1, 3)].Last!.Value;
 
             if (SubEdges.ElementAt(firstSubEdge).Key.Item1 != SubEdges.ElementAt(lastSubEdgeOfPrevEdge).Key.Item2)
                 throw new Exception(
-                    string.Format("Continuity Error between border edges {0} and {1}", mod(i - 1, 3), i));
+                    string.Format("Continuity Error between border edges {0} and {1}", Mod(i - 1, 3), i));
 
             //Check sub edge border continuity
             var enumerator = Edges[i].GetEnumerator();

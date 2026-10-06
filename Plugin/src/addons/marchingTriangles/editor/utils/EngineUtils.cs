@@ -7,7 +7,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 /// <summary>
 /// Utility class for Godot Engine-specific tasks.
 /// </summary>
-public class EngineUtils
+public static class EngineUtils
 {
     public static Node GetRootNode(Node node)
     {
@@ -28,13 +28,12 @@ public class EngineUtils
     /// Sets the owner of a node to the root node of the current scene;
     /// </summary>
     /// <param name="node"></param>
-    /// <exception cref="NotImplementedException"></exception>
-    public static void SetOwnerAsSceneRoot(Node node)
+   public static void SetOwnerAsSceneRoot(Node node)
     {
         node.SetOwner(GetRootNode(node));
     }
 
-    public static int mod(int x, int m)
+    public static int Mod(int x, int m)
     {
         return (x % m + m) % m;
     }
@@ -61,7 +60,7 @@ public class EngineUtils
     
     public static Texture2D Resize2DTexture(string imagePath,int targetX,int targetY)
     {
-        var image = Image.LoadFromFile(FileUtils.ApplyCustomDirectoryPath(imagePath));
+        var image = GD.Load<Image>(FileUtils.ApplyCustomDirectoryPath(imagePath));
         image.Resize(targetX,targetY);
         return ImageTexture.CreateFromImage(image);
     }

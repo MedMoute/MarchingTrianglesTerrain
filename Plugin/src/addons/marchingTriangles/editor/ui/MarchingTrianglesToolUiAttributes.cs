@@ -414,7 +414,7 @@ public partial class MarchingTrianglesToolUiAttributes
 
         foreach (var editorSetting in _terrainSettingsData)
         {
-            Variant pluginSettingValue = propertyInSettings.Contains(editorSetting.Key)
+            Func<Variant> pluginSettingValue = ()=>propertyInSettings.Contains(editorSetting.Key)
                 ? _terrainPlugin.CurTerrainNode.TerrainSettings.Get(editorSetting.Key)
                 : _terrainPlugin.CurTerrainNode.Get(editorSetting.Key);
 
@@ -449,7 +449,7 @@ public partial class MarchingTrianglesToolUiAttributes
                     break;
                 case UiSettingType.SpinBox:
                     SpinBox spinBox = new();
-                    spinBox.Value = pluginSettingValue.AsDouble();
+                    spinBox.Value = pluginSettingValue.Invoke().AsDouble();
                     spinBox.ValueChanged += (val) =>
                     {
                         OnTerrainPropertyChanged(editorSetting.Key, val,
@@ -464,7 +464,7 @@ public partial class MarchingTrianglesToolUiAttributes
                     spinSlider.SetMin(0);
                     spinSlider.SetMax(editorSetting.Key == "wallThreshold" ? 0.5 : 1.0);
                     spinSlider.SetStep(0.01);
-                    spinSlider.SetValue(pluginSettingValue.AsDouble());
+                    spinSlider.SetValue(pluginSettingValue.Invoke().AsDouble());
                     spinSlider.ValueChanged += val =>
                     {
                         OnTerrainPropertyChanged(editorSetting.Key, val,
@@ -541,9 +541,9 @@ public partial class MarchingTrianglesToolUiAttributes
                     }
 
                     optionButton.Selected =
-                        (editorSetting.Key == "extraCollisionLayer"
-                            ? pluginSettingValue.AsInt32() - 9
-                            : pluginSettingValue.AsInt32());
+                        editorSetting.Key == "extraCollisionLayer"
+                            ? pluginSettingValue.Invoke().AsInt32() - 9
+                            : pluginSettingValue.Invoke().AsInt32();
                     optionButton.ItemSelected += (val) =>
                     {
                         OnTerrainPropertyChanged(editorSetting.Key, val,
@@ -634,10 +634,12 @@ public partial class MarchingTrianglesToolUiAttributes
     }
 
 
-    private HBoxContainer _CreateVectorEditorContainer(Variant previousValue,
+    private HBoxContainer _CreateVectorEditorContainer(Func<Variant> valueSupplier,
         KeyValuePair<string, UiSettingType> setting,
         bool propertyInSettings)
     {
+
+        var previousValue = valueSupplier.Invoke();
         var container = new HBoxContainer();
         int vectorMembers;
         // We can assume the size of the Vector looking at the defaultValue type
@@ -683,25 +685,26 @@ public partial class MarchingTrianglesToolUiAttributes
             subSpinBoxes[i] = spinBox;
             var handler = (double v) =>
             {
+                var curValue = valueSupplier.Invoke();
                 // Variant needs to be unboxed , updated, then re-boxed for this to be applied
                 var unboxed = typeof(Variant)
                     .GetMethod("As")!
-                    .MakeGenericMethod(previousValue.Obj.GetType())
-                    .Invoke(previousValue, null);
+                    .MakeGenericMethod(curValue.Obj.GetType())
+                    .Invoke(curValue, null);
                 Variant boxed;
-                if (previousValue.VariantType is Variant.Type.Vector2I or Variant.Type.Vector3I
+                if (curValue.VariantType is Variant.Type.Vector2I or Variant.Type.Vector3I
                     or Variant.Type.Vector4I)
                 {
                     field.SetValue(unboxed, (int)v);
                 }
                 else
                 {
-                    field.SetValue(previousValue.Obj, v);
+                    field.SetValue(curValue.Obj, v);
                 }
 
                 boxed = (Variant)typeof(Variant)
                     .GetMethod("From")!
-                    .MakeGenericMethod(previousValue.Obj.GetType())
+                    .MakeGenericMethod(curValue.Obj.GetType())
                     .Invoke(null, new[] { unboxed })!;
 
 
