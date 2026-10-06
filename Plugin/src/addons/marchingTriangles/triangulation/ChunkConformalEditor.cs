@@ -212,23 +212,24 @@ public class ChunkConformalEditor
             var localVertexIndexingInNeighbors = vertexToCellsMapping[coords];
             var triangulationsByCell =
                 new Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)?>>();
-            var neighborCells = new Dictionary<Vector2I, HexTerrainCell>();
-            foreach (var neigborCell in localVertexIndexingInNeighbors)
+            var impactedCells = new Dictionary<Vector2I, HexTerrainCell>();
+            foreach (var cellAndVertexIndex
+                     in localVertexIndexingInNeighbors)
             {
-                neighborCells.Add(neigborCell.Item1, _cells[neigborCell.Item1]);
+                impactedCells.Add(cellAndVertexIndex.Item1, _cells[cellAndVertexIndex.Item1]);
                 //Add the two triangulations of the cell containing the vertex (the one pointed by the mapping...and the one after)
-                triangulationsByCell.Add((neigborCell.Item2, _cells[neigborCell.Item1]),
+                triangulationsByCell.Add((cellAndVertexIndex.Item2, _cells[cellAndVertexIndex.Item1]),
                     new Tuple<(Triangulation, int), (Triangulation, int)?>(
-                        (_triangulationsPerCell[neigborCell.Item1]?[neigborCell.Item2]!,
+                        (_triangulationsPerCell[cellAndVertexIndex.Item1]?[cellAndVertexIndex.Item2]!,
                             1), // For the first triangulation, the vertex is the index#1 of the triangulation
-                        (_triangulationsPerCell[neigborCell.Item1]?[EngineUtils.mod(neigborCell.Item2 - 1, HexTerrainCell.VertexCount)]!,
+                        (_triangulationsPerCell[cellAndVertexIndex.Item1]?[EngineUtils.mod(cellAndVertexIndex.Item2 - 1, HexTerrainCell.VertexCount)]!,
                             2) // For the second triangulation, the vertex is the index#2 of the triangulation
                     )
                 );
             }
 
-            var edit = new VertexConformalGeometryEdit();
-            _editions.Add(coords, edit);
+            var vertexEditor = new VertexConformalGeometryEdit();
+            _editions.Add(coords, vertexEditor);
             if (true) //DEBUG FLAG
             {
                 var comp = new EngineUtils.V2DComp(1e-5);
@@ -248,12 +249,12 @@ public class ChunkConformalEditor
             }
 
             ComputeLocalGeometryActions(
-                edit,
+                vertexEditor,
                 localVertexIndexingInNeighbors,
                 triangulationsByCell,
                 _chunk.DefaultGeometryModes,
                 _chunk.DefaultThreshold,
-                neighborCells);
+                impactedCells);
         }
     }
 
@@ -280,7 +281,7 @@ public class ChunkConformalEditor
         for (int i = 0; i < localVertexIndexing.Count; i++)
         {
             var requestedGeometryMode =
-                chunkGeometryMode ?? neighborCells[localVertexIndexing[i].Item1].GeometryModesOverride;
+                neighborCells[localVertexIndexing[i].Item1].GeometryModesOverride ?? chunkGeometryMode;
             requestedGeometryOperation.Add(localVertexIndexing[i].Item1,
                 (thresholdMask ^ (1 << i)) == 0 ? (requestedGeometryMode.Item1) : (requestedGeometryMode.Item2));
         }

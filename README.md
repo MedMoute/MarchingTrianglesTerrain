@@ -31,7 +31,13 @@ Otherwise please visit the Get Started page on the wiki (TODO)
 The 0.1 Roadmap is [here](https://github.com/MedMoute/MarchingTrianglesTerrain/issues?q=milestone%3A0.1)
 The goal is to provide a serviceable MVP for all of the 3 key features of the project
 
+#### Known Issues :
+
+* The geometry behaviour is not propagated accross chunk borders [#29](https://github.com/MedMoute/MarchingTrianglesTerrain/issues/29)
+* The geometry behaviour is not implemented and fails for `GeometryMode.BendingEdge`,`GeometryMode.Foothill` and `GeometryMode.Plateau`[#36](https://github.com/MedMoute/MarchingTrianglesTerrain/issues/36)
+
 ### Credit
 
 Development by [HerrMyth](https://github.com/MedMoute)
 This project initially stemmed from my interest into [Yūgen's Terrain Authoring Toolkit](https://github.com/ToumaKamijou/Yugens-Terrain-Authoring-Toolkit), written by [Yugen](https://www.youtube.com/@yugen_seishin) as well as [a larger team](https://github.com/ToumaKamijou/Yugens-Terrain-Authoring-Toolkit#credits) since 1.1.0 .
+

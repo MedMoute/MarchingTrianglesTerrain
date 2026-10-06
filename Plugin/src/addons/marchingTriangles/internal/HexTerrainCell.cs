@@ -5,6 +5,7 @@ using System.Text;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
+using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Spatial.Euclidean;
 using static MarchingTrianglesTerrain.addons.marchingTriangles.utils.EngineUtils;
 
@@ -22,6 +23,8 @@ public class HexTerrainCell
 
     public bool Verbose;
     public bool RunIntegrityChecks;
+    
+    
 
     /// <summary>
     /// The coordinates of the current cell in the paren chunk's hex frame.
@@ -33,7 +36,7 @@ public class HexTerrainCell
         private init
         {
             _cellCoordsImplicit = value;
-            _cellCoords = new Vector3I(value.X, value.Y, 0);
+            _cellCoords = new Vector3I(value.X, value.Y, -value.X-value.Y);
         }
     }
 
@@ -133,7 +136,7 @@ public class HexTerrainCell
         TempDataArrays = new CellDataArrays(cellCoordsImpl);
         DualCellsMapping = new Dictionary<int, Vector3I>();
         VertexPositionsInPlane = [];
-        CenterPosition = _orientationSystem.GetCellCentroid(CellCoords);
+        CenterPosition = _orientationSystem.GetCellCentroid(new Vector3I(cellCoordsImpl.X,cellCoordsImpl.Y,0));
 
 
         for (int i = 0; i < VertexCount; i++)
@@ -145,7 +148,7 @@ public class HexTerrainCell
             DualCellsMapping.Add(
                 i,
                 _orientationSystem.GetVertexIndexInDualSpace(
-                    CellCoords, // Set by CellCoordsImplicit setter
+                    new Vector3I(CellCoords.X,CellCoords.Y,0), // Set by CellCoordsImplicit setter
                     dualFrame,
                     i));
         }
@@ -157,7 +160,51 @@ public class HexTerrainCell
         }
     }
 
+    /// <summary>
+    /// Returns the edge index of the border between this and another cell;
+    /// </summary>
+    /// <param name="cell"></param>
+    /// <returns></returns>
+    public int GetBorderEdge(HexTerrainCell cell)
+    {
+        if (cell == this)
+        {
+            throw new ArgumentException("The two cells are the same.");
+        }
+        if (cell._orientationSystem! != _orientationSystem)
+        {
+            throw new ArgumentException("The two cells are defined in a different frame and thus are not comparable");
+        }
+        if (!cell.GetNeighborCellsCoordinates().Contains(_cellCoords))
+        {
+            return -1;
+        }
+        else
+        {
+            var borderVertexIndices = VertexPositionsInPlane.Index()
+                .Where(pos=> cell.VertexPositionsInPlane.Index().Any(v=> pos.Item.Equals(v.Item,1e-5)))
+                .Select(pos => pos.Index).ToList();
+            if (borderVertexIndices.Count > 2)
+            {
+                throw new InvalidOperationException("Unexpected state: more than 2 coinciding vertices for 2 different bordering cells");
+            } else if (borderVertexIndices.Count < 2)
+            {
+                throw new InvalidOperationException("Unexpected state: less than 2 coinciding vertices for 2 different bordering cells");
+            }
 
+            var i0 = borderVertexIndices[0];
+            var i1 = borderVertexIndices[1];
+            if (mod(i0 + 1, VertexCount) == i1)
+            {
+                return i0;
+            }
+            else
+            {
+                return i1;
+            }
+        }
+    }
+    
     public void SetDataFetchingFunction(
         Vector2I dimensions2D,
         Func<Vector2I, TriangleGrid> dataProviderProvider,
@@ -365,13 +412,16 @@ public class HexTerrainCell
     /// <returns></returns>
     public List<Vector3I> GetNeighborCellsCoordinates()
     {
-        // Trivial with cube coordinates
-        return [CellCoords+Vector3I.Right-Vector3I.Up,
-            CellCoords-Vector3I.Right+Vector3I.Up,
-            CellCoords+Vector3I.Back-Vector3I.Up,
-            CellCoords-Vector3I.Back+Vector3I.Up,
-            CellCoords+Vector3I.Back-Vector3I.Right,
-            CellCoords-Vector3I.Back+Vector3I.Right];  
+        // Trivial with axial coordinates
+        // https://www.redblobgames.com/grids/hexagons/#conversions
+        return [
+            CellCoords+Vector3I.Right-Vector3I.Up+Vector3I.Zero,
+            CellCoords+Vector3I.Right+Vector3I.Zero-Vector3I.Back,
+            CellCoords+Vector3I.Zero+Vector3I.Up-Vector3I.Back,
+            CellCoords-Vector3I.Right+Vector3I.Up+Vector3I.Zero,
+            CellCoords-Vector3I.Right+Vector3I.Zero+Vector3I.Back,
+            CellCoords+Vector3I.Zero-Vector3I.Up+Vector3I.Back
+        ];  
     }
 }
 

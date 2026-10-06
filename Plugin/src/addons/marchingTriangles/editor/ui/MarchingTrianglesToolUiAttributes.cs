@@ -1169,7 +1169,7 @@ public partial class MarchingTrianglesToolUiAttributes
             _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
         }
 
-        Console.WriteLine("Updated  chunk : " + (_terrainPlugin.PluginHelper.CurrentSelectedChunk is null
+        GD.Print("Updated  chunk : " + (_terrainPlugin.PluginHelper.CurrentSelectedChunk is null
             ? "NONE"
             : _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.Coordinates
               + " => Geometry state : < " +

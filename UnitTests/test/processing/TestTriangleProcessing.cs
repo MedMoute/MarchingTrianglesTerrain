@@ -1,6 +1,7 @@
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MathNet.Numerics;
 
 namespace UnitTests.processing;
 
@@ -102,8 +103,7 @@ public class TestTriangleProcessing
                     AssertIsTriangleListManifold(keyValuePair.Value);
                     break;
                 default:
-break;
-                
+                    break;
             }
         }
 
@@ -159,20 +159,6 @@ break;
     [Test]
     public void TestProcessingOfChunk([Values] GeometryMode geometryMode)
     {
-        //Change src1 and src2 : this case has a constant average  per cell WTFFFFF
-        for (int i = 0; i < src1.Length; i++)
-        {
-            src1[i] = new float[dimension];
-            src2[i] = new float[dimension];
-
-            for (int j = 0; j < src1.Length; j++)
-            {
-                src1[i][j] = i * src1.Length + j;
-                src2[i][j] = -(i * src1.Length + j);
-            }
-        }
-
-        //Change src1 and src2 : this case has a constant average  per cell WTFFFFF
         for (int i = 0; i < src1.Length; i++)
         {
             src1[i] = new float[dimension];
@@ -201,24 +187,52 @@ break;
         output = chunk.ProcessGeometry();
         Assert.DoesNotThrow(() => { output = chunk.ProcessGeometry(); });
 
-
-        //Per cell manifold checks
+        //Per cell manifold and value checks
         foreach (var keyValuePair in output)
         {
             AssertIsTriangleListManifold(keyValuePair.Value);
 
+            var curCell = keyValuePair.Key;
+            var triangul = keyValuePair.Value;
             switch (geometryMode)
             {
                 case GeometryMode.SmoothLinear:
-                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
+                    Assert.That(triangul, Has.Count.EqualTo(6));
+                    break;
+                case GeometryMode.FlatHexagonsNoFans:
+                    Assert.That(triangul, Has.Count.EqualTo(6));
+                    //Check cell equality
+                    Assert.That(triangul.SelectMany(tri => tri.Points)
+                        .All(p => p.Y.AlmostEqual(curCell.AverageHeight)));
+                    break;
+                case GeometryMode.FlatTrianglesNoFans:
+                    Assert.That(triangul, Has.Count.EqualTo(6));
+                    //Per triangle equality
+                    foreach (var triangle in triangul)
+                    {
+                        Assert.That(triangle.Points.All(v => v.Y.AlmostEqual(triangle.Points[0].Y)));
+                    }
+
                     break;
                 case GeometryMode.FlatHexagons:
-                    // Assert.That(keyValuePair.Value, Has.Count.EqualTo(6 
-                    //         //Count the existing neighbor cells
-                    //         // + output.Keys
-                    //         //     .Count(c => c.GetNeighborCellsCoordinates()
-                    //         //         .Any( cIdx => keyValuePair.Key.CellCoords == cIdx))
-                    //         ));
+                    //Check that 6 triangles are flat and equal to the avg in each cell
+                    Assert.That(triangul.Count(tri => tri.Points
+                        .All(p => p.Y.AlmostEqual(curCell.AverageHeight))), Is.EqualTo(6));
+
+                    //Count the amount of neighbor cells : Each adds one triangle to the final triangulation 
+
+                    //we extract the actually existing neighbor cells
+                    var neighborCellEdges = chunk.GetHexCells(c => c.IsReady() && c.GetNeighborCellsCoordinates()
+                            .Any(cIdx => curCell.CellCoords == cIdx)).ToList();
+
+                    int additionalTriangles = neighborCellEdges.Count;
+
+                    Assert.That(triangul, Has.Count.EqualTo(6 + additionalTriangles));
+                    break;
+                case GeometryMode.FlatTriangles:
+                    //Check that 6 triangles are flat in each cell
+                    Assert.That(triangul.Count(tri => tri.Points
+                        .All(p => p.Y.AlmostEqual(tri.Points[0].Y))), Is.EqualTo(6));
                     break;
             }
         }
@@ -403,6 +417,7 @@ break;
         }
     }
 
+    //TODO : Edge connexity check
     internal static void AssertIsTriangleListManifold(List<HexTerrainCell.TriangleInfo> res)
     {
         var (
@@ -427,6 +442,7 @@ break;
                 || kvp.Value == 1 && borderEdgesAsSets.Contains(kvp.Key, new FloatArrayComparer(1e-5)) //border edge
                 , Is.True);
         }
+
     }
 }
 
