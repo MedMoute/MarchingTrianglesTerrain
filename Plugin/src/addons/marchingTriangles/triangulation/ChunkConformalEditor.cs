@@ -77,7 +77,7 @@ public class ChunkConformalEditor
                 var a2D = cell.CenterPosition;
                 var b2D = cell.VertexPositionsInPlane[cellIdxToVertex.Key];
                 var c2D = cell.VertexPositionsInPlane[
-                    EngineUtils.mod(cellIdxToVertex.Key + 1, HexTerrainCell.VertexCount)];
+                    EngineUtils.Mod(cellIdxToVertex.Key + 1, HexTerrainCell.VertexCount)];
 
                 var a = new Vector3(
                     (float)a2D.X,
@@ -91,7 +91,7 @@ public class ChunkConformalEditor
 
                 var c = new Vector3(
                     (float)c2D.X,
-                    cell.GetVertexData!(EngineUtils.mod(cellIdxToVertex.Key + 1, HexTerrainCell.VertexCount)),
+                    cell.GetVertexData!(EngineUtils.Mod(cellIdxToVertex.Key + 1, HexTerrainCell.VertexCount)),
                     (float)c2D.Y);
 
                 triangulationArray![cellIdxToVertex.Key] ??= new Triangulation([a, b, c], false, true);
@@ -222,7 +222,7 @@ public class ChunkConformalEditor
                     new Tuple<(Triangulation, int), (Triangulation, int)?>(
                         (_triangulationsPerCell[cellAndVertexIndex.Item1]?[cellAndVertexIndex.Item2]!,
                             1), // For the first triangulation, the vertex is the index#1 of the triangulation
-                        (_triangulationsPerCell[cellAndVertexIndex.Item1]?[EngineUtils.mod(cellAndVertexIndex.Item2 - 1, HexTerrainCell.VertexCount)]!,
+                        (_triangulationsPerCell[cellAndVertexIndex.Item1]?[EngineUtils.Mod(cellAndVertexIndex.Item2 - 1, HexTerrainCell.VertexCount)]!,
                             2) // For the second triangulation, the vertex is the index#2 of the triangulation
                     )
                 );

@@ -52,10 +52,10 @@ public static class BrushPatternCalculator
         int minYChunkIdx = Mathf.FloorToInt((float)cellIdxAtMinPosition.Y / terrain.TerrainSettings.ChunkDimensions.Y);
         int maxYChunkIdx = Mathf.FloorToInt((float)cellIdxAtMaxPosition.Y / terrain.TerrainSettings.ChunkDimensions.Y);
 
-        int minXCell = EngineUtils.mod(cellIdxAtMinPosition.X, terrain.TerrainSettings.ChunkDimensions.X);
-        int maxXCell = EngineUtils.mod(cellIdxAtMaxPosition.X, terrain.TerrainSettings.ChunkDimensions.X);
-        int minYCell = EngineUtils.mod(cellIdxAtMinPosition.Y, terrain.TerrainSettings.ChunkDimensions.Y);
-        int maxYCell = EngineUtils.mod(cellIdxAtMaxPosition.Y, terrain.TerrainSettings.ChunkDimensions.Y);
+        int minXCell = EngineUtils.Mod(cellIdxAtMinPosition.X, terrain.TerrainSettings.ChunkDimensions.X);
+        int maxXCell = EngineUtils.Mod(cellIdxAtMaxPosition.X, terrain.TerrainSettings.ChunkDimensions.X);
+        int minYCell = EngineUtils.Mod(cellIdxAtMinPosition.Y, terrain.TerrainSettings.ChunkDimensions.Y);
+        int maxYCell = EngineUtils.Mod(cellIdxAtMaxPosition.Y, terrain.TerrainSettings.ChunkDimensions.Y);
 
 
         Vector2I blChunk = new Vector2I(minXChunkIdx, minYChunkIdx);

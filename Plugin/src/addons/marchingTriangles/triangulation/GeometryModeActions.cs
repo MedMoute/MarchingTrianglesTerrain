@@ -81,7 +81,7 @@ public static class GeometryModeActions
             htCell.VertexPositionsInPlane[vertexInHtCellIdx]; //Usual vertex
 
         var height = secondTriangulationFlag
-            ? htCell.GetEdgeAvgHeight(EngineUtils.mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
+            ? htCell.GetEdgeAvgHeight(EngineUtils.Mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
             : htCell.GetEdgeAvgHeight(vertexInHtCellIdx);
 
         editor.RegisterAction(new MovePointAlongYAxisAction(vertexInTriIdx, height), tri);
@@ -131,7 +131,7 @@ public static class GeometryModeActions
                 //(0=> VertexInHtCellIdx-1; 2=>VertexInHtCellIdx-1), or  the cell
             {
                 height = vertexInTriIdx == 0
-                    ? htCell.GetEdgeAvgHeight(EngineUtils.mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
+                    ? htCell.GetEdgeAvgHeight(EngineUtils.Mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
                     : htCell.GetEdgeAvgHeight(vertexInHtCellIdx);
                 editor.RegisterAction(
                     new AddTrianglesOnBorderEdge(vertexInTriIdx, new Vector3((float)pInit.X, height, (float)pInit.Y)),

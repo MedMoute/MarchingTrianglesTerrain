@@ -151,7 +151,7 @@ public class TestSplitEdge
         {
             for (int i = 0; i < 3; i++)
             {
-                var action = new SplitSubEdgeAction(i, i, EngineUtils.mod(i + 1, 3), 0.5f);
+                var action = new SplitSubEdgeAction(i, i, EngineUtils.Mod(i + 1, 3), 0.5f);
                 output = action.Apply(t);
             }
         });
@@ -174,9 +174,9 @@ public class TestSplitEdge
         {
             for (int i = 0; i < 3; i++)
             {
-                var action = new SplitSubEdgeAction(i, i, EngineUtils.mod(i + 1, 3), 0.5f);
+                var action = new SplitSubEdgeAction(i, i, EngineUtils.Mod(i + 1, 3), 0.5f);
                 output = action.Apply(t);
-                action = new SplitSubEdgeAction(i, output, EngineUtils.mod(i + 1, 3), 0.5f);
+                action = new SplitSubEdgeAction(i, output, EngineUtils.Mod(i + 1, 3), 0.5f);
                 output = action.Apply(t);
             }
         });

@@ -429,7 +429,7 @@ public class TestTriangleProcessing
         foreach (var kvp in dico)
         {
             Assert.That(
-                EngineUtils.mod(kvp.Value, 2) == 0 //inner edges 
+                EngineUtils.Mod(kvp.Value, 2) == 0 //inner edges 
                 || kvp.Value == 1 && borderEdgesAsSets.Contains(kvp.Key, new FloatArrayComparer(1e-5)) //border edge
                 , Is.True);
         }

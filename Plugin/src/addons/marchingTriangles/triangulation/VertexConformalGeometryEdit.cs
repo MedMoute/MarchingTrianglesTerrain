@@ -45,7 +45,7 @@ public class VertexConformalGeometryEdit
             var operationType = kvp.Value.Item1;
 
             var htCell = cell.Item2;
-            var vertexInHtCellIdx = EngineUtils.mod(cell.Item1, HexTerrainCell.VertexCount);
+            var vertexInHtCellIdx = EngineUtils.Mod(cell.Item1, HexTerrainCell.VertexCount);
 
             var tri = target.Item1;
             var vertexInTriIdx = target.Item2;
