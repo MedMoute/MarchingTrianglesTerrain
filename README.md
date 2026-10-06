@@ -34,7 +34,7 @@ The goal is to provide a serviceable MVP for all of the 3 key features of the pr
 #### Known Issues :
 
 * The geometry behaviour is not propagated accross chunk borders [#29](https://github.com/MedMoute/MarchingTrianglesTerrain/issues/29)
-
+* The geometry behaviour is not implemented and fails for `GeometryMode.BendingEdge`,`GeometryMode.Foothill` and `GeometryMode.Plateau`[#36](https://github.com/MedMoute/MarchingTrianglesTerrain/issues/36)
 
 ### Credit
 
