@@ -96,6 +96,15 @@ public class TerrainColorMaps(
             hexTerrainCell.GeometryModesOverride = new Tuple<GeometryMode, GeometryMode>((GeometryMode)value.X, (GeometryMode)value.Y);
         }
     }
+    
+    public void SetDualCellGeometryEditionParameters(Vector3I cellDataIdx, Vector4 parameters)
+    {
+        EnsureRange(cellDataIdx,parent.Dimensions);
+        foreach (var hexTerrainCell in parent.TerrainDualGrid.CompleteCells.Where(cell=> cell.Visits.ContainsKey(cellDataIdx)))
+        {
+            hexTerrainCell.ParametersOverride = ((parameters.X,parameters.Y) ,(parameters.Z,parameters.W));
+        }
+    }
 
     public void SetWallColor1(Vector3I cellCoords, Color value)
     {
@@ -117,7 +126,14 @@ public class TerrainColorMaps(
         NotifySelfAndNeighborsForUpdate(cell);
     }
     
-    public void DrawNewGeometryMode(Vector3I cell, Vector2I newGeometryModes)
+    public void SetNewGeometryParameters(Vector3I cell, Vector4 geometryEditionParameters)
+    {
+        SetDualCellGeometryEditionParameters(cell, geometryEditionParameters);
+        parent.Dirty = true;
+        NotifySelfAndNeighborsForUpdate(cell);
+    }
+
+    public void SetNewGeometryMode(Vector3I cell, Vector2I newGeometryModes)
     {
         SetDualCellGeometryMode(cell, newGeometryModes);
         parent.Dirty = true;

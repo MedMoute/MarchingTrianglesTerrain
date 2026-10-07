@@ -27,7 +27,7 @@ public partial class MarchingTrianglesToolUiAttributes
     public delegate void TerrainSettingChangedEventHandler(string setting, Variant variant);
 
     private readonly MarchingTrianglesTerrainPlugin _terrainPlugin;
-
+    
 
     private readonly Dictionary<string, UiSettingType> _terrainSettingsData = new()
     {
@@ -229,7 +229,7 @@ public partial class MarchingTrianglesToolUiAttributes
                 var subCont = new HBoxContainer();
 
                 Label label = new();
-                label.Text = $"Parameter {j}";
+                label.Text = $"Param {j}";
                 if (mode >= 0 && mode.SupportsParameter(j))
                 {
                     EditorSpinSlider value = new();
@@ -237,7 +237,8 @@ public partial class MarchingTrianglesToolUiAttributes
                     value.EditingInteger = false;
                     value.MinValue = 0f;
                     value.MaxValue = 1f;
-                    value.SetCustomMinimumSize(new Vector2(50, 35));
+                    value.Step = 0.01f;
+                    value.SetCustomMinimumSize(new Vector2(80, 35));
                     subCont.AddChild(value);
                 }
                 else
@@ -245,7 +246,7 @@ public partial class MarchingTrianglesToolUiAttributes
                     sliderArray[i, j] = null;
 
                     Label unsupported = new();
-                    unsupported.Text = "No parameter";
+                    unsupported.Text = "No param.";
                     subCont.AddChild(unsupported);
                 }
 
@@ -979,36 +980,6 @@ public partial class MarchingTrianglesToolUiAttributes
             _hboxContainer.AddChild(vBox, true);
         }
     }
-
-    // private void ProcessQuickPaintSetting(Variant savedSetting,
-    //     Godot.Collections.Dictionary<string, Variant> toolParameters)
-    // {
-    //     OptionButton quickPaint = new();
-    //     quickPaint.AddItem("None");
-    //     quickPaint.SetItemMetadata(0, new Variant());
-    //     // 1. Load GLOBAL quick paints from folder (always available)
-    //     var dir = DirAccess.Open(_defaultQuickPaintPath);
-    //     if (dir != null)
-    //     {
-    //         dir.ListDirBegin();
-    //         var fileName = dir.GetNext();
-    //         while (fileName != "")
-    //         {
-    //             if (fileName.EndsWith(".tres") || fileName.EndsWith(".res"))
-    //             {
-    //                 // TODO implement => tool_attributes ll.300 -> 350
-    //                 GD.PushError("Found a .(t)res in the quick pain preset, not doing anything with it");
-    //             }
-    //
-    //             fileName = dir.GetNext();
-    //         }
-    //     }
-    //
-    //     var container = new CenterContainer();
-    //     container.SetCustomMinimumSize(new Vector2(65, 35));
-    //     container.AddChild(quickPaint, true);
-    //     _hboxContainer.AddChild(container, true);
-    // }
 
     /// <summary>
     /// Process a UI setting that will take shape of a TexturePreset selection in the Editor

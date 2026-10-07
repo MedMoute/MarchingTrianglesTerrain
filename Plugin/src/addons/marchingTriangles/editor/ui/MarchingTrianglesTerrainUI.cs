@@ -57,6 +57,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         }
 
         Toolbar = new MarchingTrianglesToolbar();
+        Plugin.ToolAttributes.UiReloadRequested += OnToolChanged;
         Toolbar.ToolChanged += OnToolChanged;
         Toolbar.Hide();
 

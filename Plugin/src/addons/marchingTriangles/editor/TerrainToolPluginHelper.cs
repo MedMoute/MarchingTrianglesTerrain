@@ -6,7 +6,8 @@ using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.gizmo;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Spatial.Euclidean;
-using MarchingTrianglesTerrainUi = MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui.MarchingTrianglesTerrainUi;
+using MarchingTrianglesTerrainUi =
+    MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui.MarchingTrianglesTerrainUi;
 using Plane = Godot.Plane;
 using TerrainSettings = MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.TerrainSettings;
 
@@ -528,16 +529,20 @@ public class TerrainToolPluginHelper
         // WARNING : We're relying on godot's dictionaries from now on
         // This is due to the fact that the Undo-Redo manager needs Variant compatible types (Godot's dictionary is one)
         var pattern = new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>();
-        // ReSharper disable once CollectionNeverQueried.Local
-        Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Vector2I>> patternCellCoords =
-            new ();
         var restorePattern =
             new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>();
-        // ReSharper disable once CollectionNeverQueried.Local
+
+        var pattern2 = new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>();
+        var restorePattern2 =
+            new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>();
+        // ReSharper disable CollectionNeverQueried.Local
+        Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Vector2I>> patternCellCoords =
+            new();
         var restorePatternCellCoords =
             new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Vector2I>>();
-        
-        
+        // ReSharper enable CollectionNeverQueried.Local
+
+
         if (node is MarchingTrianglesTerrain terrain)
         {
             // Process the pattern entries
@@ -547,6 +552,9 @@ public class TerrainToolPluginHelper
                 patternCellCoords[chunkCoord] = new();
                 restorePattern[chunkCoord] = new();
                 restorePatternCellCoords[chunkCoord] = new();
+
+                pattern2[chunkCoord] = new();
+                restorePattern2[chunkCoord] = new();
 
                 var hasData = _curDrawPattern.TryGetValue(chunkCoord, out var chunkDataDrawn);
                 if (hasData && chunkDataDrawn != null)
@@ -561,6 +569,10 @@ public class TerrainToolPluginHelper
                         float sample = Mathf.Clamp(chunkDataDrawn[drawCellCoords], 0.001f, 0.999f); // why not 0 - 1 ?
                         Variant? drawValue = 0f;
                         Variant? restoreValue = 0f;
+
+                        Variant? value2 = null;
+                        Variant? restoreValue2 = null;
+
 
                         switch (_parent.SelectedMode)
                         {
@@ -608,6 +620,27 @@ public class TerrainToolPluginHelper
                                     : new Vector2I((int)chunk.Underlying.DefaultGeometryModes!.Item1,
                                         (int)chunk.Underlying.DefaultGeometryModes!.Item2);
                                 drawValue = _parent.ToolAttributes.GeometryModes;
+
+                                var cellValue2 = cell.ParametersOverride;
+
+                                if (cellValue2 == null)
+                                {
+                                    var chunkMode1Params = chunk.Underlying.GeometryModeParameters!.Value.Item1;
+                                    var chunkMode2Params = chunk.Underlying.GeometryModeParameters!.Value.Item2;
+                                    restoreValue2 = new Vector4(chunkMode1Params.Item1, chunkMode1Params.Item2,
+                                        chunkMode2Params.Item1, chunkMode2Params.Item2);
+                                }
+                                else
+                                {
+                                    var mode1Params = cellValue2.Value.Item1;
+                                    var mode2Params = cellValue2.Value.Item2;
+                                    restoreValue2 = new Vector4(
+                                        mode1Params.Item1, mode1Params.Item2,
+                                        mode2Params.Item1, mode2Params.Item2);
+                                }
+
+                                value2 = _parent.ToolAttributes.GeometryModesParameters;
+
                                 break;
                             default:
                                 throw new NotSupportedException($"Behavior not implemented for {_parent.SelectedMode}");
@@ -618,28 +651,58 @@ public class TerrainToolPluginHelper
                             restorePattern[chunkCoord][drawCellCoords] = restoreValue.Value;
                             pattern[chunkCoord][drawCellCoords] = drawValue.Value;
                         }
+
+                        if (restoreValue2 != null && value2 != null)
+                        {
+                            restorePattern2[chunkCoord][drawCellCoords] = restoreValue2.Value;
+                            pattern2[chunkCoord][drawCellCoords] = value2.Value;
+                        }
                     }
                 }
             }
 
-            bool isQuickPaint = false; //TODO Not supported
+            Godot.Collections.Dictionary<
+                string,
+                Godot.Collections.Dictionary<
+                    Vector2I,
+                    Godot.Collections.Dictionary<
+                        Vector3I,
+                        Variant>>> doPattern;
+            Godot.Collections.Dictionary<
+                string,
+                Godot.Collections.Dictionary<
+                    Vector2I,
+                    Godot.Collections.Dictionary<
+                        Vector3I,
+                        Variant>>> undoPattern;
 
-            if (isQuickPaint)
+            if (_parent.SelectedMode == TerrainToolMode.GeometryEdit)
             {
-                throw new NotImplementedException();
+                ProcessBrushPattern(
+                    _parent.SelectedMode,
+                    [pattern, pattern2],
+                    [restorePattern, restorePattern2],
+                    out doPattern,
+                    out undoPattern);
+            }
+            else
+            {
+                ProcessBrushPattern(
+                    _parent.SelectedMode,
+                    [pattern],
+                    [restorePattern],
+                    out doPattern,
+                    out undoPattern);
             }
 
-            ProcessBrushPattern(
-                _parent.SelectedMode,
-                pattern,
-                restorePattern,
-                out var doPattern,
-                out var undoPattern);
+
             var doPatternVariant = doPattern;
             var undoPatternVariant = undoPattern;
 
             // Use delegate method since "this" helper is not a Godot object (but the plugin itself is)
-            undoRedoManager.CreateAction("Terrain height draw" + (isQuickPaint ? " with quick paint brush" : ""));
+            undoRedoManager.CreateAction(_parent.SelectedMode == TerrainToolMode.GeometryEdit
+                ? "Modify terrain geometry edition mode"
+                : "Terrain height draw");
             undoRedoManager.AddDoMethod(_parent, nameof(
                     MarchingTrianglesTerrainPlugin.DelegateCompositePatternAction),
                 terrain,
@@ -659,8 +722,8 @@ public class TerrainToolPluginHelper
     /// </summary>
     private void ProcessBrushPattern(
         TerrainToolMode operationMode,
-        Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> pattern,
-        Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> restorePattern,
+        List<Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>> pattern,
+        List<Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>> restorePattern,
         out Godot.Collections.Dictionary<
             string,
             Godot.Collections.Dictionary<
@@ -681,13 +744,16 @@ public class TerrainToolPluginHelper
 
         switch (operationMode)
         {
+            //TODO Fix this at some point
             case TerrainToolMode.GeometryEdit:
-                doPattern["geometryMode"] = pattern;
-                undoPattern["geometryMode"] = restorePattern;
+                doPattern["geometryMode"] = pattern[0];
+                undoPattern["geometryMode"] = restorePattern[0];
+                doPattern["geometryParameters"] = pattern[1];
+                undoPattern["geometryParameters"] = restorePattern[1];
                 break;
             default:
-                doPattern["height"] = pattern;
-                undoPattern["height"] = restorePattern;
+                doPattern["height"] = pattern[0];
+                undoPattern["height"] = restorePattern[0];
                 break;
         }
     }
@@ -713,7 +779,9 @@ public class TerrainToolPluginHelper
         // map each string to a method and a type in an Ordered dico
         OrderedDictionary<string, Action<TerrainColorMaps, Vector3I, Variant>> actions = new()
         {
-            ["geometryMode"] = (input, v, data) => input.DrawNewGeometryMode(v, data.AsVector2I()),
+            ["geometryParameters"] =
+                (input, v, data) => input.SetDualCellGeometryEditionParameters(v, data.AsVector4()),
+            ["geometryMode"] = (input, v, data) => input.SetNewGeometryMode(v, data.AsVector2I()),
             // Apply wall colors before height changes that can create ridge vertices
             ["wall_color_0"] = (input, v, data) => input.DrawWallColor0(v, data.AsColor()),
             ["wall_color_1"] = (input, v, data) => input.DrawWallColor1(v, data.AsColor()),

@@ -85,7 +85,7 @@ public class MarchingTriangleTerrainToolAttributesList
     {
         { UiAttributeKey.Name, "geometryModeParameterEditor" },
         { UiAttributeKey.Type, (int)SettingType.GeometryModeParameterEditor },
-        { UiAttributeKey.Label, "Geometry Mode Parameters" }
+        { UiAttributeKey.Label, "Parameters" }
     };
 }
 

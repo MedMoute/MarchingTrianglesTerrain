@@ -391,8 +391,8 @@ public class HexagonalTerrainChunk
         var color2 = (cell.GeometryModesOverride 
                       ?? DefaultGeometryModes
                       ?? throw new InvalidOperationException("DefaultGeometryModes should have been set")).Item2.GetModePalette()(
-            parameters.Value.Item1.Item1,
-            parameters.Value.Item1.Item2);
+            parameters.Value.Item2.Item1,
+            parameters.Value.Item2.Item2);
 
         var bytesR = BitConverter.GetBytes((Half)color1.R).Concat(BitConverter.GetBytes((Half)color2.R)).ToArray();
         var bytesG = BitConverter.GetBytes((Half)color1.G).Concat(BitConverter.GetBytes((Half)color2.G)).ToArray();

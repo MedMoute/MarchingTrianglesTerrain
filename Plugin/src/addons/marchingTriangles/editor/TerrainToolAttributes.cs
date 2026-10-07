@@ -1,5 +1,6 @@
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor;
 
@@ -10,6 +11,9 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor;
 /// </summary>
 public partial class TerrainToolAttributes : Node
 {
+    [Signal]
+    public delegate void UiReloadRequestedEventHandler(int toolIndex);
+    
     public int BrushIndex { get; set; } 
     public double BrushSize { get; set; } = 5D;
     public double EaseValue { get; set; } = -1; // No ease
@@ -17,9 +21,64 @@ public partial class TerrainToolAttributes : Node
     public double Height { get; set; } 
     public bool Flatten { get; set; } = true;
     public bool Falloff { get; set; } = true;
-    
-    public Vector2I GeometryModes { get; set; } = Vector2I.Zero;
-    
+
+    private Vector2I _geometryModes = Vector2I.Zero;
+    public Vector2I GeometryModes
+    {
+        get => _geometryModes;
+        set
+        {
+            _geometryModes = value;
+            Vector4 defaultParams = new Vector4();
+
+            if (MarchingTrianglesTerrainPlugin.Instance != null &&
+                MarchingTrianglesTerrainPlugin.Instance.CurTerrainNode != null)
+            {
+                if (((GeometryMode)_geometryModes.X).SupportsParameter(0))
+                {
+                    defaultParams.X = MarchingTrianglesTerrainPlugin.Instance.CurTerrainNode.TerrainSettings
+                        .ChunkGeometryParameters.X;
+                }                else
+                {
+                    defaultParams.X = -1f;
+                }
+                if (((GeometryMode)_geometryModes.X).SupportsParameter(1))
+                {
+                    defaultParams.Y = MarchingTrianglesTerrainPlugin.Instance.CurTerrainNode.TerrainSettings
+                        .ChunkGeometryParameters.Y;
+                }                else
+                {
+                    defaultParams.Y = -1f;
+                }
+                if (((GeometryMode)_geometryModes.Y).SupportsParameter(0))
+                {
+                    defaultParams.Z = MarchingTrianglesTerrainPlugin.Instance.CurTerrainNode.TerrainSettings
+                        .ChunkGeometryParameters.Z;
+                }
+                else
+                {
+                    defaultParams.Z = -1f;
+                }
+                if (((GeometryMode)_geometryModes.Y).SupportsParameter(1))
+                {
+                    defaultParams.W = MarchingTrianglesTerrainPlugin.Instance.CurTerrainNode.TerrainSettings
+                        .ChunkGeometryParameters.W;
+                }
+                else
+                {
+                    defaultParams.W = -1f;
+                }
+                if  (!defaultParams.IsEqualApprox(GeometryModesParameters))
+                {
+                    GeometryModesParameters = defaultParams;
+                    //Force the UI reload by emitting signal
+                    EmitSignal(nameof(UiReloadRequested),(int)TerrainToolMode.GeometryEdit);
+                }
+            }
+
+        }
+    }
+
     public Vector4 GeometryModesParameters { get; set; } = new(-1f,-1f,-1f,-1f);
 
 
