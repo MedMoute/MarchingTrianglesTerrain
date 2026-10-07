@@ -12,7 +12,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 /// The Square Tile pattern is a Regular Uniform pattern where the pattern tile
 /// is a single square.
 /// </summary>
-public class SquareTileFrame : RegularUniformFrame
+public class SquareTileFrame : IRegularUniformFrame
 {
     /// <summary>
     /// Constructive constructor using a provided origin, assumed to be the center of the
@@ -109,13 +109,13 @@ public class SquareTileFrame : RegularUniformFrame
 
     public double GetVertexAngleInRad(int i, int polygonIndex) => _offsetAngle - Math.PI / 4 + (Math.PI / 2) * i;
 
-    public RegularUniformFrame GetDual()
+    public IRegularUniformFrame GetDual()
     {
-        var dualOrigin = ((RegularUniformFrame)this).GetVertex(
+        var dualOrigin = ((IRegularUniformFrame)this).GetVertex(
             Vector2I.Zero,
             2,
             0);
-        var dualSeedVertex = ((RegularUniformFrame)this).GetCellCentroid(
+        var dualSeedVertex = ((IRegularUniformFrame)this).GetCellCentroid(
             Vector2I.Zero,
             0);
         return new SquareTileFrame(dualOrigin, dualSeedVertex);
@@ -123,7 +123,7 @@ public class SquareTileFrame : RegularUniformFrame
 
     public Vector2I GetCell(Vector2D cartesianPos)
     {
-        var localPos = ((RegularUniformFrame)this).CartesianToLocal.Invoke(cartesianPos);
+        var localPos = ((IRegularUniformFrame)this).CartesianToLocal.Invoke(cartesianPos);
         return new Vector2I((int)Math.Round(localPos.X), (int)Math.Round(localPos.Y));
     }
 
@@ -131,7 +131,7 @@ public class SquareTileFrame : RegularUniformFrame
     {
         var clone = new SquareTileFrame(UnscaledOriginCellCentroidPositions[0] +
                                         Vector2D.OfVector(TransformOffset),
-            ((RegularUniformFrame)this).GetVertex(Vector2I.Zero, 0, 0));
+            ((IRegularUniformFrame)this).GetVertex(Vector2I.Zero, 0, 0));
         return clone;
     }
 }

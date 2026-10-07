@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Spatial.Euclidean;
+
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 #pragma warning disable CS0169 // Field is never used
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 
 /// <summary>
 /// Helper component for computing/interpolating cell colors.
@@ -195,13 +197,13 @@ public class VertexColorHelper
 
         Vector2D qr = cell.GetHexCoordsOfPoint(new Vector2D(vertex.X, vertex.Z));
         float s = (float)(-qr.X - qr.Y);
-        float S = -cell.CellCoordsImplicit.X - cell.CellCoordsImplicit.Y;
+        float sS = -cell.CellCoordsImplicit.X - cell.CellCoordsImplicit.Y;
         vertexWeights.Add((float)(qr.X - cell.CellCoordsImplicit.X));
         vertexWeights.Add((float)(qr.Y - cell.CellCoordsImplicit.Y));
-        vertexWeights.Add(s - S);
+        vertexWeights.Add(s - sS);
         vertexWeights.Add((float)(1 - qr.X + cell.CellCoordsImplicit.X));
         vertexWeights.Add((float)(1 - qr.Y + cell.CellCoordsImplicit.Y));
-        vertexWeights.Add(1 - s + S);
+        vertexWeights.Add(1 - s + sS);
 
 
         // Accumulate weights for all 3 cell materials
@@ -227,9 +229,9 @@ public class VertexColorHelper
         }
 
         // Pack mat_a and mat_b into one channel (each is 0-15, so together 0-255)
-        float packed_mats = (_cellMatA + _cellMatB * 16.0f) / 255.0f;
+        float packedMats = (_cellMatA + _cellMatB * 16.0f) / 255.0f;
 
-        return new Color(packed_mats, _cellMatC / 15.0f, weightMatA, weightMatB);
+        return new Color(packedMats, _cellMatC / 15.0f, weightMatA, weightMatB);
     }
 
     ///Converts vertex color pair to texture index.
@@ -265,6 +267,7 @@ public class VertexColorHelper
 
         if (color1.B > c1Max)
         {
+            // ReSharper disable once RedundantAssignment
             c1Max = color1.B;
             c1Idx = 2;
         }
@@ -277,13 +280,16 @@ public class VertexColorHelper
         return c0Idx * 4 + c1Idx;
     }
 
+    // ReSharper disable UnusedParameter.Local
     private Color InterpolateVertexColor(
-        HexTerrainCell cell,
-        Vector3 vertex,
-        Func<Vector3I, Color> source,
-        bool diagMidPoint,
-        Color lower0,
-        Color upper0)
+            HexTerrainCell cell,
+            Vector3 vertex,
+            Func<Vector3I, Color> source,
+            bool diagMidPoint,
+            Color lower0,
+            Color upper0) 
+    // ReSharper enable UnusedParameter.Local
+
     {
         if (diagMidPoint)
         {

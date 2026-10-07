@@ -1,9 +1,10 @@
 using System;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MathNet.Spatial.Euclidean;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 
 public partial class TerrainSettings(
     MarchingTrianglesTerrain parent,
@@ -16,7 +17,7 @@ public partial class TerrainSettings(
     
     /// Chunks Global orientation.
     /// DO NOT USE for local computations !
-    public static RegularUniformFrame OrientationSystem { get; } = new DoubleDeltaTileOrientationSystem(
+    public static IRegularUniformFrame OrientationSystem { get; } = new DoubleDeltaTileOrientationSystem(
         new Vector2D(0.5,1/(2*Math.Sqrt(3))),
         new Vector2D(1,1/Math.Sqrt(3))
         );

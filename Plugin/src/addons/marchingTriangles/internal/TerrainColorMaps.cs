@@ -3,32 +3,32 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
 /// <summary>
 /// Inner Class for storing the chunk's color maps
 /// </summary>
-/// <param name="ground_0"></param>
-/// <param name="ground_1"></param>
-/// <param name="wall_0"></param>
-/// <param name="wall_1"></param>
+/// <param name="ground0"></param>
+/// <param name="ground1"></param>
+/// <param name="wall0"></param>
+/// <param name="wall1"></param>
 public class TerrainColorMaps(
     HexagonalTerrainChunk parent,
-    Dictionary<Vector3I, Color> ground_0,
-    Dictionary<Vector3I, Color> ground_1,
-    Dictionary<Vector3I, Color> wall_0,
-    Dictionary<Vector3I, Color> wall_1)
+    Dictionary<Vector3I, Color> ground0,
+    Dictionary<Vector3I, Color> ground1,
+    Dictionary<Vector3I, Color> wall0,
+    Dictionary<Vector3I, Color> wall1)
 {
     public Color GetGroundColor0(Vector3I cellCoords)
     {
         EnsureRange(cellCoords,parent.Dimensions);
-        return ground_0[cellCoords];
+        return ground0[cellCoords];
     }
 
     public void SetGroundColor0(Vector3I cellCoords, Color value)
     {
         EnsureRange(cellCoords,parent.Dimensions);
-        ground_0[cellCoords] = value;
+        ground0[cellCoords] = value;
     }
 
     public void DrawGroundColor0(Vector3I cellCoords, Color value)
@@ -41,13 +41,13 @@ public class TerrainColorMaps(
     public Color GetGroundColor1(Vector3I cellCoords)
     {
         EnsureRange(cellCoords,parent.Dimensions);
-        return ground_1[cellCoords];
+        return ground1[cellCoords];
     }
 
     public void SetGroundColor1(Vector3I cellCoords, Color value)
     {
         EnsureRange(cellCoords,parent.Dimensions);
-        ground_1[cellCoords] = value;
+        ground1[cellCoords] = value;
     }
 
     public void DrawGroundColor1(Vector3I cellCoords, Color value)
@@ -60,13 +60,13 @@ public class TerrainColorMaps(
     public Color GetWallColor0(Vector3I cellCoords)
     {
         EnsureRange(cellCoords,parent.Dimensions);
-        return wall_0[cellCoords];
+        return wall0[cellCoords];
     }
 
     public void SetWallColor0(Vector3I cellCoords, Color value)
     {
         EnsureRange(cellCoords,parent.Dimensions);
-        wall_0[cellCoords] = value;
+        wall0[cellCoords] = value;
     }
 
     public void DrawWallColor0(Vector3I cellCoords, Color value)
@@ -79,7 +79,7 @@ public class TerrainColorMaps(
     public Color GetWallColor1(Vector3I cellCoords)
     {
         EnsureRange(cellCoords,parent.Dimensions);
-        return wall_1[cellCoords];
+        return wall1[cellCoords];
     }
 
     public void SetHeight(Vector3I cell, float yValue)
@@ -100,7 +100,7 @@ public class TerrainColorMaps(
     public void SetWallColor1(Vector3I cellCoords, Color value)
     {
         EnsureRange(cellCoords,parent.Dimensions);
-        wall_1[cellCoords] = value;
+        wall1[cellCoords] = value;
     }
 
     public void DrawWallColor1(Vector3I cellCoords, Color value)

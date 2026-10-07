@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using Godot;
-using Godot.Collections;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MathNet.Spatial.Euclidean;
 using Microsoft.Extensions.Logging;
 
-
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
 /// <summary>
 /// Utility class for handling the project-related IO operations
@@ -25,8 +23,8 @@ public abstract class MttDataHandler
     internal const string MetadataFilename = "metadata.tres";
     internal const string DataStructFilename = "datastruct.tres";
 
-    private static ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
-    private static ILogger logger = factory.CreateLogger("MttDataHandler");
+    private static readonly ILoggerFactory Factory = LoggerFactory.Create(builder => builder.AddConsole());
+    private static readonly ILogger Logger = Factory.CreateLogger("MttDataHandler");
 
     /// <summary>
     /// Generates a default storing directory and returns its path
@@ -39,7 +37,7 @@ public abstract class MttDataHandler
         }
 
         var rootNode = EngineUtils.GetRootNode(terrain);
-        if (rootNode == null || rootNode.SceneFilePath.Length == 0)
+        if (rootNode.SceneFilePath.Length == 0)
         {
             return "";
         }
@@ -99,14 +97,14 @@ public abstract class MttDataHandler
 
             if (needsSave)
             {
-                logger.LogInformation("Saving chunk resource {chunkCoords}.", chunk.Underlying.Coordinates);
+                Logger.LogInformation("Saving chunk resource {chunkCoords}.", chunk.Underlying.Coordinates);
                 SaveChunkResource(terrain, chunk);
                 chunk.Underlying.Dirty = false;
                 savedCount++;
             }
             else
             {
-                logger.LogInformation("Chunk resource {chunkCoords} skipped for saving.", chunk.Underlying.Coordinates);
+                Logger.LogInformation("Chunk resource {chunkCoords} skipped for saving.", chunk.Underlying.Coordinates);
             }
         }
 
@@ -131,7 +129,7 @@ public abstract class MttDataHandler
     }
 
     /// Cleans up orphaned chunk directories that no longer exist in the scene.
-    private static void CleanupOrphanedChunkDirectories(MarchingTrianglesTerrain terrain)
+    public static void CleanupOrphanedChunkDirectories(MarchingTrianglesTerrain terrain)
     {
         var dirPath = terrain.DataDirectory;
         if (dirPath.Length == 0)
@@ -235,7 +233,7 @@ public abstract class MttDataHandler
 
     /// Clean up terrain data directories for terrains that no longer exist in the saved scene.
     /// Called during save to prevent disk bloat from deleted terrains.
-    private static void CleanupOrphanedTerrainDirectories(MarchingTrianglesTerrain terrain)
+    public static void CleanupOrphanedTerrainDirectories(MarchingTrianglesTerrain terrain)
     {
         if (!terrain.IsInsideTree())
         {
@@ -243,7 +241,7 @@ public abstract class MttDataHandler
         }
 
         var rootOfScene = EngineUtils.GetRootNode(terrain);
-        if (rootOfScene == null || rootOfScene.SceneFilePath.Length == 0)
+        if (rootOfScene.SceneFilePath.Length == 0)
         {
             return;
         }
@@ -340,9 +338,9 @@ public abstract class MttDataHandler
     /// <summary>
     /// Recursively collect terrain data directories that happen to be children of the provided node .
     /// </summary>
-    private static System.Collections.Generic.Dictionary<string, List<MarchingTrianglesTerrain>>
+    private static Dictionary<string, List<MarchingTrianglesTerrain>>
         CollectTerrainDirsRecursive(
-            Node node, System.Collections.Generic.Dictionary<string, List<MarchingTrianglesTerrain>> dirs)
+            Node node, Dictionary<string, List<MarchingTrianglesTerrain>> dirs)
     {
         if (node is MarchingTrianglesTerrain terrain && terrain.DataDirectory.Length != 0)
         {
@@ -449,7 +447,7 @@ public abstract class MttDataHandler
             return;
         }
 
-        logger.LogInformation("Saved data: [Coords]{0}", dataTuple.Item1.ChunkCoords);
+        Logger.LogInformation("Saved data: [Coords]{0}", dataTuple.Item1.ChunkCoords);
     }
 
     /// <summary>
@@ -476,7 +474,7 @@ public abstract class MttDataHandler
         {
             foreach (var child in chunk.GetChildren())
             {
-                if (child is StaticBody3D body)
+                if (child is StaticBody3D)
                 {
                     foreach (var bodyChild in child.GetChildren())
                     {
@@ -490,7 +488,7 @@ public abstract class MttDataHandler
             }
         }
 
-        logger.LogInformation("Chunk data being exported : [Coords]{0}", chunk.Underlying.Coordinates);
+        Logger.LogInformation("Chunk data being exported : [Coords]{0}", chunk.Underlying.Coordinates);
         return new Tuple<MttChunkData, IChunkDataStruct>(data, dataStructImpl);
     }
 
@@ -500,7 +498,7 @@ public abstract class MttDataHandler
     /// </summary>
     private static bool ImportChunkData(
         GdPluginHexTerrainChunk chunk,
-        MttChunkData data, 
+        MttChunkData? data, 
         IChunkDataStruct dataStruct)
     {
         if (data == null)
@@ -513,17 +511,7 @@ public abstract class MttDataHandler
         chunk.Underlying.MergeMode = data.MergeMode;
 
         //Restore baked assets if they exist
-        if (data.Mesh != null)
-        {
-            chunk.Mesh = data.Mesh;
-        }
-        else if (chunk.GetParent() is MarchingTrianglesTerrain
-                 {
-                     StorageType: MarchingTrianglesTerrain.StorageMode.Baked
-                 })
-        {
-            GD.PushWarning("Baking enabled, but terrain resource does not contain mesh data.");
-        }
+        chunk.Mesh = data.Mesh;
 
         if (chunk.GetParent() is MarchingTrianglesTerrain { BakeCollision: true } && data.CollisionFaces.IsEmpty())
         {
@@ -566,7 +554,7 @@ public abstract class MttDataHandler
 
         // // -- Encoded DualGrid (Hexagonal grid)
         // //----------------------------------------
-        // // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
+        // // ----> IRegularUniformFrame (DoubleDeltaTiling) seeds
         chunk.TerrainDualGrid = HexagonGrid.BuildFromSerialData(
             dataStruct.HexFrameSeed1,
             dataStruct.HexFrameSeed2,
@@ -639,7 +627,7 @@ public abstract class MttDataHandler
         // //----------------------------------------
         // // ----> Grid Expected Size
         dataStruct.FrameDimensions = chunk.Dimensions;
-        // // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
+        // // ----> IRegularUniformFrame (DoubleDeltaTiling) seeds
         var seed1 = chunk.DataGrid.OrientationSystem.UnscaledOriginCellCentroidPositions[0];
         dataStruct.TriFrameSeed1 = [seed1.X, seed1.Y];
         var seed2 = chunk.DataGrid.OrientationSystem.UnscaledOriginCellCentroidPositions[1];
@@ -657,7 +645,7 @@ public abstract class MttDataHandler
 
         // // -- Encoded DualGrid (Hexagonal grid)
         // //----------------------------------------
-        // // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
+        // // ----> IRegularUniformFrame (DoubleDeltaTiling) seeds
         seed1 = chunk.TerrainDualGrid.Frame.UnscaledOriginCellCentroidPositions[0];
         dataStruct.HexFrameSeed1 = [seed1.X, seed1.Y];
         seed2 = ((HexTileOrientationSystem)chunk.TerrainDualGrid.Frame).InitialSeedVector;
@@ -797,6 +785,7 @@ public abstract class MttDataHandler
         }
 
         var chunkDirectory = dirPath.PathJoin($"{ChunkPrefix}{underlyingCoordinates.X}_{underlyingCoordinates.Y}");
+        // ReSharper disable once RedundantNameQualifier
         return Godot.FileAccess.FileExists(chunkDirectory.PathJoin(MetadataFilename));
     }
 
@@ -812,7 +801,7 @@ public abstract class MttDataHandler
 
         var sceneRoot = EngineUtils.GetRootNode(terrain);
         var dirs = CollectTerrainDirsRecursive(sceneRoot,
-            new System.Collections.Generic.Dictionary<string, List<MarchingTrianglesTerrain>>());
+            new Dictionary<string, List<MarchingTrianglesTerrain>>());
 
         var simplifiedPath = terrain.DataDirectory.SimplifyPath();
         if (!dirs.ContainsKey(simplifiedPath))
@@ -920,7 +909,7 @@ public abstract class MttDataHandler
         var exists = terrain.Chunks.TryGetValue(coords, out var chunk);
         if (!exists && !forceLoadFromDir )
         {
-            logger.LogInformation("Chunk " + coords + " not found in the terrain. Load from disk is aborted");
+            Logger.LogInformation("Chunk " + coords + " not found in the terrain. Load from disk is aborted");
             return false;
         }
 
@@ -948,17 +937,17 @@ public abstract class MttDataHandler
             }
             else
             {
-                logger.LogInformation("Loaded File " + metadataPath + " is not of the expected type.");
+                Logger.LogInformation("Loaded File " + metadataPath + " is not of the expected type.");
             }
         }
         else
         {
-            logger.LogInformation("File " + metadataPath + " does not exist.");
+            Logger.LogInformation("File " + metadataPath + " does not exist.");
         }
 
         if (success)
         {
-            logger.LogInformation("MttDataHandler : Loaded chunk " + coords);
+            Logger.LogInformation("MttDataHandler : Loaded chunk " + coords);
         }
 
         return success;
@@ -984,7 +973,7 @@ public abstract class MttDataHandler
 
         foreach (var chunk in terrain.Chunks.Values)
         {
-            if (chunk.Underlying.DataGrid != null && chunk.Underlying.DataGrid.Size > 0)
+            if (chunk.Underlying.DataGrid.Size > 0)
             {
                 if (!MetadataExists(dirPath, chunk.Underlying.Coordinates))
                 {

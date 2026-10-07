@@ -1,6 +1,6 @@
 using Godot;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
 /// <summary>
 /// ChunkDataStruct Implementation based on AutoProperties

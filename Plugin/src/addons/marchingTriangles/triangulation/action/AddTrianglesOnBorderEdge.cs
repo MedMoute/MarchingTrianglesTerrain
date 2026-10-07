@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
-using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
 
 /// <summary>
 /// Action that appends a triangle on an edge of the triangulation.

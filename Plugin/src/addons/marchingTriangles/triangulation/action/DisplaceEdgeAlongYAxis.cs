@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
 
 /// <summary>
 /// Action that Displaces a triangulation's edge along the Y axis.

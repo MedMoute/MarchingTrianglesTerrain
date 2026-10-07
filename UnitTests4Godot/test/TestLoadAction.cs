@@ -1,11 +1,10 @@
 using GdUnit4;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
-using static GdUnit4.Assertions;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 using NUnit.Framework;
+using static GdUnit4.Assertions;
 
-namespace UnitTests4Godot.test;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.test;
 
 [TestSuite]
 [RequireGodotRuntime]
@@ -13,19 +12,19 @@ namespace UnitTests4Godot.test;
 public class TestLoadAction
 {
     private MarchingTrianglesTerrainPlugin _plugin = null!;
-    private MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain _terrain = null!;
+    private MarchingTrianglesTerrain _terrain = null!;
 
     [BeforeTest]
     public void Setup()
     {
         _plugin = AddNode(new MarchingTrianglesTerrainPlugin());
-        _terrain = AddNode(new MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain());
+        _terrain = AddNode(new MarchingTrianglesTerrain());
     }
 
     [GdUnit4.TestCase]
     public void TestLoadOnSingleChunk()
     {       
-        AssertThat(_terrain!.Chunks.Count).IsEqual(0);
+        AssertThat(_terrain.Chunks.Count).IsEqual(0);
         Vector2I chunkCoord = Vector2I.One;
         _terrain.TerrainSettings.ChunkDimensions = new Vector2I(3, 3);
         _terrain.AddNewChunk(chunkCoord, _plugin ?? throw new InvalidOperationException());

@@ -1,8 +1,8 @@
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
-namespace UnitTests;
+namespace UnitTests.test;
 
 public class TestChunkSerialization
 {

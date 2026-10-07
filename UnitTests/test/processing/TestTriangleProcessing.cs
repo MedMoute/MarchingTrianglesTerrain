@@ -1,27 +1,28 @@
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Numerics;
-
-namespace UnitTests.processing;
+// ReSharper disable AccessToModifiedClosure
+// ReSharper disable UnusedVariable
+namespace UnitTests.test.processing;
 
 public class TestTriangleProcessing
 {
-    private HexagonalTerrainChunk? chunk;
+    private HexagonalTerrainChunk? _chunk;
 
-    private static int dimension = 5;
+    private static int _dimension = 5;
 
-    private float[][] src1 = new float[dimension][];
-    private float[][] src2 = new float[dimension][];
+    private float[][] _src1 = new float[_dimension][];
+    private float[][] _src2 = new float[_dimension][];
 
     [TearDown]
     public void TearDown()
     {
         //Reset source & dimension
-        src1 = new float[dimension][];
-        src2 = new float[dimension][];
-        dimension = 5;
-        chunk = null;
+        _src1 = new float[_dimension][];
+        _src2 = new float[_dimension][];
+        _dimension = 5;
+        _chunk = null;
     }
 
     /// <summary>
@@ -31,40 +32,40 @@ public class TestTriangleProcessing
     [Test]
     public void TestProcessingOfSimpleChunk([Values] GeometryMode geometryMode)
     {
-        dimension = 2;
-        src1 = new float[dimension][];
-        src2 = new float[dimension][];
+        _dimension = 2;
+        _src1 = new float[_dimension][];
+        _src2 = new float[_dimension][];
 
 
-        for (int i = 0; i < src1.Length; i++)
+        for (int i = 0; i < _src1.Length; i++)
         {
-            src1[i] = new float[dimension];
-            src2[i] = new float[dimension];
+            _src1[i] = new float[_dimension];
+            _src2[i] = new float[_dimension];
 
-            for (int j = 0; j < src1.Length; j++)
+            for (int j = 0; j < _src1.Length; j++)
             {
-                src1[i][j] = i * src1.Length + j;
-                src2[i][j] = i * src1.Length + j;
+                _src1[i][j] = i * _src1.Length + j;
+                _src2[i][j] = i * _src1.Length + j;
             }
         }
 
-        chunk = new HexagonalTerrainChunk(
+        _chunk = new HexagonalTerrainChunk(
             Vector2I.Zero,
-            dimension * Vector2I.One,
-            v => v is { X: 0, Y: 0 } ? chunk : null,
-            src1, src2)
+            _dimension * Vector2I.One,
+            v => v is { X: 0, Y: 0 } ? _chunk : null,
+            _src1, _src2)
         {
             DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode),
             DefaultThreshold = new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference)
         };
 
-        chunk.Dirty = true;
+        _chunk.Dirty = true;
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
 
-        Assert.That(chunk.TerrainDualGrid.CompleteCells, Has.Count.EqualTo(1));
+        Assert.That(_chunk.TerrainDualGrid.CompleteCells, Has.Count.EqualTo(1));
 
-        Assert.DoesNotThrow(() => { output = chunk.ProcessGeometry(); });
+        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(); });
 
 
         //Per cell manifold checks
@@ -80,12 +81,12 @@ public class TestTriangleProcessing
                     AssertIsTriangleListManifold(keyValuePair.Value);
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
                     //Check all heights are identical and equal to the cell avg
-                    keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight)));
+                    Assert.That(keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight))),Is.True);
                     break;
                 case GeometryMode.FlatHexagonsNoFans:
                     AssertIsTriangleListManifold(keyValuePair.Value);
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
-                    keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight)));
+                    Assert.That(keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight))),Is.True);
                     break;
                 case GeometryMode.FlatTrianglesNoFans:
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
@@ -102,8 +103,7 @@ public class TestTriangleProcessing
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6 + 12));
                     AssertIsTriangleListManifold(keyValuePair.Value);
                     break;
-                default:
-                    break;
+
             }
         }
 
@@ -127,21 +127,21 @@ public class TestTriangleProcessing
     [Test]
     public void TestProcessingOfFlatChunk([Values] GeometryMode geometryMode)
     {
-        chunk = new HexagonalTerrainChunk(
+        _chunk = new HexagonalTerrainChunk(
             Vector2I.Zero,
-            dimension * Vector2I.One,
-            v => v is { X: 0, Y: 0 } ? chunk : null,
-            src1, src2)
+            _dimension * Vector2I.One,
+            v => v is { X: 0, Y: 0 } ? _chunk : null,
+            _src1, _src2)
         {
             DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode),
             DefaultThreshold = new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference)
         };
 
-        chunk.Dirty = true;
+        _chunk.Dirty = true;
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
 
-        Assert.DoesNotThrow(() => { output = chunk.ProcessGeometry(); });
+        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(); });
 
 
         //Per cell manifold checks
@@ -159,32 +159,32 @@ public class TestTriangleProcessing
     [Test]
     public void TestProcessingOfChunk([Values] GeometryMode geometryMode)
     {
-        for (int i = 0; i < src1.Length; i++)
+        for (int i = 0; i < _src1.Length; i++)
         {
-            src1[i] = new float[dimension];
-            src2[i] = new float[dimension];
+            _src1[i] = new float[_dimension];
+            _src2[i] = new float[_dimension];
 
-            for (int j = 0; j < src1.Length; j++)
+            for (int j = 0; j < _src1.Length; j++)
             {
-                src1[i][j] = i * src1.Length + j;
-                src2[i][j] = 3 * (i * src1.Length + j);
+                _src1[i][j] = i * _src1.Length + j;
+                _src2[i][j] = 3 * (i * _src1.Length + j);
             }
         }
 
-        chunk = new HexagonalTerrainChunk(
+        _chunk = new HexagonalTerrainChunk(
             Vector2I.Zero,
-            dimension * Vector2I.One,
-            v => v is { X: 0, Y: 0 } ? chunk : null,
-            src1, src2)
+            _dimension * Vector2I.One,
+            v => v is { X: 0, Y: 0 } ? _chunk : null,
+            _src1, _src2)
         {
             DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode),
             DefaultThreshold =
                 new Tuple<float, ThresholdComputationMode>(0.5f, ThresholdComputationMode.HeightDifference)
         };
-        chunk.Dirty = true;
+        _chunk.Dirty = true;
 
-        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = chunk.ProcessGeometry();
-        Assert.DoesNotThrow(() => { output = chunk.ProcessGeometry(); });
+        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = _chunk.ProcessGeometry();
+        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(); });
 
         //Per cell manifold and value checks
         foreach (var keyValuePair in output)
@@ -221,7 +221,7 @@ public class TestTriangleProcessing
                     //Count the amount of neighbor cells : Each adds one triangle to the final triangulation 
 
                     //we extract the actually existing neighbor cells
-                    var neighborCellEdges = chunk.GetHexCells(c => c.IsReady() && c.GetNeighborCellsCoordinates()
+                    var neighborCellEdges = _chunk.GetHexCells(c => c.IsReady() && c.GetNeighborCellsCoordinates()
                             .Any(cIdx => curCell.CellCoords == cIdx)).ToList();
 
                     int additionalTriangles = neighborCellEdges.Count;
@@ -243,19 +243,16 @@ public class TestTriangleProcessing
 
     private static (Dictionary<float[], int> dico,
         List<float[]> borderEdgesAsSets,
-        List<float[]>manifoldBorderEdgesAsSets) ReprocessEdgeGeometry(List<HexTerrainCell.TriangleInfo> outputTriangles,
-            List<HexTerrainCell.TriangleInfo>? baseTriangles = null)
+        List<float[]>manifoldBorderEdgesAsSets) ReprocessEdgeGeometry(List<HexTerrainCell.TriangleInfo> outputTriangles)
     {
         var dico = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
         var borderEdgesAsSets = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
 
         var vertexSet = new SortedSet<Vector3>(new V3Comp());
-        var z = 0;
         foreach (var tInfo in outputTriangles)
         {
             foreach (var edge in tInfo.GetEdges())
             {
-                z++;
                 var set = new SortedSet<Vector3>(new V3Comp());
                 vertexSet.Add(edge.Item1);
                 vertexSet.Add(edge.Item2);
@@ -324,7 +321,8 @@ public class TestTriangleProcessing
         });
 
         //Check that there is as many vertices as there are edges
-        var borderVertices = borderVerticesEnumerable.Distinct().ToList();
+        var verticesEnumerable = borderVerticesEnumerable as Vector3[] ?? borderVerticesEnumerable.ToArray();
+        var borderVertices = verticesEnumerable.Distinct().ToList();
 
         var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedTupleComparer.Instance);
         setOfBorders.ForEach(e =>
@@ -401,7 +399,7 @@ public class TestTriangleProcessing
         }
 
         //Check that there every vertex is present twice
-        var vertexList = borderVerticesEnumerable.ToList();
+        var vertexList = verticesEnumerable.ToList();
         foreach (var v in borderVertices)
         {
             var vertexOccurenceCount = vertexList.FindAll(vec => vec.IsEqualApprox(v)).Count;
@@ -447,10 +445,10 @@ public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
 {
     internal FloatArrayComparer(double epsilon)
     {
-        this.epsilon = epsilon;
+        this._epsilon = epsilon;
     }
 
-    private double epsilon;
+    private double _epsilon;
 
     public bool Equals(float[]? x, float[]? y)
     {
@@ -459,7 +457,7 @@ public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
             return false;
         for (int i = 0; i < x.Length; i++)
         {
-            if (Math.Abs(x[i] - y[i]) > epsilon)
+            if (Math.Abs(x[i] - y[i]) > _epsilon)
             {
                 return false;
             }

@@ -1,6 +1,6 @@
 using Godot;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 /// <summary>
 /// IChunkDataSource implementation using a delegate pattern : relying on an underlying implementation. 
 /// </summary>
@@ -27,7 +27,7 @@ public partial class DelegatedChunkDataStruct(IChunkDataStruct underlying) : Res
         set => underlying.FrameDimensions = value;
     }
 
-    // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
+    // ----> IRegularUniformFrame (DoubleDeltaTiling) seeds
     [Export]
     public double[] TriFrameSeed1
     {
@@ -52,7 +52,7 @@ public partial class DelegatedChunkDataStruct(IChunkDataStruct underlying) : Res
 
     // -- Encoded DualGrid (Hexagonal grid)
     //----------------------------------------
-    // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
+    // ----> IRegularUniformFrame (DoubleDeltaTiling) seeds
     [Export]
     public double[] HexFrameSeed1
     {

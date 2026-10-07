@@ -2,7 +2,7 @@ using System;
 using Godot;
 using MathNet.Spatial.Euclidean;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 
 public static class BrushPatternCalculator
 {
@@ -86,13 +86,13 @@ public static class BrushPatternCalculator
         BrushBounds brushBounds,
         MarchingTrianglesTerrain terrain)
     {
-        var xMin = chunkCoords.X == brushBounds.ChunkAABB.Item1.X ? brushBounds.CellAABB.Item1.X : 0;
-        var xMax = chunkCoords.X == brushBounds.ChunkAABB.Item2.X
-            ? brushBounds.CellAABB.Item2.X
+        var xMin = chunkCoords.X == brushBounds.ChunkAabb.Item1.X ? brushBounds.CellAabb.Item1.X : 0;
+        var xMax = chunkCoords.X == brushBounds.ChunkAabb.Item2.X
+            ? brushBounds.CellAabb.Item2.X
             : terrain.TerrainSettings.ChunkDimensions.X - 1;
-        var zMin = chunkCoords.Y == brushBounds.ChunkAABB.Item1.Y ? brushBounds.CellAABB.Item1.Y : 0;
-        var zMax = chunkCoords.Y == brushBounds.ChunkAABB.Item2.Y
-            ? brushBounds.CellAABB.Item2.Y
+        var zMin = chunkCoords.Y == brushBounds.ChunkAabb.Item1.Y ? brushBounds.CellAabb.Item1.Y : 0;
+        var zMax = chunkCoords.Y == brushBounds.ChunkAabb.Item2.Y
+            ? brushBounds.CellAabb.Item2.Y
             : terrain.TerrainSettings.ChunkDimensions.Y - 1;
         return new Tuple<Vector2I, Vector2I>(new Vector2I(xMin, zMin), new Vector2I(xMax, zMax));
     }
@@ -149,4 +149,4 @@ public static class BrushPatternCalculator
 
 ///Brush bounds in the triangular grid space
 /// Each tuple entry corresponds respectively to the Top-Left and Bottom-Right coordinates for the entry. 
-public record BrushBounds(Tuple<Vector2I, Vector2I> ChunkAABB, Tuple<Vector2I, Vector2I> CellAABB);
+public record BrushBounds(Tuple<Vector2I, Vector2I> ChunkAabb, Tuple<Vector2I, Vector2I> CellAabb);

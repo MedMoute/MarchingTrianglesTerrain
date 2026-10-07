@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Text;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.ui;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Spatial.Euclidean;
-using Microsoft.VisualBasic.CompilerServices;
+using MarchingTrianglesTerrainUi = MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui.MarchingTrianglesTerrainUi;
+using TerrainSettings = MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.TerrainSettings;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.gizmo;
 
@@ -16,7 +16,7 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
     /// <summary>
     /// Flag for debug print.
     /// </summary>
-    private bool _verbose = false;
+    private bool _verbose ;
 
     private readonly List<Vector3> _lines = new();
 
@@ -405,11 +405,11 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
             (float)_terrainPlugin.ToolAttributes.BrushSize,
             _terrainPlugin.CurTerrainNode);
         sb.Append(" | B. chk BBOX : Min="
-                  + brushBounds.ChunkAABB.Item1 + " Max="
-                  + brushBounds.ChunkAABB.Item2 +
+                  + brushBounds.ChunkAabb.Item1 + " Max="
+                  + brushBounds.ChunkAabb.Item2 +
                   " | B. cel BBOX : Min="
-                  + brushBounds.CellAABB.Item1 + " Max="
-                  + brushBounds.CellAABB.Item2);
+                  + brushBounds.CellAabb.Item1 + " Max="
+                  + brushBounds.CellAabb.Item2);
 
         var maxSqDistance = BrushPatternCalculator.CalculateMaxSqDistance(
             (float)_terrainPlugin.ToolAttributes.BrushSize,
@@ -424,9 +424,9 @@ public partial class MarchingTrianglesTerrainGizmo : EditorNode3DGizmo
 
         Vector2 brushPos = new Vector2(pos.X, pos.Z);
         int cellCount = 0;
-        for (int chunkZ = brushBounds.ChunkAABB.Item1.Y; chunkZ <= brushBounds.ChunkAABB.Item2.Y; chunkZ++)
+        for (int chunkZ = brushBounds.ChunkAabb.Item1.Y; chunkZ <= brushBounds.ChunkAabb.Item2.Y; chunkZ++)
         {
-            for (int chunkX = brushBounds.ChunkAABB.Item1.X; chunkX <= brushBounds.ChunkAABB.Item2.X; chunkX++)
+            for (int chunkX = brushBounds.ChunkAabb.Item1.X; chunkX <= brushBounds.ChunkAabb.Item2.X; chunkX++)
             {
                 Vector2I chunkCoords = new Vector2I(chunkX, chunkZ);
                 if (!terrain.Chunks.TryGetValue(chunkCoords, out var chunk))

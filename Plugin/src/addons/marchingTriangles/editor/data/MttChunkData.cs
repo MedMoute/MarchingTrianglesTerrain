@@ -1,8 +1,7 @@
 using Godot;
 using Godot.Collections;
-using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
 /// <summary>
 /// Resource -based class used for the serialization of a Chunk's metadata
@@ -51,5 +50,5 @@ public partial class MttChunkData : Resource
 /// </summary>
 public enum DataContent
 {
-    V1_STRUCT
+    V1Struct
 }

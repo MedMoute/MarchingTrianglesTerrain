@@ -1,10 +1,9 @@
-using System.Collections.Generic;
-using System.Linq;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
-using NUnit.Framework;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
-namespace UnitTests;
+// ReSharper disable AccessToModifiedClosure
+// ReSharper disable UnusedVariable
+namespace UnitTests.test;
 
 public class TestHexTerrainChunk
 {

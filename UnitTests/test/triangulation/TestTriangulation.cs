@@ -1,16 +1,17 @@
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
+// ReSharper disable UnusedVariable
 
-namespace UnitTests.triangulation;
+namespace UnitTests.test.triangulation;
 
 /// <summary>
 /// Tests on a basic triangulation
 /// </summary>
 public class TestTriangulation
 {
-    private Vector3 A = Vector3.Up;
-    private Vector3 B = Vector3.Back;
-    private Vector3 C = Vector3.Right;
+    private static readonly Vector3 A = Vector3.Up;
+    private static readonly Vector3 B = Vector3.Back;
+    private static readonly Vector3 C = Vector3.Right;
 
     [Test]
     public void TestCanCreateTriangulation()

@@ -1,19 +1,17 @@
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
-using NUnit.Framework.Internal;
 
-namespace UnitTests.triangulation;
+namespace UnitTests.test.triangulation;
 
 internal class TestMultipleActions
 {
-    private static Vector3 A = Vector3.Up;
-    private static Vector3 B = Vector3.Back;
-    private static Vector3 C = Vector3.Right;
-    private Vector3[] tri = [A, B, C];
+    private static readonly Vector3 A = Vector3.Up;
+    private static readonly Vector3 B = Vector3.Back;
+    private static readonly Vector3 C = Vector3.Right;
+    private readonly Vector3[] _tri = [A, B, C];
 
-    private Triangulation t;
+    private Triangulation _t;
 
     private static readonly Func<Triangulation, ITriangulationEditAction<int>> Displace0 = _ =>
         new DisplaceEdgeAlongYAxis(0, 30, 200);
@@ -40,23 +38,15 @@ internal class TestMultipleActions
             .Count(p => !p.IsEqualApprox(A) && !p.IsEqualApprox(B) && !p.IsEqualApprox(C)) == 1) ? 1 : 3
         , 0.5f);
 
-    private static readonly Func<Triangulation, ITriangulationEditAction<int>> AddTriOnEdge0 = t =>
-        new AddTrianglesOnBorderEdge(
-            0,
-            new Vector3(
-                A.X,
-                t.ToTriangleInfoList().Count == 1 ? 5 : 8,
-                A.Z));
-
 
     internal class TestData
     {
-        internal readonly Func<Triangulation, ITriangulationEditAction<int>> _action;
+        internal readonly Func<Triangulation, ITriangulationEditAction<int>> Action;
         private readonly string _className;
 
         internal TestData(Func<Triangulation, ITriangulationEditAction<int>> action, string className)
         {
-            _action = action;
+            Action = action;
             _className = className;
         }
 
@@ -66,7 +56,7 @@ internal class TestMultipleActions
         }
     }
 
-    protected static List<TestData> _actionList =
+    protected static List<TestData> ActionList =
     [
         new(Displace0, nameof(DisplaceEdgeAlongYAxis)),
         new(MovePoint0, nameof(MovePointAlongYAxisAction)),
@@ -80,18 +70,18 @@ internal class TestMultipleActions
     [SetUp]
     public void Setup()
     {
-        t = new Triangulation([A, B, C], false, true);
+        _t = new Triangulation(_tri, false, true);
     }
 
     [Test]
     public void TestCanApplyAnyTypeOfActionOnSameEdge(
-        [ValueSource(nameof(_actionList))] TestData action1,
-        [ValueSource(nameof(_actionList))] TestData action2)
+        [ValueSource(nameof(ActionList))] TestData action1,
+        [ValueSource(nameof(ActionList))] TestData action2)
     {
         Assert.DoesNotThrow(() =>
         {
-            action1._action(t).Apply(t);
-            action2._action(t).Apply(t);
+            action1.Action(_t).Apply(_t);
+            action2.Action(_t).Apply(_t);
         });
     }
 }

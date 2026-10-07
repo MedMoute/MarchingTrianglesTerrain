@@ -1,6 +1,6 @@
 using GdUnit4;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 using NUnit.Framework;
 using FileAccess = Godot.FileAccess;
 

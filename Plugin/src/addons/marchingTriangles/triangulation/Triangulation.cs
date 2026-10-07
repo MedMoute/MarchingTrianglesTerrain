@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Godot;
-using static MarchingTrianglesTerrain.addons.marchingTriangles.utils.EngineUtils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
+using static MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.EngineUtils;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
 /// <summary>
 /// Representation of the result of applying various "warping" operations to a triangle in 3D space.
@@ -52,9 +53,7 @@ public class Triangulation
     /// Position of the initial triangle's vertices.
     /// </summary>
     internal ImmutableArray<Vector3> SourceTriangle;
-
-    internal Dictionary<string, object>? _additionalHints;
-
+    
     private readonly bool _verbose;
     private readonly bool _extensiveVerification;
 
@@ -62,8 +61,7 @@ public class Triangulation
     public Triangulation(
         Vector3[] triangle,
         bool verbose = false,
-        bool extensiveVerification = false,
-        Dictionary<string, object>? additionalHints = null)
+        bool extensiveVerification = false)
     {
         if (triangle.Length != 3)
         {
@@ -78,7 +76,6 @@ public class Triangulation
         }
 
         SourceTriangle = [.. triangle];
-        _additionalHints = additionalHints;
         _verbose = verbose;
         _extensiveVerification = extensiveVerification;
         for (int i = 0; i < 3; i++)

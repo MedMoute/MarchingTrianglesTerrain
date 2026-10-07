@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
 [GlobalClass]
+// ReSharper disable once Godot.MissingParameterlessConstructor : code-only instantiated object
 public partial class GdPluginHexTerrainChunk : MeshInstance3D
 {
     public HexagonalTerrainChunk Underlying { get; }
@@ -65,7 +69,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
         if (regenerateMesh)
         {
-            GenerateTerrainMesh(true);
+            GenerateTerrainMesh();
         }
 
         if (Mesh != null && GetParent() is MarchingTrianglesTerrain terrain)
@@ -281,7 +285,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     }
 
     private void CopyToMesh(
-        System.Collections.Generic.Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> trianglesPerCell,
+        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> trianglesPerCell,
         ChunkConformalEditor chunkConformalEditor)
     {
         foreach (var cellularTriangulation in trianglesPerCell)

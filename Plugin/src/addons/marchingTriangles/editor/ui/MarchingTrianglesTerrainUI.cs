@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui;
 
 /// <summary>
 /// Component handling the Godot Editor's display of the plugin.
@@ -53,12 +53,6 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         if (!Engine.IsEditorHint())
         {
             GD.PushError("Attempting to load the plugin UI during game runtime.");
-            return;
-        }
-
-        if (Plugin == null)
-        {
-            GD.PushError("Plugin is not available.");
             return;
         }
 

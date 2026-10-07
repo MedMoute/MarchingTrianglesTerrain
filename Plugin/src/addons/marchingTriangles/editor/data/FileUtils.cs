@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
 /// <summary>
 /// Utility class for File and IO related operations.
@@ -36,6 +36,7 @@ internal static class FileUtils
             }
             else
             {
+                // ReSharper disable once RedundantNameQualifier
                 totalSize += Godot.FileAccess.GetFileAsBytes(nextPath).Length;
             }
 

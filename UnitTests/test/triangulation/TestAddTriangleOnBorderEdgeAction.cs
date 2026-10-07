@@ -1,21 +1,23 @@
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
+// ReSharper disable UnusedVariable
 
-namespace UnitTests.triangulation;
+namespace UnitTests.test.triangulation;
 
 public class TestAddTriangleOnBorderEdgeAction
 {
-    private static Vector3 A = Vector3.Up;
-    private static Vector3 B = Vector3.Back;
-    private static Vector3 C = Vector3.Right;
-    private Vector3[] tri = [A, B, C];
+    private static readonly Vector3 A = Vector3.Up;
+    private static readonly Vector3 B = Vector3.Back;
+    private static readonly Vector3 C = Vector3.Right;
+    private readonly Vector3[] _tri = [A, B, C];
 
-    private Triangulation t;
+    private Triangulation _t;
 
     [SetUp]
     public void Setup()
     {
-        t = new Triangulation([A, B, C], false, true);
+        _t = new Triangulation([A, B, C], false, true);
     }
 
     [Test]
@@ -36,15 +38,15 @@ public class TestAddTriangleOnBorderEdgeAction
     [Test]
     public void TestCanApplyAddTriangleAction()
     {
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(1));
 
         Assert.DoesNotThrow(() =>
         {
             var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
-            action.Apply(t);
+            action.Apply(_t);
         });
 
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(2));
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(2));
 
         //Invalid edge
         var e = Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -58,14 +60,14 @@ public class TestAddTriangleOnBorderEdgeAction
     public void TestCanApplyAddTriangleActionOnSplitEdge()
     {
         var action = new SplitSubEdgeAction(0, 0, 1, 0.5f);
-        action.Apply(t);
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(2));
+        action.Apply(_t);
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(2));
         Assert.DoesNotThrow(() =>
         {
-            var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
-            action.Apply(t);
+            var action2 = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
+            action2.Apply(_t);
         });
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(3));
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(3));
     }
 
     [Test]
@@ -75,42 +77,42 @@ public class TestAddTriangleOnBorderEdgeAction
         {
             for (int i = 0; i < 3; i++)
             {
-                var action = new AddTrianglesOnBorderEdge(i, new Vector3(tri[i].X, tri[i].Y + 10, tri[i].Z));
-                action.Apply(t);
+                var action = new AddTrianglesOnBorderEdge(i, new Vector3(_tri[i].X, _tri[i].Y + 10, _tri[i].Z));
+                action.Apply(_t);
             }
         });
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(4));
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(4));
 
     }
 
     [Test]
     public void TestCanApplyAddSameTriangleActionTwiceAsNoop()
     {
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(1));
 
        Assert.DoesNotThrow(() =>
         {
             var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
-            action.Apply(t);
+            action.Apply(_t);
             action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
-            action.Apply(t);
+            action.Apply(_t);
         });
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(2));
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(2));
 
     }
     [Test]
     public void TestCanApplyAddDiffTriangleActionTwice()
     {
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(1));
 
         Assert.DoesNotThrow(() =>
         {
             var action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 10, A.Z));
-            action.Apply(t);
+            action.Apply(_t);
             action = new AddTrianglesOnBorderEdge(0, new Vector3(A.X, A.Y + 20, A.Z));
-            action.Apply(t);
+            action.Apply(_t);
         });
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(3));
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(3));
 
     }
 }

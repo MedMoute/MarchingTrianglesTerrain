@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui;
 
 public class MarchingTrianglesToolbox
 {

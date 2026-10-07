@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
-using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Spatial.Euclidean;
-using static MarchingTrianglesTerrain.addons.marchingTriangles.utils.EngineUtils;
+using static MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.EngineUtils;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
 public class HexTerrainCell
 {
@@ -74,7 +73,7 @@ public class HexTerrainCell
     /// <summary>
     ///  The underlying frame used for coordinates computations
     /// </summary>
-    private readonly RegularUniformFrame _orientationSystem;
+    private readonly IRegularUniformFrame _orientationSystem;
 
 
     /// <summary>
@@ -127,8 +126,8 @@ public class HexTerrainCell
 
     public HexTerrainCell(
         Vector2I cellCoordsImpl,
-        RegularUniformFrame orientationSystem,
-        RegularUniformFrame dualFrame)
+        IRegularUniformFrame orientationSystem,
+        IRegularUniformFrame dualFrame)
     {
         CellCoordsImplicit = cellCoordsImpl;
         _orientationSystem = orientationSystem;
@@ -171,7 +170,7 @@ public class HexTerrainCell
             throw new ArgumentException("The two cells are the same.");
         }
 
-        if (cell._orientationSystem! != _orientationSystem)
+        if (!ReferenceEquals(cell._orientationSystem, _orientationSystem))
         {
             throw new ArgumentException("The two cells are defined in a different frame and thus are not comparable");
         }
@@ -291,28 +290,6 @@ public class HexTerrainCell
         );
         return string.Format("{0} (Centered in {2})\n     Points : {1}", CellCoordsImplicit, sb,
             TerrainToolPluginHelper.FormatVector2(CenterPosition));
-    }
-
-    private (Vector3[] tri, int Mask) ComputeTriangleAndMask(
-        int i, Dictionary<Vector2D,
-            float> dataArray,
-        HexagonalTerrainChunk chunk)
-    {
-        var center = CenterPosition;
-        var posB = VertexPositionsInPlane[i];
-        int index = (i + 1) % 6;
-        var posC = VertexPositionsInPlane[index];
-
-        var a = new Vector3((float)center.X, AverageHeight, (float)center.Y);
-        var b = new Vector3((float)posB.X, dataArray[posB], (float)posB.Y);
-        var c = new Vector3((float)posC.X, dataArray[posC], (float)posC.Y);
-
-        Vector3[] tri = [a, b, c];
-
-        int mask = (Math.Abs(a.Y - c.Y) > chunk.MergeThreshold ? 1 : 0) * 4 +
-                   (Math.Abs(b.Y - c.Y) > chunk.MergeThreshold ? 1 : 0) * 2 +
-                   (Math.Abs(a.Y - b.Y) > chunk.MergeThreshold ? 1 : 0) * 1;
-        return (tri, mask);
     }
 
     internal void ProcessTrianglesIntoPoints(

@@ -4,18 +4,19 @@ using System.Linq;
 using System.Text;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.gizmo;
-using MarchingTrianglesTerrain.addons.marchingTriangles.ui;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Spatial.Euclidean;
+using MarchingTrianglesTerrainUi = MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui.MarchingTrianglesTerrainUi;
 using Plane = Godot.Plane;
+using TerrainSettings = MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.TerrainSettings;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor;
 
 public class TerrainToolPluginHelper
 {
     private readonly MarchingTrianglesPhysicsDelegate _physicsDelegate;
 
-    public TerrainToolAttributes _toolAttributes;
+    public TerrainToolAttributes ToolAttributes;
 
     private readonly MarchingTrianglesGizmoPlugin _gizmoPlugin;
 
@@ -44,7 +45,7 @@ public class TerrainToolPluginHelper
         {
             _currentSelectedChunk = value;
             _ui.UiToolAttributes.SelectedChunk = value;
-            _toolAttributes.SelectedChunk = value == null ? Vector2I.Zero : value.Underlying.Coordinates;
+            ToolAttributes.SelectedChunk = value == null ? Vector2I.Zero : value.Underlying.Coordinates;
         }
     }
 
@@ -80,7 +81,7 @@ public class TerrainToolPluginHelper
         MarchingTrianglesTerrainPlugin parent)
     {
         _physicsDelegate = physicsDelegate;
-        _toolAttributes = attributes;
+        ToolAttributes = attributes;
         _gizmoPlugin = gizmoPlugin;
         _ui = ui;
         _parent = parent;
@@ -146,30 +147,30 @@ public class TerrainToolPluginHelper
                 // Prepare bridge building
                 if (terrainToolMode == TerrainToolMode.Bridge && !BridgeBuilding)
                 {
-                    _toolAttributes.Flatten = false;
+                    ToolAttributes.Flatten = false;
                     BridgeBuilding = true;
-                    _toolAttributes.BridgeStartPos = BrushPosition;
+                    ToolAttributes.BridgeStartPos = BrushPosition;
                 }
 
                 // Forcing Falloff values when needed
-                if (terrainToolMode == TerrainToolMode.Smooth && !_toolAttributes.Falloff)
+                if (terrainToolMode == TerrainToolMode.Smooth && !ToolAttributes.Falloff)
                 {
                     // Force falloff when smoothing
-                    _toolAttributes.Falloff = true;
+                    ToolAttributes.Falloff = true;
                 }
 
-                if (terrainToolMode == TerrainToolMode.DebugBrush && _toolAttributes.Falloff)
+                if (terrainToolMode == TerrainToolMode.DebugBrush && ToolAttributes.Falloff)
                 {
                     // Disable falloff when debugging (Apply to GrassMask as well)
-                    _toolAttributes.Falloff = false;
+                    ToolAttributes.Falloff = false;
                 }
 
                 // Forcing Flatten values when needed
                 if (terrainToolMode is TerrainToolMode.DebugBrush
-                    && _toolAttributes.Flatten)
+                    && ToolAttributes.Flatten)
                 {
                     // Disable flatten when painting vertices or debugging
-                    _toolAttributes.Flatten = false;
+                    ToolAttributes.Flatten = false;
                 }
 
                 if (terrainToolMode is TerrainToolMode.Level && Input.IsKeyPressed(Key.Ctrl))
@@ -188,7 +189,7 @@ public class TerrainToolPluginHelper
                 else
                 {
                     HeightDragging = true;
-                    if (!_toolAttributes.Flatten)
+                    if (!ToolAttributes.Flatten)
                     {
                         if (drawPosition != null)
                         {
@@ -354,7 +355,7 @@ public class TerrainToolPluginHelper
             {
                 var localRayNormal = mouseRayNormal * terrainNode.Transform;
                 Plane setPlane = new Plane(new Vector3(localRayNormal.X, 0, localRayNormal.Z),
-                    _toolAttributes.DragBasePosition);
+                    ToolAttributes.DragBasePosition);
                 Vector3? setPosition = setPlane.IntersectsRay(terrainNode.ToLocal(mouseRayOrigin), localRayNormal);
                 if (setPosition.HasValue)
                 {
@@ -362,7 +363,7 @@ public class TerrainToolPluginHelper
                 }
             }
             // If the pattern is currently not empty and flatten mode ENABLED
-            else if (_toolAttributes.Flatten && CurrentDrawPattern.Count > 0)
+            else if (ToolAttributes.Flatten && CurrentDrawPattern.Count > 0)
             {
                 chunkPlane = new Plane(Vector3.Up, new Vector3(0, DrawHeight, 0));
                 drawPosition = chunkPlane.IntersectsRay(mouseRayOrigin, mouseRayNormal);
@@ -527,10 +528,12 @@ public class TerrainToolPluginHelper
         // WARNING : We're relying on godot's dictionaries from now on
         // This is due to the fact that the Undo-Redo manager needs Variant compatible types (Godot's dictionary is one)
         var pattern = new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>();
-        var patternCellCoords =
-            new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Vector2I>>();
+        // ReSharper disable once CollectionNeverQueried.Local
+        Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Vector2I>> patternCellCoords =
+            new ();
         var restorePattern =
             new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>();
+        // ReSharper disable once CollectionNeverQueried.Local
         var restorePatternCellCoords =
             new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Vector2I>>();
         
@@ -620,32 +623,20 @@ public class TerrainToolPluginHelper
             }
 
             bool isQuickPaint = false; //TODO Not supported
-            var doPatternVariant =
-                new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
-                    Godot.Collections.Dictionary<Vector3I, Variant>>>();
-            var undoPatternVariant =
-                new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
-                    Godot.Collections.Dictionary<Vector3I, Variant>>>();
 
             if (isQuickPaint)
             {
-                ProcessQuickPaintBrushPattern(
-                    node,
-                    pattern, restorePattern, out var doPattern, out var undoPattern);
-                doPatternVariant = doPattern;
-                undoPatternVariant = undoPattern;
+                throw new NotImplementedException();
             }
-            else
-            {
-                ProcessBrushPattern(
-                    _parent.SelectedMode,
-                    pattern,
-                    restorePattern,
-                    out var doPattern,
-                    out var undoPattern);
-                doPatternVariant = doPattern;
-                undoPatternVariant = undoPattern;
-            }
+
+            ProcessBrushPattern(
+                _parent.SelectedMode,
+                pattern,
+                restorePattern,
+                out var doPattern,
+                out var undoPattern);
+            var doPatternVariant = doPattern;
+            var undoPatternVariant = undoPattern;
 
             // Use delegate method since "this" helper is not a Godot object (but the plugin itself is)
             undoRedoManager.CreateAction("Terrain height draw" + (isQuickPaint ? " with quick paint brush" : ""));
@@ -661,28 +652,6 @@ public class TerrainToolPluginHelper
         }
     }
 
-
-    private void ProcessQuickPaintBrushPattern(
-        Node3D node,
-        Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> pattern,
-        Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> restorePattern,
-        out Godot.Collections.Dictionary<
-            string,
-            Godot.Collections.Dictionary<
-                Vector2I,
-                Godot.Collections.Dictionary<
-                    Vector3I,
-                    Variant>>> doPattern,
-        out Godot.Collections.Dictionary<
-            string,
-            Godot.Collections.Dictionary<
-                Vector2I,
-                Godot.Collections.Dictionary<
-                    Vector3I,
-                    Variant>>> undoPattern)
-    {
-        throw new NotImplementedException();
-    }
 
     /// <summary>
     /// NON-QUICK PAINT MODE: Apply height + default wall texture
@@ -804,6 +773,6 @@ public class TerrainToolPluginHelper
             return val.Value;
         }
 
-        throw new System.NotImplementedException();
+        throw new NotImplementedException();
     }
 }

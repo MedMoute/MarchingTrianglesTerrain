@@ -1,9 +1,11 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Godot;
 using Godot.Collections;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.gizmo;
-using MarchingTrianglesTerrain.addons.marchingTriangles.ui;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrainUi = MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui.MarchingTrianglesTerrainUi;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
@@ -268,6 +270,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         return (int)AfterGuiInput.Pass;
     }
 
+    [SuppressMessage("ReSharper", "RedundantNameQualifier")]
     public void DelegateCompositePatternAction(MarchingTrianglesTerrain terrain,
         Godot.Collections.Dictionary<
             string,

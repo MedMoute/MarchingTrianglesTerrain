@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
 public class VertexConformalGeometryEdit
 {
@@ -123,7 +122,7 @@ public class VertexConformalGeometryEdit
 
 public class CopyOnlyGeometryEdit : VertexConformalGeometryEdit
 {
-    public CopyOnlyGeometryEdit(Vector3I _, HexagonalTerrainChunk _1)
+    public CopyOnlyGeometryEdit()
     {
         throw new NotImplementedException();
     }

@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Spatial.Euclidean;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
 public class ChunkConformalEditor
 {
@@ -157,6 +158,7 @@ public class ChunkConformalEditor
         }
     }
 
+    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
     private void ComputeCellCenterGeometryActions(HexTerrainCell hexTerrainCell, bool copyOnly = false)
     {
         if (copyOnly)
@@ -197,6 +199,7 @@ public class ChunkConformalEditor
         edit.RegisterLocalVertexAction(appliedGeometryOperations, appliedTriangulations);
     }
 
+    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
     private void ComputeVertexGeometryActions(Vector3I coords, bool copyOnly = false)
     {
         if (copyOnly)
@@ -288,7 +291,7 @@ public class ChunkConformalEditor
             var requestedGeometryMode =
                 neighborCells[localVertexIndexing[i].Item1].GeometryModesOverride ?? chunkGeometryMode;
             requestedGeometryOperation.Add(localVertexIndexing[i].Item1,
-                (thresholdMask ^ (1 << i)) == 0 ? requestedGeometryMode!.Item1 : requestedGeometryMode.Item2);
+                (thresholdMask ^ (1 << i)) == 0 ? requestedGeometryMode.Item1 : requestedGeometryMode.Item2);
         }
 
         // Now that we know which operations are requested by each cell, we check if there are incompatibilities
@@ -324,25 +327,16 @@ public class ChunkConformalEditor
             Dictionary<Vector2I, GeometryMode> requestedGeometryOperation,
             IEnumerable<ValueTuple<int, HexTerrainCell>> neighborCells)
     {
-        Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations = new();
-        int level = int.MaxValue;
+        var cellAndVertexIndices = neighborCells as (int, HexTerrainCell)[] ?? neighborCells.ToArray();
+        int level = cellAndVertexIndices.Select(
+                cellAndVertexIndex => (int)requestedGeometryOperation[cellAndVertexIndex.Item2.CellCoordsImplicit])
+            .Prepend(int.MaxValue)
+            .Min();
 
-
-        foreach (var cellAndVertexIndex in neighborCells)
-        {
-            if ((int)requestedGeometryOperation[cellAndVertexIndex.Item2.CellCoordsImplicit] < level)
-            {
-                level = (int)requestedGeometryOperation[cellAndVertexIndex.Item2.CellCoordsImplicit];
-            }
-        }
-
-        foreach (var cellAndVertexIndex in neighborCells)
-        {
-            appliedGeometryOperations.Add(cellAndVertexIndex,
-                new Tuple<GeometryMode, GeometryMode?>((GeometryMode)level, (GeometryMode)level));
-        }
-
-        return appliedGeometryOperations;
+        return cellAndVertexIndices.ToDictionary(
+            cellAndVertexIndex => cellAndVertexIndex, _ => new Tuple<GeometryMode, GeometryMode?>(
+                (GeometryMode)level, 
+                (GeometryMode)level));
     }
 
     private static int ComputeLocalMask(

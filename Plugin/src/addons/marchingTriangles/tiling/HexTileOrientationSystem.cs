@@ -1,6 +1,6 @@
 using System;
-using System.Text;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using MathNet.Spatial.Euclidean;
@@ -14,7 +14,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 /// <summary>
 /// Uniform frame of the Euclidean plane creating a hexagonal tiling.
 /// </summary>
-public class HexTileOrientationSystem : RegularUniformFrame
+public class HexTileOrientationSystem : IRegularUniformFrame
 {
     public int PolygonCount => 1;
     public double TilingScale { get; }
@@ -147,11 +147,11 @@ public class HexTileOrientationSystem : RegularUniformFrame
 
     public Vector2I GetCell(Vector2D cartesianPos)
     {
-        var localPos = ((RegularUniformFrame)this).CartesianToLocal.Invoke(cartesianPos);
+        var localPos = ((IRegularUniformFrame)this).CartesianToLocal.Invoke(cartesianPos);
         return HexagonGrid.CubeRound(localPos);
     }
 
-    public RegularUniformFrame GetDual()
+    public IRegularUniformFrame GetDual()
     {
         // // Debug statement
         // Console.WriteLine("Dual prep :");
@@ -168,8 +168,8 @@ public class HexTileOrientationSystem : RegularUniformFrame
         // Console.WriteLine("{0} \n     Points : {1}", Vector2I.Zero, sb);
 
         return new DoubleDeltaTileOrientationSystem(
-            ((RegularUniformFrame)this).GetVertex(Vector2I.Zero, GetPolygonVertexCount(0) - 2, 0),
-            ((RegularUniformFrame)this).GetVertex(Vector2I.Zero, GetPolygonVertexCount(0) - 1, 0)
+            ((IRegularUniformFrame)this).GetVertex(Vector2I.Zero, GetPolygonVertexCount(0) - 2, 0),
+            ((IRegularUniformFrame)this).GetVertex(Vector2I.Zero, GetPolygonVertexCount(0) - 1, 0)
         );
     }
     

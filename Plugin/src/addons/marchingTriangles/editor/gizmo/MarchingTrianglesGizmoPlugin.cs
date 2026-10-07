@@ -1,9 +1,7 @@
 using System.Collections.Generic;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
-using Microsoft.VisualBasic.CompilerServices;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
-//using Godot.Collections;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.gizmo;
 

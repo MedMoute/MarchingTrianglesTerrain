@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Spatial.Euclidean;
+using TerrainSettings = MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.TerrainSettings;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
@@ -221,7 +224,7 @@ public partial class MarchingTrianglesTerrain : Node3D
     /// <returns></returns>
     public static Vector3I GetGlobalCellCoordsFromCartesian(Vector2D pos)
     {
-        RegularUniformFrame tiling = TerrainSettings.OrientationSystem;
+        IRegularUniformFrame tiling = TerrainSettings.OrientationSystem;
         var xy = tiling.GetCell(pos);
         return new Vector3I(xy.X, xy.Y, tiling.GetPolygonIndexFromCartesian(pos, xy));
     }
@@ -231,7 +234,7 @@ public partial class MarchingTrianglesTerrain : Node3D
     /// </summary>
     public static Vector2I GetChunkCoordsFromCartesian(Vector2D vector2, Vector2I chunkDimensions)
     {
-        RegularUniformFrame tiling = TerrainSettings.OrientationSystem;
+        IRegularUniformFrame tiling = TerrainSettings.OrientationSystem;
         Vector2I globalCoords = tiling.GetCell(vector2);
 
         return new Vector2I(

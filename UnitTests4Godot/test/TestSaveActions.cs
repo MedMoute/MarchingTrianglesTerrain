@@ -1,12 +1,13 @@
+using System.Collections.Immutable;
 using GdUnit4;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
-using static GdUnit4.Assertions;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using NUnit.Framework;
-using FileAccess = Godot.FileAccess;
+using static GdUnit4.Assertions;
 
-namespace UnitTests4Godot.test;
+
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.test;
 
 [TestSuite]
 [RequireGodotRuntime]
@@ -14,7 +15,7 @@ namespace UnitTests4Godot.test;
 public class TestSaveActions
 {
     private MarchingTrianglesTerrainPlugin _plugin = null!;
-    private MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain _terrain = null!;
+    private MarchingTrianglesTerrain _terrain = null!;
 
     [GdUnit4.TestCase]
     public void TestSaveEmptyTerrainInstance()
@@ -187,7 +188,7 @@ public class TestSaveActions
         }
 
         //Read the file
-        String str = FileAccess.GetFileAsString("res://resources/file.tres");
+        String str = Godot.FileAccess.GetFileAsString("res://resources/file.tres");
         Assert.That(str.Length, Is.GreaterThan(0));
         error = dir.Remove("res://resources/file.tres");
         if (error != Error.Ok)
@@ -201,18 +202,18 @@ public class TestSaveActions
     public void Setup()
     {
         _plugin = AddNode(new MarchingTrianglesTerrainPlugin());
-        _terrain = AddNode(new MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain());
+        _terrain = AddNode(new MarchingTrianglesTerrain());
         _terrain.DataDirectory = "res://out";
     }
 
     [AfterTest]
     public void TestCleanup()
     {
-        // terrain.Chunks.Keys.ToImmutableList().ForEach((chk) => terrain.RemoveChunkFromTree(chk, plugin));
-        // // Clean up the chunk directories referring to chunks that no longer exist in the saved scene
-        // MttDataHandler.CleanupOrphanedChunkDirectories(terrain);
-        // // Clean up the terrain directories referring to terrain nodes no longer existing in the scene
-        // MttDataHandler.CleanupOrphanedTerrainDirectories(terrain);
-        // DirAccess.RemoveAbsolute(terrain.DataDirectory.TrimSuffix("/"));
+        _terrain.Chunks.Keys.ToImmutableList().ForEach((chk) => _terrain.RemoveChunkFromTree(chk, _plugin));
+        // Clean up the chunk directories referring to chunks that no longer exist in the saved scene
+        MttDataHandler.CleanupOrphanedChunkDirectories(_terrain);
+        // Clean up the terrain directories referring to terrain nodes no longer existing in the scene
+        MttDataHandler.CleanupOrphanedTerrainDirectories(_terrain);
+        DirAccess.RemoveAbsolute(_terrain.DataDirectory.TrimSuffix("/"));
     }
 }

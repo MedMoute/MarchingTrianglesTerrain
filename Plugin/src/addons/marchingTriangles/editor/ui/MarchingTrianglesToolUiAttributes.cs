@@ -5,17 +5,18 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Godot;
-using Godot.Collections;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
-using Microsoft.VisualBasic.CompilerServices;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using Array = Godot.Collections.Array;
+using TerrainSettings = MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.TerrainSettings;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui;
 
 /// <summary>
 /// UI-based attributes handler for the various plugin tools.
 /// </summary>
 [Tool]
+// ReSharper disable once Godot.MissingParameterlessConstructor
 public partial class MarchingTrianglesToolUiAttributes
     : ScrollContainer
 {
@@ -28,7 +29,7 @@ public partial class MarchingTrianglesToolUiAttributes
     private readonly MarchingTrianglesTerrainPlugin _terrainPlugin;
 
 
-    private readonly System.Collections.Generic.Dictionary<string, UiSettingType> _terrainSettingsData = new()
+    private readonly Dictionary<string, UiSettingType> _terrainSettingsData = new()
     {
         { nameof(TerrainSettings.ChunkDimensions), UiSettingType.Vector2I },
         { nameof(TerrainSettings.CellScale), UiSettingType.EditorSpinSlider },
@@ -49,7 +50,7 @@ public partial class MarchingTrianglesToolUiAttributes
     /// <summary>
     ///  The container for the tool settings
     /// </summary>
-    private HBoxContainer _hboxContainer = new ();
+    private HBoxContainer _hboxContainer = new();
 
     public MarchingTrianglesToolUiAttributes(MarchingTrianglesTerrainPlugin terrainPlugin)
     {
@@ -107,11 +108,12 @@ public partial class MarchingTrianglesToolUiAttributes
                 {
                     if (propertyInfo.Name == filteredData.Item1)
                     {
-                        propertiesAttributes = (Godot.Collections.Dictionary<string, Variant>)propertyInfo.GetValue(Attributes)!;
+                        propertiesAttributes =
+                            (Godot.Collections.Dictionary<string, Variant>)propertyInfo.GetValue(Attributes)!;
                     }
                 }
 
-                return propertiesAttributes ==null ? throw new Exception(): propertiesAttributes;
+                return propertiesAttributes == null ? throw new Exception() : propertiesAttributes;
             }).ToList();
 
         foreach (var toolAttribute in toolAttributes)
@@ -189,7 +191,7 @@ public partial class MarchingTrianglesToolUiAttributes
                 break;
             case SettingType.QuickPaint:
                 throw new NotSupportedException("Quickpaint not supported");
-                //ProcessQuickPaintSetting(savedSettingValue, toolSettingParameters);
+            //ProcessQuickPaintSetting(savedSettingValue, toolSettingParameters);
             case SettingType.Chunk:
                 ProcessChunkSetting();
                 break;
@@ -261,6 +263,8 @@ public partial class MarchingTrianglesToolUiAttributes
             {
                 if (sliderArray[i, j] is not null)
                 {
+                    var i1 = i;
+                    var j1 = j;
                     sliderArray[i, j]!.ValueChanged += val =>
                     {
                         Vector4 result = new Vector4();
@@ -274,7 +278,7 @@ public partial class MarchingTrianglesToolUiAttributes
                             }
                         }
 
-                        result[2 * i + j] = (float)val;
+                        result[2 * i1 + j1] = (float)val;
                         OnSettingChanged("GeometryModeParameters", result);
                     };
                 }
@@ -315,13 +319,13 @@ public partial class MarchingTrianglesToolUiAttributes
             new Vector2I(optionButton.Selected - 1, (int)val - 1));
 
 
-        OptionButton OptionButton(int _iconSize)
+        OptionButton OptionButton(int iconSizeInternal)
         {
             OptionButton button = new();
             button.SetCustomMinimumSize(new Vector2(65, 35));
             button.SetFlat(true);
             var texture = EngineUtils.Resize2DTexture("res://addons/marchingTriangles/editor/icons/empty_texture.png",
-                _iconSize, _iconSize);
+                iconSizeInternal, iconSizeInternal);
             button.AddIconItem(texture, "Noop");
             foreach (GeometryMode mode in Enum.GetValues(typeof(GeometryMode)))
             {
@@ -329,8 +333,8 @@ public partial class MarchingTrianglesToolUiAttributes
                 gradient.SetColors([mode.GetModePalette()(0f, 0f)]);
                 var gradTexture = new GradientTexture2D();
                 gradTexture.SetGradient(gradient);
-                gradTexture.SetHeight(_iconSize);
-                gradTexture.SetWidth(_iconSize);
+                gradTexture.SetHeight(iconSizeInternal);
+                gradTexture.SetWidth(iconSizeInternal);
                 button.AddIconItem(gradTexture, mode.ToString()); // +1 is offset due
             }
 
@@ -402,7 +406,7 @@ public partial class MarchingTrianglesToolUiAttributes
             BindingFlags.Instance |
             BindingFlags.Static |
             BindingFlags.Public);
-        var enumSettings = new System.Collections.Generic.Dictionary<string, Type>();
+        var enumSettings = new Dictionary<string, Type>();
 
         foreach (var pInfo in properties)
         {
@@ -587,6 +591,7 @@ public partial class MarchingTrianglesToolUiAttributes
                     browseButton.TooltipText = "Browse for folder";
                     browseButton.Pressed += () =>
                     {
+                        // ReSharper disable once AccessToModifiedClosure
                         _OpenFolderDialog(editorSetting.Key, folderLineEdit,
                             propertyInSettings.Contains(editorSetting.Key));
                     };
@@ -660,6 +665,7 @@ public partial class MarchingTrianglesToolUiAttributes
                 throw new ArgumentException("The provided argument is not Vector-typed Variant");
         }
 
+        // ReSharper disable once CollectionNeverQueried.Local : edited via reflection
         var subSpinBoxes = new SpinBox[vectorMembers];
         for (int i = 0; i < vectorMembers; i++)
         {
@@ -867,7 +873,12 @@ public partial class MarchingTrianglesToolUiAttributes
             var selectedText = updatedButton.GetItemText((int)index);
             var updatedIsChunk = int.TryParse(selectedText, out var selectedValue);
 
-            var terrain = _terrainPlugin.CurTerrainNode;
+            if (_terrainPlugin.CurTerrainNode == null)
+            {
+                return null;
+            }
+
+            var terrainNode = _terrainPlugin.CurTerrainNode;
             //Computed values for the affected button
             List<int> impactedButtonChunkValues;
 
@@ -875,7 +886,7 @@ public partial class MarchingTrianglesToolUiAttributes
 
             if (updatedIsChunk) //We selected an existing chunk row/column
             {
-                impactedButtonChunkValues = terrain.Chunks.Keys.Where(v => filter((v, selectedValue)))
+                impactedButtonChunkValues = terrainNode.Chunks.Keys.Where(v => filter((v, selectedValue)))
                     .Select(selector)
                     .Distinct().Order().ToList();
                 if (impactedPreviouslyWasChunk) // The impacted button was previously a chunk, we keep the value 
@@ -892,7 +903,7 @@ public partial class MarchingTrianglesToolUiAttributes
             else //We explicitly selected a non-existing chunk row/column, we set the other to non-existing as well and 
             {
                 // The values are not filtered
-                impactedButtonChunkValues = terrain.Chunks.Keys.Select(selector)
+                impactedButtonChunkValues = terrainNode.Chunks.Keys.Select(selector)
                     .Distinct().Order().ToList();
                 tmpChunkSelected = null;
                 computedImpactedButtonSelection = null;
@@ -937,13 +948,13 @@ public partial class MarchingTrianglesToolUiAttributes
 
             Console.WriteLine("Selected  chunk : " + (tmpChunkSelected is null
                 ? "NONE"
-                : terrain.Chunks[tmpChunkSelected.Value].Underlying.Coordinates
+                : terrainNode.Chunks[tmpChunkSelected.Value].Underlying.Coordinates
                   + " => Geometry default state : < " +
-                  terrain.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes!.Item1 + " ; " +
-                  terrain.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes!.Item2 + " >"));
+                  terrainNode.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes!.Item1 + " ; " +
+                  terrainNode.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes!.Item2 + " >"));
 
             _terrainPlugin.PluginHelper.CurrentSelectedChunk =
-                tmpChunkSelected == null ? null : terrain.Chunks[tmpChunkSelected.Value];
+                tmpChunkSelected == null ? null : terrainNode.Chunks[tmpChunkSelected.Value];
 
             return _terrainPlugin.PluginHelper.CurrentSelectedChunk;
         }
@@ -1003,15 +1014,13 @@ public partial class MarchingTrianglesToolUiAttributes
     /// <summary>
     /// Process a UI setting that will take shape of a TexturePreset selection in the Editor
     /// </summary>
-    /// <param name="savedSetting"> previously saved value for the setting</param>
-    /// <param name="toolParameters">internal parameters of the UI setting</param>
-    private void ProcessTexturePresetSetting(Variant savedSetting,
-        Godot.Collections.Dictionary<string, Variant> toolParameters)
+    private void ProcessTexturePresetSetting(Variant _,
+        Godot.Collections.Dictionary<string, Variant> _1)
     {
         throw new NotImplementedException();
     }
 
-    private void ProcessTextSetting(Variant savedSetting,
+    private void ProcessTextSetting(Variant _,
         Godot.Collections.Dictionary<string, Variant> toolParameters)
     {
         string settingName = toolParameters.GetValueOrDefault("name", "").AsString();

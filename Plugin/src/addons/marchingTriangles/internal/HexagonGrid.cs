@@ -4,22 +4,22 @@ using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MathNet.Spatial.Euclidean;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
 /// <summary>
 /// Hexagonal tiling build by duality of a TriangleGrid.
 /// </summary>
 public class HexagonGrid
 {
-    public RegularUniformFrame Frame { get; }
+    public IRegularUniformFrame Frame { get; }
 
     public Dictionary<Vector2I, HexTerrainCell> PendingCells { get; } = new();
 
     public HashSet<HexTerrainCell> CompleteCells = new();
 
-    private readonly RegularUniformFrame _dualFrame;
+    private readonly IRegularUniformFrame _dualFrame;
 
-    private HexagonGrid(RegularUniformFrame frame, RegularUniformFrame dualFrame)
+    private HexagonGrid(IRegularUniformFrame frame, IRegularUniformFrame dualFrame)
     {
         if (frame is not HexTileOrientationSystem)
         {
@@ -37,8 +37,8 @@ public class HexagonGrid
         Func<Vector2I, TriangleGrid?> neighborDataGridProvider,
         Func<Vector2I, bool> chunkTester)
     {
-        RegularUniformFrame dualFrame = dualGrid.OrientationSystem;
-        RegularUniformFrame frame = dualFrame.GetDual();
+        IRegularUniformFrame dualFrame = dualGrid.OrientationSystem;
+        IRegularUniformFrame frame = dualFrame.GetDual();
         HexagonGrid grid = new(frame, dualFrame);
         foreach (var dataPoint in dualGrid.Data)
         {
@@ -116,15 +116,15 @@ public class HexagonGrid
         var r = (int)Math.Round(frac.Y);
         var s = (int)Math.Round((-frac.X - frac.Y));
 
-        var q_diff = Math.Abs(q - frac.X);
-        var r_diff = Math.Abs(r - frac.Y);
-        var s_diff = Math.Abs(s - (-frac.X - frac.Y));
+        var qDiff = Math.Abs(q - frac.X);
+        var rDiff = Math.Abs(r - frac.Y);
+        var sDiff = Math.Abs(s - (-frac.X - frac.Y));
 
-        if (q_diff > r_diff && q_diff > s_diff)
+        if (qDiff > rDiff && qDiff > sDiff)
         {
             q = -r - s;
         }
-        else if (r_diff > s_diff)
+        else if (rDiff > sDiff)
         {
             r = -q - s;
         }
@@ -165,13 +165,11 @@ public class HexagonGrid
             //TODO : Enforce a consistent size across arrays
         }
 
-        Vector2I chunkDimensions = new Vector2I(dataStructFrameDimensions.X, dataStructFrameDimensions.Y);
-
         HexTileOrientationSystem frame = new HexTileOrientationSystem(
             new Vector2D(dataStructHexFrameSeed1[0], dataStructHexFrameSeed1[1]),
             new Vector2D(dataStructHexFrameSeed2[0], dataStructHexFrameSeed2[1])
         );
-        RegularUniformFrame dualFrame = frame.GetDual();
+        IRegularUniformFrame dualFrame = frame.GetDual();
         HexagonGrid grid = new HexagonGrid(frame, dualFrame);
         grid.CompleteCells = new HashSet<HexTerrainCell>();
         for (int i = 0; i < dataStructFullCellIndices.Length / 2; i++)

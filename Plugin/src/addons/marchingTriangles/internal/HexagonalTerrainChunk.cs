@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 using MathNet.Spatial.Euclidean;
+using TerrainSettings = MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.TerrainSettings;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
 /// <summary>
 /// Chunk of hexagonal cells that takes a data source map and generates two terrain meshes from it.
@@ -133,7 +135,7 @@ public class HexagonalTerrainChunk
         var src1 = dataSource ?? new float[dimension.X][];
         var src2 = dataSource2 ?? new float[dimension.X][];
         var chunkPos = GetChunkGlobalPosition(chunkCoordinates, TerrainSettings.OrientationSystem);
-        RegularUniformFrame terrainFrame = TerrainSettings.OrientationSystem.OffsetBy(chunkPos);
+        IRegularUniformFrame terrainFrame = TerrainSettings.OrientationSystem.OffsetBy(chunkPos);
         DataGrid = TriangleGrid.BuildFrom(src1, src2, terrainFrame);
 
         _neighborChunksProvider = neighboringChunkDataHandle;
@@ -195,7 +197,7 @@ public class HexagonalTerrainChunk
             return grid!.Data[cellCoords + scaledOffset];
     }
 
-    public Vector2D GetChunkGlobalPosition(Vector2I chunkIndex, RegularUniformFrame referenceFrame)
+    public Vector2D GetChunkGlobalPosition(Vector2I chunkIndex, IRegularUniformFrame referenceFrame)
     {
         var buildVectors = referenceFrame.Transform;
 
@@ -277,7 +279,7 @@ public class HexagonalTerrainChunk
         {
             // There may not be a corresponding value for every cell if the cell the border is expanding from 
             // has an extra border-related datapoint.
-            if (neighbor.DataGrid.Data.TryGetValue(triCell - offset3D, out var newCellData))
+            if (neighbor.DataGrid.Data.ContainsKey(triCell - offset3D))
             {
                 foundCells++;
                 TerrainDualGrid.AddDeltaTileCellValues(

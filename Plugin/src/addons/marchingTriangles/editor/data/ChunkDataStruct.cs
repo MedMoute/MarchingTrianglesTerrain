@@ -1,6 +1,6 @@
 using Godot;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
 /// <summary>
 /// Interface for serializing the data structure of a Chunk.
@@ -13,7 +13,7 @@ public interface IChunkDataStruct
     // ----> Grid Expected Size
     public Vector3I FrameDimensions { get; set; }
 
-    // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
+    // ----> IRegularUniformFrame (DoubleDeltaTiling) seeds
     public double[] TriFrameSeed1 { get; set; }
 
     public double[] TriFrameSeed2 { get; set; }
@@ -23,7 +23,7 @@ public interface IChunkDataStruct
 
     // -- Encoded DualGrid (Hexagonal grid)
     //----------------------------------------
-    // ----> RegularUniformFrame (DoubleDeltaTiling) seeds
+    // ----> IRegularUniformFrame (DoubleDeltaTiling) seeds
     public double[] HexFrameSeed1 { get; set; }
 
     public double[] HexFrameSeed2 { get; set; }
