@@ -7,7 +7,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 
 public partial class TerrainSettings(
     MarchingTrianglesTerrain parent,
-    ShaderMaterial shaderMaterial) : Node
+    ShaderMaterial? shaderMaterial) : Node
 {
     [Signal]
     public delegate void ChunkDimensionsChangedEventHandler(int height, Vector2I chunkSize);
@@ -21,7 +21,7 @@ public partial class TerrainSettings(
         new Vector2D(1,1/Math.Sqrt(3))
         );
 
-    public ShaderMaterial ShaderMaterial => shaderMaterial;
+    public ShaderMaterial? ShaderMaterial => shaderMaterial;
 
     [Export]
     public int MaxHeight
@@ -30,7 +30,7 @@ public partial class TerrainSettings(
         set
         {
             _maxHeight = value;
-            shaderMaterial.SetShaderParameter("height", _maxHeight);
+            shaderMaterial?.SetShaderParameter("height", _maxHeight);
             if (Engine.IsEditorHint())
             {
                 EmitSignal(nameof(ChunkDimensionsChanged), _maxHeight, _chunkDimensions);
@@ -51,7 +51,7 @@ public partial class TerrainSettings(
         set
         {
             _chunkDimensions = value;
-            shaderMaterial.SetShaderParameter("chunkDimensions", _chunkDimensions);
+            shaderMaterial?.SetShaderParameter("chunkDimensions", _chunkDimensions);
             if (Engine.IsEditorHint())
             {
                 EmitSignal(nameof(ChunkDimensionsChanged), _maxHeight, _chunkDimensions);
@@ -68,7 +68,7 @@ public partial class TerrainSettings(
         set
         {
             _cellScale = value;
-            shaderMaterial.SetShaderParameter("cellSize", value);
+            shaderMaterial?.SetShaderParameter("cellSize", value);
         }
     }
 

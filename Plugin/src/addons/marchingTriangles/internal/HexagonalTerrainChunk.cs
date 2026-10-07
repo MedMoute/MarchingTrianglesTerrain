@@ -60,19 +60,19 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// The dual grid used for data representation.
     /// </summary>
-    public HexagonGrid _terrainDualGrid;
+    public HexagonGrid TerrainDualGrid;
 
 
     /// <summary>
     /// Stores the coordinates of the neighboring chunks that exist that 
     /// </summary>
-    public HashSet<Vector2I> existingNeighbors { get; set; } = new();
+    public HashSet<Vector2I> ExistingNeighbors { get; set; } = new();
 
     /// <summary>
     /// Neighbor-only aware chunk provider.
     /// The coordinates to provide are the offset coordinates.  
     /// </summary>
-    private readonly Func<Vector2I, HexagonalTerrainChunk> _neighborChunksProvider;
+    private readonly Func<Vector2I, HexagonalTerrainChunk?> _neighborChunksProvider;
 
     /// Helper for computing/interpolating cell colors.
     private readonly VertexColorHelper _colorHelper;
@@ -92,7 +92,7 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// Default geometry mode value 
     /// </summary>
-    public Tuple<GeometryMode, GeometryMode> DefaultGeometryModes { get; set; }
+    public Tuple<GeometryMode, GeometryMode>? DefaultGeometryModes { get; set; }
 
     /// <summary>
     /// Default threshold computation method and value
@@ -103,14 +103,14 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// Data holder for the chunk's color data
     /// </summary>
-    public TerrainColorMaps ColorMaps { get; internal set; }
+    public TerrainColorMaps? ColorMaps { get; internal set; }
 
     /// <summary>
     /// Chunk's type of merge operation
     /// </summary>
     public int MergeMode { get; set; } = 1;
 
-    public Dictionary<Vector3I, bool> NeedUpdate { get; } = new();
+    public Dictionary<Vector3I, bool> NeedUpdate { get; }
 
     /// <summary>
     /// Chunk constructor.
@@ -122,13 +122,13 @@ public class HexagonalTerrainChunk
     /// <param name="dataSource2">Starting height data for the 1-triangle cells of the triangular tiling</param>
     public HexagonalTerrainChunk(Vector2I chunkCoordinates,
         Vector2I dimension,
-        Func<Vector2I, HexagonalTerrainChunk> neighboringChunkDataHandle,
+        Func<Vector2I, HexagonalTerrainChunk?> neighboringChunkDataHandle,
         float[][]? dataSource = null,
         float[][]? dataSource2 = null)
     {
         Coordinates = chunkCoordinates;
         Dimensions2D = dimension;
-        existingNeighbors.Add(Vector2I.Zero); // Register the chunk as its own neighbor
+        ExistingNeighbors.Add(Vector2I.Zero); // Register the chunk as its own neighbor
 
         var src1 = dataSource ?? new float[dimension.X][];
         var src2 = dataSource2 ?? new float[dimension.X][];
@@ -137,12 +137,12 @@ public class HexagonalTerrainChunk
         DataGrid = TriangleGrid.BuildFrom(src1, src2, terrainFrame);
 
         _neighborChunksProvider = neighboringChunkDataHandle;
-        _terrainDualGrid = HexagonGrid.BuildFromDual(
+        TerrainDualGrid = HexagonGrid.BuildFromDual(
             DataGrid,
             Dimensions2D,
-            v => neighboringChunkDataHandle(v).DataGrid,
-            v => existingNeighbors.Contains(v));
-        _colorHelper = new VertexColorHelper(_neighborChunksProvider);
+            v => neighboringChunkDataHandle(v)?.DataGrid,
+            v => ExistingNeighbors.Contains(v));
+        _colorHelper = new VertexColorHelper(neighboringChunkDataHandle);
         NeedUpdate = new();
     }
 
@@ -187,19 +187,12 @@ public class HexagonalTerrainChunk
 
     public float GetHeightFromTriCellCoords(Vector3I cellCoords)
     {
-        try
-        {
+
             var offset = HexTerrainCell.GetChunkOffsetForDualCell(_dimension2D, cellCoords);
-            var grid = _neighborChunksProvider(offset).DataGrid;
+            var grid = _neighborChunksProvider(offset)?.DataGrid;
 
             var scaledOffset = new Vector3I(offset.X * _dimension2D.X, offset.Y * _dimension2D.Y, 0);
-            return grid.Data[cellCoords + scaledOffset];
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+            return grid!.Data[cellCoords + scaledOffset];
     }
 
     public Vector2D GetChunkGlobalPosition(Vector2I chunkIndex, RegularUniformFrame referenceFrame)
@@ -224,9 +217,7 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// Returns the list of triangle tiles' coordinates of the chunk that are affected by the addition of a border
     /// </summary>
-    /// <param name="neighborChunkIndex">the index of the neighboring chunk</param>
-    /// <returns></returns>
-    public List<Vector3I> GetTriCellsTouchingNeighbour(Vector2I offset)
+    private List<Vector3I> GetTriCellsTouchingNeighbour(Vector2I offset)
     {
         var offset3D = new Vector3I(offset.X, offset.Y, 0);
 
@@ -262,9 +253,9 @@ public class HexagonalTerrainChunk
     /// </summary>
     public List<HexTerrainCell> GetHexCells(Func<HexTerrainCell, bool>? predicate = null)
     {
-        var result = new List<HexTerrainCell>(_terrainDualGrid.CompleteCells.Where(predicate ?? (_ => true)));
+        var result = new List<HexTerrainCell>(TerrainDualGrid.CompleteCells.Where(predicate ?? (_ => true)));
         result.AddRange(
-            _terrainDualGrid.PendingCells
+            TerrainDualGrid.PendingCells
                 .Where(c => c.Value != null && (predicate?.Invoke(c.Value) ?? true))
                 .Select(kvp => kvp.Value));
         return result;
@@ -279,7 +270,7 @@ public class HexagonalTerrainChunk
         var foundCells = 0;
         //
 
-        existingNeighbors.Add(offset);
+        ExistingNeighbors.Add(offset);
 
         var triCells = GetTriCellsTouchingNeighbour(offset);
         foreach (var triCell in triCells)
@@ -289,11 +280,11 @@ public class HexagonalTerrainChunk
             if (neighbor.DataGrid.Data.TryGetValue(triCell - offset3D, out var newCellData))
             {
                 foundCells++;
-                _terrainDualGrid.AddDeltaTileCellValues(
+                TerrainDualGrid.AddDeltaTileCellValues(
                     triCell,
                     Dimensions2D,
-                    v => _neighborChunksProvider(v).DataGrid,
-                    v => existingNeighbors.Contains(v));
+                    v => _neighborChunksProvider(v)!.DataGrid,
+                    v => ExistingNeighbors.Contains(v));
                 NeedUpdate[triCell - offset3D] = true;
             }
         }
@@ -304,8 +295,6 @@ public class HexagonalTerrainChunk
     /// <summary>
     /// Processes the chunk borders between two chunk indexes/coordinates. 
     /// </summary>
-    /// <param name="other"></param>
-    /// <param name="func"></param>
     /// <returns>The chunk index that will receive the data from the border, or null if none</returns>
     private Vector2I? ProcessNewChunkBorder(HexagonalTerrainChunk other)
     {
@@ -326,7 +315,11 @@ public class HexagonalTerrainChunk
     /// </summary>
     public HashSet<Vector2I> ProcessChunkBorderCells()
     {
-        HashSet<HexagonalTerrainChunk> neighbors =
+        if (_neighborChunksProvider == null)
+        {
+            throw new InvalidOperationException("the chunk provider is not set properly");
+        }
+        HashSet<HexagonalTerrainChunk?> neighbors =
         [
             _neighborChunksProvider.Invoke(Vector2I.Up),
             _neighborChunksProvider.Invoke(Vector2I.Up + Vector2I.Left),
@@ -338,12 +331,14 @@ public class HexagonalTerrainChunk
             _neighborChunksProvider.Invoke(Vector2I.Right)
         ];
 
-        neighbors = neighbors.Where(c => c != null).ToHashSet();
+        var neighborsNotNull = neighbors.Where(c => c != null)
+            .Select(c=>c!)
+            .ToHashSet();
 
         HashSet<Vector2I> chunksFlaggedForRebuild = new HashSet<Vector2I>();
         // //Debug statement
         // Console.WriteLine(Coordinates);
-        foreach (var neighbor in neighbors)
+        foreach (var neighbor in neighborsNotNull)
         {
             var editedChunkStatistics = ProcessNewChunkBorder(neighbor);
             // Border debug stats
@@ -357,16 +352,15 @@ public class HexagonalTerrainChunk
         return chunksFlaggedForRebuild;
     }
 
-    public Dictionary<string, Color> BlendColors(HexTerrainCell cell, Vector3 pos, Vector2 uv, bool b)
+    private Dictionary<string, Color> BlendColors(HexTerrainCell cell, Vector3 pos, Vector2 uv, bool b)
     {
         return _colorHelper.BlendColors(this, cell, pos, uv, b);
     }
 
-    internal void CopyPointDataToCellStructures(Vector3 p, Vector2 _uv, HexTerrainCell cell)
+    internal void CopyPointDataToCellStructures(Vector3 p, Vector2 uv, HexTerrainCell cell)
     {
         //UV - used for ledge detection. X = closeness to top terrace, Y = closeness to bottom of terrace
         //Walls will always have UV of 1, 1
-        Vector2 uv = _uv;
 
         Vector2 uv2 = cell.FloorMode
             ? new Vector2(p.X, p.Z) / 1f / MathF.Sqrt(3)
@@ -384,10 +378,14 @@ public class HexagonalTerrainChunk
         // Pack two colors in a single channel using half-precision (16 bits)
         //
         var parameters = cell.ParametersOverride ?? GeometryModeParameters;
-        var color1 = (cell.GeometryModesOverride ?? DefaultGeometryModes).Item1.GetModePalette()(
+        var color1 = (cell.GeometryModesOverride 
+                      ?? DefaultGeometryModes
+                      ?? throw new InvalidOperationException("DefaultGeometryModes should have been set")).Item1.GetModePalette()(
             parameters.Item1.Item1,
             parameters.Item1.Item2);
-        var color2 = (cell.GeometryModesOverride ?? DefaultGeometryModes).Item2.GetModePalette()(
+        var color2 = (cell.GeometryModesOverride 
+                      ?? DefaultGeometryModes
+                      ?? throw new InvalidOperationException("DefaultGeometryModes should have been set")).Item2.GetModePalette()(
             parameters.Item1.Item1,
             parameters.Item1.Item2);
 
@@ -396,12 +394,12 @@ public class HexagonalTerrainChunk
         var bytesB = BitConverter.GetBytes((Half)color1.B).Concat(BitConverter.GetBytes((Half)color2.B)).ToArray();
         var bytesA = BitConverter.GetBytes((Half)color1.A).Concat(BitConverter.GetBytes((Half)color2.A)).ToArray();
 
-        var PackedColors = new Color(
+        var packedColors = new Color(
             BitConverter.ToSingle(bytesR),
             BitConverter.ToSingle(bytesG),
             BitConverter.ToSingle(bytesB),
             BitConverter.ToSingle(bytesA));
-        data.Custom3Value.Add(PackedColors);
+        data.Custom3Value.Add(packedColors);
 
         data.MatBlend.Add(colors["mat_blend"]);
         data.Floor.Add(cell.FloorMode);
@@ -458,15 +456,20 @@ public enum GeometryMode
 /// </summary>
 public static class GeometryModeExtensions
 {
-    private static float lMin = 0.3f;
+    /// <summary>
+    /// Minimum lightness
+    /// </summary>
+    private const float LMin = 0.3f;
 
-    private static float lMax = 0.8f;
+    /// <summary>
+    /// Maximum lightness
+    /// </summary>
+    private const float LMax = 0.8f;
 
-    //Hue-margin
-    private static float hMargin = 0.2f;
-
-    //Saturation margin
-    private static float saturationMargin = 0.3f;
+    /// <summary>
+    /// Saturation margin value: the range of values will be [sMargin,1-sMargin]
+    /// </summary>
+    private const float SaturationMargin = 0.3f;
 
     public static bool SupportsParameter(this GeometryMode gMode,int parameterIdx)
     {
@@ -497,7 +500,7 @@ public static class GeometryModeExtensions
     }
     
     /// <summary>
-    /// Returns the palette method (a double parametered float function)
+    /// Returns the palette method (a double parameterized float function)
     /// for a given GeometryMode.
     /// The input range for the resulting function is [0,1]
     /// </summary>
@@ -520,7 +523,7 @@ public static class GeometryModeExtensions
         var hueMin = (idx - 1f) / count;
         var hueMax = (float)idx / count;
         var hueMid = (hueMax + hueMin) / 2;
-        var lMid = (lMin + lMax) / 2;
+        var lMid = (LMin + LMax) / 2;
         var sDefault = 0.8f;
 
         var v = (float s, float l) => l + s * Math.Min(l, 1 - l);
@@ -543,21 +546,21 @@ public static class GeometryModeExtensions
             //the lightness to [lMin, lMax]
             return (p1, p2) =>
             {
-                if (p1 is > 1 or < 0)
+                if (p1 is > 1 or < 0 or null)
                 {
                     throw new ArgumentOutOfRangeException(nameof(p1));
                 }
 
-                if (p2 is > 1 or < 0)
+                if (p2 is > 1 or < 0 or null)
                 {
                     throw new ArgumentOutOfRangeException(nameof(p2));
                 }
 
                 var x = Color.FromHsv(hueMid,
-                    Mathf.Lerp(saturationMargin, 1 - saturationMargin, p1.Value),
+                    Mathf.Lerp(SaturationMargin, 1 - SaturationMargin, p1.Value),
                     v(
-                        Mathf.Lerp(saturationMargin, 1 - saturationMargin, p1.Value),
-                        Mathf.Lerp(lMin, lMax, p2.Value))
+                        Mathf.Lerp(SaturationMargin, 1 - SaturationMargin, p1.Value),
+                        Mathf.Lerp(LMin, LMax, p2.Value))
                 );
                 return x;
             };
@@ -569,13 +572,13 @@ public static class GeometryModeExtensions
             //We map with the saturation, with lightness fixed @ lMin+lMax/2
             return (p1, _) =>
             {
-                if (p1 is > 1 or < 0)
+                if (p1 is > 1 or < 0 or null)
                 {
                     throw new ArgumentOutOfRangeException(nameof(p1));
                 }
 
                 var x = Color.FromHsv(hueMid,
-                    Mathf.Lerp(saturationMargin, 1 - saturationMargin, p1.Value),
+                    Mathf.Lerp(SaturationMargin, 1 - SaturationMargin, p1.Value),
                     vMid);
                 return x;
             };

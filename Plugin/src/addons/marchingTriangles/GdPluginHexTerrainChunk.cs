@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Godot;
-using Godot.Collections;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
-using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
@@ -16,9 +13,9 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     /// <summary>
     /// The default collision layer used for plugin editing. 
     /// </summary>
-    public const uint DefaultCollisionLayer = 17;
+    private const uint DefaultCollisionLayer = 17;
 
-    internal ConcavePolygonShape3D TempCollisionShape;
+    internal ConcavePolygonShape3D? TempCollisionShape;
 
     private SurfaceTool _st = new();
 
@@ -35,9 +32,9 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public GdPluginHexTerrainChunk(Vector2I chunkIndex,
         Vector2I dimension,
-        Func<Vector2I, HexagonalTerrainChunk> neighboringChunkDataHandle,
-        float[][] dataSource = null,
-        float[][] dataSource2 = null)
+        Func<Vector2I, HexagonalTerrainChunk?> neighboringChunkDataHandle,
+        float[][]? dataSource = null,
+        float[][]? dataSource2 = null)
     {
         Underlying = new HexagonalTerrainChunk(
             chunkIndex,
@@ -88,7 +85,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     {
         if (GetParent() != null && GetParent() is MarchingTrianglesTerrain terrain)
         {
-            Underlying.DefaultGeometryModes ??= new Tuple<GeometryMode, GeometryMode>(
+            Underlying.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(
                 terrain.TerrainSettings.ChunkBlendMode,
                 terrain.TerrainSettings.ChunkBlendModeFallBack);
 
@@ -135,7 +132,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             }
         }
 
-        ConcavePolygonShape3D shape = null;
+        ConcavePolygonShape3D? shape = null;
         CreateTrimeshCollision();
         foreach (var child in GetChildren())
         {
@@ -145,13 +142,13 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
                 {
                     if (grandChild is CollisionShape3D collisionShape)
                     {
-                        shape = collisionShape.Shape as ConcavePolygonShape3D;
+                        shape = collisionShape.Shape as ConcavePolygonShape3D ?? throw new InvalidOperationException();
                     }
                 }
             }
         }
 
-        return shape;
+        return shape ?? throw new InvalidOperationException();
     }
 
 
@@ -189,9 +186,8 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             var body = new StaticBody3D();
             body.Name = Name + "_col";
             body.CollisionLayer = DefaultCollisionLayer;
-            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain)
+            if (GetParent() != null && GetParent() is MarchingTrianglesTerrain terrain)
             {
-                var terrain = GetParent() as MarchingTrianglesTerrain;
                 body.SetCollisionLayerValue(terrain.TerrainSettings.CollisionLayer, true);
             }
 
@@ -204,11 +200,8 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
             // Owner set for visibility
             var sceneRoot = EngineUtils.GetRootNode(this);
-            if (sceneRoot != null)
-            {
-                body.Owner = sceneRoot;
-                colShape.Owner = sceneRoot;
-            }
+            body.Owner = sceneRoot;
+            colShape.Owner = sceneRoot;
 
             foreach (StringName group in GetGroups())
             {
@@ -299,16 +292,5 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             ProcessPointsIntoMeshTriangles(cell);
             cell.TempDataArrays.Clear();
         }
-    }
-}
-
-/// <summary>
-/// Terrain blend options to allow for smooth color and height blend influence at transitions and at different heights
-/// </summary>
-record TerrainBlendOptions(float LowerThreshold, float UpperThreshold, float BlendSensitivity)
-{
-    public float GetBlendBand()
-    {
-        return UpperThreshold - LowerThreshold;
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
@@ -102,12 +101,13 @@ public class AddTrianglesOnBorderEdge : DelegatedTriangulationEditAction<int>
             .SelectMany(e => e.Value.Select(v => (e.Key, v)))
             .Reverse();
         // Make sure all sub-actions have created the same vertex
-        if (flattenedPointCreations.DistinctBy(v => v.v).Count() > 1)
+        var pointCreations = flattenedPointCreations as (int Key, int v)[] ?? [.. flattenedPointCreations];
+        if (pointCreations.DistinctBy(v => v.v).Count() > 1)
         {
             throw new InvalidOperationException("The action created multiple vertices which is not expected");
         }
 
-        if (flattenedPointCreations.DistinctBy(v => v.v).Count() == 0)
+        if (pointCreations.DistinctBy(v => v.v).Count() == 0)
         {
             return t.ReverseVertices.GetValueOrDefault(_p, int.MaxValue) ;
         }
@@ -116,8 +116,8 @@ public class AddTrianglesOnBorderEdge : DelegatedTriangulationEditAction<int>
         // We check all the created triangles, and we need to make sure that the triangles that intersect with
         // pre-existing triangles are removed from the triangle list 
 
-        var otherEdges = flattenedPointCreations.ToList();
-        otherEdges.Remove(flattenedPointCreations.DistinctBy(v => v.v).First());
+        var otherEdges = pointCreations.ToList();
+        otherEdges.Remove(pointCreations.DistinctBy(v => v.v).First());
 
         otherEdges.ForEach(e =>
         {
@@ -159,7 +159,7 @@ public class AddTrianglesOnBorderEdge : DelegatedTriangulationEditAction<int>
         });
 
 
-        foreach (var placeValuePair in flattenedPointCreations.DistinctBy(v => v.v))
+        foreach (var placeValuePair in pointCreations.DistinctBy(v => v.v))
         {
             var affectedSubEdge = placeValuePair.Key;
             (int, int) subEdgeIdxs = t.SubEdges.ElementAt(affectedSubEdge).Key;
@@ -179,7 +179,7 @@ public class AddTrianglesOnBorderEdge : DelegatedTriangulationEditAction<int>
             throw new InvalidOperationException("The action created no vertices which is not expected");
         }
 
-        return flattenedPointCreations.First().v;
+        return pointCreations.First().v;
     }
 
     private List<(int, int)> FindBorderFromSubEdge(Triangulation t, (int, int) edge)

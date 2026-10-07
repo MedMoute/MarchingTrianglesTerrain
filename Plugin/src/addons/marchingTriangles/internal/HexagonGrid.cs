@@ -34,7 +34,7 @@ public class HexagonGrid
     public static HexagonGrid BuildFromDual(
         TriangleGrid dualGrid,
         Vector2I chunkDimensions,
-        Func<Vector2I, TriangleGrid> neighborDataGridProvider,
+        Func<Vector2I, TriangleGrid?> neighborDataGridProvider,
         Func<Vector2I, bool> chunkTester)
     {
         RegularUniformFrame dualFrame = dualGrid.OrientationSystem;
@@ -51,7 +51,7 @@ public class HexagonGrid
     public void AddDeltaTileCellValues(
         Vector3I trianglesTile,
         Vector2I dimensions2D,
-        Func<Vector2I, TriangleGrid> neighborDataGridProvider,
+        Func<Vector2I, TriangleGrid?> neighborDataGridProvider,
         Func<Vector2I, bool> chunkTester)
     {
         var triangleVertices = _dualFrame.GetVertices(trianglesTile);
@@ -72,7 +72,7 @@ public class HexagonGrid
         for (var i = 0; i < affectedHexCells.Count; i++)
         {
             var cellCoords = affectedHexCells[i];
-            HexTerrainCell cell;
+            HexTerrainCell? cell;
             if (!PendingCells.ContainsKey(cellCoords))
             {
                 cell = new HexTerrainCell(cellCoords, Frame, _dualFrame);
@@ -128,10 +128,10 @@ public class HexagonGrid
         {
             r = -q - s;
         }
-        else
-        {
-            s = -q - r;
-        }
+        // else
+        // {
+        //     s = -q - r;
+        // }
 
         return new Vector2I(q, r);
     }

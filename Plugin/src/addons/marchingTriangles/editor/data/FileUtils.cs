@@ -74,7 +74,7 @@ internal static class FileUtils
     }
 
     /// <summary>
-    /// Wrapper around FileUtils.Load<T> to apply the Custom Directory path if needed.
+    /// Wrapper around  FileUtils.Load&lt;T&gt; to apply the Custom Directory path if needed.
     /// </summary>
     /// <param name="path"></param>
     /// <returns></returns>

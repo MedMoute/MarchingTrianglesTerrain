@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
 using GdUnit4;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles;
@@ -18,13 +13,13 @@ namespace UnitTests4Godot.test;
 [GodotExceptionMonitor]
 public class TestSaveActions
 {
-    private MarchingTrianglesTerrainPlugin plugin;
-    private MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain terrain;
+    private MarchingTrianglesTerrainPlugin _plugin = null!;
+    private MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain _terrain = null!;
 
     [GdUnit4.TestCase]
     public void TestSaveEmptyTerrainInstance()
     {
-        Assert.DoesNotThrow(() => { MttDataHandler.SaveChunks(terrain); });
+        Assert.DoesNotThrow(() => { MttDataHandler.SaveChunks(_terrain); });
     }
 
     [GdUnit4.TestCase]
@@ -32,14 +27,14 @@ public class TestSaveActions
     {
         Vector2I chunkCoord = Vector2I.Zero;
         // Basic assertions on workflow : Empty dir => Non-empty dir after save
-        AssertThat(FileUtils.GetDirectorySizeRecursive(terrain.DataDirectory)).IsEqual(0);
+        AssertThat(FileUtils.GetDirectorySizeRecursive(_terrain.DataDirectory)).IsEqual(0);
 
         Assert.DoesNotThrow(() =>
         {
-            terrain.AddNewChunk(chunkCoord, plugin);
-            MttDataHandler.SaveChunks(terrain);
+            _terrain.AddNewChunk(chunkCoord, _plugin);
+            MttDataHandler.SaveChunks(_terrain);
         });
-        AssertThat(FileUtils.GetDirectorySizeRecursive(terrain.DataDirectory)).IsGreater(0);
+        AssertThat(FileUtils.GetDirectorySizeRecursive(_terrain.DataDirectory)).IsGreater(0);
 
         // Check the content of the directory
         var dataFiles = AssertOutputDirectoryContentAndCollectDatafiles(chunkCoord);
@@ -63,10 +58,10 @@ public class TestSaveActions
     {
         Vector2I chunkCoord = Vector2I.One;
 
-        terrain.AddNewChunk(chunkCoord, plugin);
-        var chunk = terrain.Chunks[chunkCoord];
+        _terrain.AddNewChunk(chunkCoord, _plugin);
+        var chunk = _terrain.Chunks[chunkCoord];
 
-        MttDataHandler.SaveChunks(terrain);
+        MttDataHandler.SaveChunks(_terrain);
 
         // Get the output file for the chunk
         var dataFile = AssertOutputDirectoryContentAndCollectDatafiles(chunkCoord)[0];
@@ -101,7 +96,7 @@ public class TestSaveActions
     {
         List<Tuple<string, string>> dataFiles = new();
 
-        var dirPath = terrain.DataDirectory;
+        var dirPath = _terrain.DataDirectory;
         var dir = DirAccess.Open(dirPath);
         // There should only be one subfolder as there is only one saved chunk
         AssertThat(dir.GetFiles().Length).IsEqual(0);
@@ -205,9 +200,9 @@ public class TestSaveActions
     [BeforeTest]
     public void Setup()
     {
-        plugin = AddNode(new MarchingTrianglesTerrainPlugin());
-        terrain = AddNode(new MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain());
-        terrain.DataDirectory = "res://out";
+        _plugin = AddNode(new MarchingTrianglesTerrainPlugin());
+        _terrain = AddNode(new MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain());
+        _terrain.DataDirectory = "res://out";
     }
 
     [AfterTest]

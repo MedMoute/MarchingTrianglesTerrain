@@ -51,10 +51,10 @@ public partial class MarchingTrianglesTerrain : Node3D
         /// Geometry changes require a texture bake step and a reload.
         /// Better runtime performance.
         /// </summary>
-        //Atlas
+        Atlas
     }
-    
-    
+
+
     private StorageMode _storageType = StorageMode.Baked;
 
     private TextureStorageMode _textureStorageType = TextureStorageMode.Shader;
@@ -69,7 +69,7 @@ public partial class MarchingTrianglesTerrain : Node3D
     /// Provides a neighbor-only aware chunk provider for a given chunk.
     /// The coordinates to give to the generated providers are the offset coordinates.  
     /// </summary>
-    internal readonly Func<Vector2I, Vector2I, HexagonalTerrainChunk> _neighborChunkProviderProvider;
+    internal readonly Func<Vector2I, Vector2I, HexagonalTerrainChunk?> NeighborChunkProviderProvider;
 
     public Dictionary<Vector2I, GdPluginHexTerrainChunk> Chunks => _chunks;
 
@@ -90,26 +90,6 @@ public partial class MarchingTrianglesTerrain : Node3D
 
             GD.Print("[MTT] Storage mode changed. All chunks marked for save.");
             NotifyPropertyListChanged();
-        }
-    }
-
-    /// <summary>
-    /// If true, storage will include grass data, ignored if storage_mode = RUNTIME
-    /// </summary>
-    private bool _bakeGrass = false;
-
-    [Export]
-    public bool BakeGrass
-    {
-        get => _bakeGrass;
-        set
-        {
-            _bakeGrass = value;
-            //Mark all chunks dirty to force re-save of data/meshes
-            foreach (var hexTerrainChunk in _chunks)
-            {
-                hexTerrainChunk.Value.Underlying.Dirty = true;
-            }
         }
     }
 
@@ -170,7 +150,7 @@ public partial class MarchingTrianglesTerrain : Node3D
     [Export] public short PolygonTextureRes { get; set; } = 16;
 
     // Used for overriding the material of the baked terrain texture.
-    [Export] public Material BakeMaterialOverride { get; set; }
+    [Export] public Material? BakeMaterialOverride { get; set; }
 
     // FIXME : Property Storages => play with class property list 
 
@@ -194,7 +174,7 @@ public partial class MarchingTrianglesTerrain : Node3D
                     "res://addons/marchingTriangles/editor/resources/plugin_materials/mst_terrain_shader.tres")
                 .Duplicate(true) as ShaderMaterial);
 
-        _neighborChunkProviderProvider =
+        NeighborChunkProviderProvider =
             BuildNeighborChunkProvider(i => _chunks.TryGetValue(i, out var chk) ? chk.Underlying : null);
     }
 
@@ -204,8 +184,8 @@ public partial class MarchingTrianglesTerrain : Node3D
     ///  and if || offset ||² is less than 2.
     /// </summary>
     /// <param name="chunkProvider"></param>
-    public static Func<Vector2I, Vector2I, HexagonalTerrainChunk> BuildNeighborChunkProvider(
-        Func<Vector2I, HexagonalTerrainChunk> chunkProvider)
+    public static Func<Vector2I, Vector2I, HexagonalTerrainChunk?> BuildNeighborChunkProvider(
+        Func<Vector2I, HexagonalTerrainChunk?> chunkProvider)
     {
         return (chunkCoord, offset) =>
         {
@@ -226,6 +206,7 @@ public partial class MarchingTrianglesTerrain : Node3D
             chunk.Value.GenerateTerrainMesh(false, customShaderPath);
         }
     }
+
     public void ForceRebuildTerrain(string customShaderPath = "")
     {
         foreach (var chunk in Chunks)
@@ -248,8 +229,6 @@ public partial class MarchingTrianglesTerrain : Node3D
     /// <summary>
     /// Returns the Chunk coordinates on which the provided position belongs
     /// </summary>
-    /// <param name="vector2"></param>
-    /// <returns></returns>
     public static Vector2I GetChunkCoordsFromCartesian(Vector2D vector2, Vector2I chunkDimensions)
     {
         RegularUniformFrame tiling = TerrainSettings.OrientationSystem;
@@ -311,7 +290,7 @@ public partial class MarchingTrianglesTerrain : Node3D
         var newChunk = new GdPluginHexTerrainChunk(
             coords,
             TerrainSettings.ChunkDimensions,
-            v => _neighborChunkProviderProvider(coords, v));
+            v => NeighborChunkProviderProvider(coords, v));
         _chunks.Add(coords, newChunk);
         newChunk.Name = "Chunk" + coords;
         return newChunk;
@@ -324,49 +303,60 @@ public partial class MarchingTrianglesTerrain : Node3D
         newChunk.InitializeTerrain();
 
 
-        plugin.PluginHelper.CurrentSelectedChunk = newChunk;
+        if (plugin.PluginHelper != null)
+        {
+            plugin.PluginHelper.CurrentSelectedChunk = newChunk;
+        }
 
-        plugin.Ui.UiToolAttributes.ShowToolAttributes((int)TerrainToolMode.ChunkManagement);
+        plugin.Ui?.UiToolAttributes.ShowToolAttributes((int)TerrainToolMode.ChunkManagement);
         plugin.GizmoPlugin.TriggerRedraw(this);
     }
 
-    public void RemoveChunk(Vector2I coords, MarchingTrianglesTerrainPlugin _plugin)
+    public void RemoveChunk(Vector2I coords, MarchingTrianglesTerrainPlugin plugin)
     {
-        var existingChunk = _chunks.GetValueOrDefault(coords, null);
+        var existingChunk = _chunks!.GetValueOrDefault(coords, null);
         _chunks.Remove(coords);
+
+        if (plugin.PluginHelper == null)
+        {
+            return;
+        }
+
         // Handle the case where the selected chunk is the deleted one
         if (_chunks.Count == 0)
         {
             var tmpChunk = new GdPluginHexTerrainChunk(new Vector2I(int.MaxValue, int.MinValue),
-                TerrainSettings.ChunkDimensions, v => _neighborChunkProviderProvider(coords, v));
+                TerrainSettings.ChunkDimensions, v => NeighborChunkProviderProvider(coords, v));
 
-            _plugin.PluginHelper.CurrentSelectedChunk = tmpChunk;
+            plugin.PluginHelper.CurrentSelectedChunk = tmpChunk;
         }
         else
         {
-            _plugin.PluginHelper.CurrentSelectedChunk = _chunks.First().Value;
+            plugin.PluginHelper.CurrentSelectedChunk = _chunks.First().Value;
         }
 
         RemoveChild(existingChunk);
         if (existingChunk != null) existingChunk.Owner = null;
-        _plugin.Ui.UiToolAttributes.ShowToolAttributes((int)TerrainToolMode.ChunkManagement);
-        _plugin.GizmoPlugin.TriggerRedraw(this);
+        plugin.Ui?.UiToolAttributes.ShowToolAttributes((int)TerrainToolMode.ChunkManagement);
+        plugin.GizmoPlugin.TriggerRedraw(this);
     }
 
     /// <summary>
     /// Clear from tree but do not free a chunk so the operation can be undone 
     /// </summary>
-    /// <param name="coords"></param>
-    public void RemoveChunkFromTree(Vector2I coords, MarchingTrianglesTerrainPlugin _plugin)
+    public void RemoveChunkFromTree(Vector2I coords, MarchingTrianglesTerrainPlugin plugin)
     {
-        var existingChunk = _chunks.GetValueOrDefault(coords, null);
+        var existingChunk = _chunks!.GetValueOrDefault(coords, null);
         _chunks.Remove(coords);
         // Handle the case where the selected chunk is the deleted one
-        _plugin.PluginHelper.CurrentSelectedChunk = (_chunks.Count == 0 ? null : _chunks.First().Value);
+        if (plugin.PluginHelper != null && existingChunk != null)
+        {
+            plugin.PluginHelper.CurrentSelectedChunk = (_chunks.Count == 0 ? null : _chunks.First().Value);
 
-        existingChunk.SkipSaveOnExit = true; // Prevent mesh save during undo/redo
-        RemoveChild(existingChunk);
-        existingChunk.Owner = null;
+            existingChunk.SkipSaveOnExit = true; // Prevent mesh save during undo/redo
+            RemoveChild(existingChunk);
+            existingChunk.Owner = null;
+        }
     }
 
     /// <summary>
@@ -461,8 +451,8 @@ public partial class MarchingTrianglesTerrain : Node3D
     private void ForceBatchShaderUpdate()
     {
         // TERRAIN MATERIAL - Core parameters
-        TerrainSettings.ShaderMaterial.SetShaderParameter("chunk_size", TerrainSettings.ChunkDimensions);
-        TerrainSettings.ShaderMaterial.SetShaderParameter("cell_size", TerrainSettings.CellScale);
+        TerrainSettings.ShaderMaterial?.SetShaderParameter("chunk_size", TerrainSettings.ChunkDimensions);
+        TerrainSettings.ShaderMaterial?.SetShaderParameter("cell_size", TerrainSettings.CellScale);
     }
 
     private void _InitDataDirectory()

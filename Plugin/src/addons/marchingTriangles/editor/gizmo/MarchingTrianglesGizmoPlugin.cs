@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using Microsoft.VisualBasic.CompilerServices;
 
 //using Godot.Collections;
 
@@ -25,39 +26,39 @@ public partial class MarchingTrianglesGizmoPlugin : EditorNode3DGizmoPlugin
 
     public override EditorNode3DGizmo _CreateGizmo(Node3D node3D)
     {
-        if (node3D is GdPluginHexTerrainChunk) // Chunk gizmo
+        switch (node3D)
         {
-            if (!_chunkGizmos.ContainsKey(node3D))
+            // Chunk gizmo
+            case GdPluginHexTerrainChunk when !_chunkGizmos.ContainsKey(node3D):
             {
                 node3D.TreeExited += () => _chunkGizmos.Remove(node3D);
                 var res = new MarchingTriangleTerrainChunkGizmo();
                 _chunkGizmos.Add(node3D, res);
                 return res;
             }
-        }
-        else if (node3D is MarchingTrianglesTerrain) // Terrain gizmo
-        {
-            if (!_terrainGizmos.ContainsKey(node3D))
+            // Terrain gizmo
+            case MarchingTrianglesTerrain when !_terrainGizmos.ContainsKey(node3D):
             {
                 node3D.TreeExited += () => _chunkGizmos.Remove(node3D);
                 var res = new MarchingTrianglesTerrainGizmo();
                 _terrainGizmos.Add(node3D, res);
                 return res;
             }
+            default:
+                return null!;
         }
-
-        return null;
     }
 
-    public void TriggerRedraw(Node node)
+    public void TriggerRedraw(Node? node)
     {
-        if (node is MarchingTrianglesTerrain && _terrainGizmos.TryGetValue(node, out var terrainGizmo))
+        switch (node)
         {
-            terrainGizmo._Redraw();
-        }
-        else if (node is GdPluginHexTerrainChunk && _chunkGizmos.TryGetValue(node, out var chunkGizmo))
-        {
-            chunkGizmo._Redraw();
+            case MarchingTrianglesTerrain when _terrainGizmos.TryGetValue(node, out var terrainGizmo):
+                terrainGizmo._Redraw();
+                break;
+            case GdPluginHexTerrainChunk when _chunkGizmos.TryGetValue(node, out var chunkGizmo):
+                chunkGizmo._Redraw();
+                break;
         }
     }
 

@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Spatial.Euclidean;
 using MathNet.Spatial.Units;
-using NUnit.Framework;
 
 #pragma warning disable NUnit2021
 namespace UnitTests;
@@ -167,20 +163,20 @@ public class DeltaTilingTests
         }
 
         //Test for random tilings
-        var c1x = rand.NextDouble();
-        var c2x = rand.NextDouble();
-        var c1y = rand.NextDouble();
-        var c2y = rand.NextDouble();
-        var c1 = new Vector2D(c1x, c1y);
-        var c2 = new Vector2D(c2x, c2y);
+        var c1X = rand.NextDouble();
+        var c2X = rand.NextDouble();
+        var c1Y = rand.NextDouble();
+        var c2Y = rand.NextDouble();
+        var c1 = new Vector2D(c1X, c1Y);
+        var c2 = new Vector2D(c2X, c2Y);
         tilingSystem = new DoubleDeltaTileOrientationSystem(c1, c2);
 
         // Manually recreate the expected basis
         var j = c2 - c1;
         var origin = c1 - (j);
-        var b_mid = Math.Sqrt(3) * j; // From construction + Pythagoras 
-        var b0 = b_mid.Rotate(Angle.FromDegrees(-30));
-        var b1 = b_mid.Rotate(Angle.FromDegrees(30));
+        var bMid = Math.Sqrt(3) * j; // From construction + Pythagoras 
+        var b0 = bMid.Rotate(Angle.FromDegrees(-30));
+        var b1 = bMid.Rotate(Angle.FromDegrees(30));
         // Compute the inverse
         var denom = 1/(b0.X*b1.Y-b1.X*b0.Y);
 
@@ -350,7 +346,7 @@ public class DeltaTilingTests
         RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0));
-        Assert.That(() => (tilingSystem.Clone() as DoubleDeltaTileOrientationSystem).Transform.ToArray(),
+        Assert.That(() => (tilingSystem.Clone() as DoubleDeltaTileOrientationSystem)?.Transform.ToArray(),
             Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
 
         //Random clones : 
@@ -365,7 +361,7 @@ public class DeltaTilingTests
             var o = new Vector2D(ox, oy);
             var v = new Vector2D(vx, vy);
             tilingSystem = new DoubleDeltaTileOrientationSystem(o, v);
-            Assert.That(() => (tilingSystem.Clone() as DoubleDeltaTileOrientationSystem).Transform.ToArray(),
+            Assert.That(() => (tilingSystem.Clone() as DoubleDeltaTileOrientationSystem)?.Transform.ToArray(),
                 Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
         }
     }

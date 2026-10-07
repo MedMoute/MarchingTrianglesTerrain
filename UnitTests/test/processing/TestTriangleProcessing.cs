@@ -62,7 +62,7 @@ public class TestTriangleProcessing
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
 
-        Assert.That(chunk._terrainDualGrid.CompleteCells, Has.Count.EqualTo(1));
+        Assert.That(chunk.TerrainDualGrid.CompleteCells, Has.Count.EqualTo(1));
 
         Assert.DoesNotThrow(() => { output = chunk.ProcessGeometry(); });
 
@@ -93,7 +93,7 @@ public class TestTriangleProcessing
                         //Check all heights are identical and equal to the cell edge value
                     {
                         Assert.That(
-                            keyValuePair.Value[i].Points.All(p => p.Y.Equals(keyValuePair.Key.GetEdgeAvgHeight(i))),
+                            keyValuePair.Value[i].Points.All(p => p.Y.Equals(keyValuePair.Key.GetEdgeAvgHeight!(i))),
                             Is.True);
                     }
 
@@ -183,8 +183,7 @@ public class TestTriangleProcessing
         };
         chunk.Dirty = true;
 
-        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
-        output = chunk.ProcessGeometry();
+        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = chunk.ProcessGeometry();
         Assert.DoesNotThrow(() => { output = chunk.ProcessGeometry(); });
 
         //Per cell manifold and value checks
@@ -249,7 +248,6 @@ public class TestTriangleProcessing
     {
         var dico = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
         var borderEdgesAsSets = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
-        var manifoldBordersAsSets = new List<float[]>();
 
         var vertexSet = new SortedSet<Vector3>(new V3Comp());
         var z = 0;
@@ -289,14 +287,13 @@ public class TestTriangleProcessing
             }
         }
 
-        manifoldBordersAsSets = dico.Where(pair => pair.Value == 1).Select(pair => pair.Key).ToList();
+        var manifoldBordersAsSets = dico.Where(pair => pair.Value == 1).Select(pair => pair.Key).ToList();
 
         // Console.WriteLine("Expected : ");
         // foreach (var set in manifoldBordersAsSets)
         // {
         //     Console.WriteLine(set.Stringify());
         // }
-
         var eulerCharacteristic = vertexSet.Count - dico.Count + outputTriangles.Count;
 
         if (eulerCharacteristic != 1)
@@ -457,13 +454,13 @@ public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
 
     public bool Equals(float[]? x, float[]? y)
     {
-        if (x?.Length != y?.Length)
+        if (x==null || y==null) return false;
+        if (x.Length != y.Length)
             return false;
-        for (int i = 0; i < x?.Length; i++)
+        for (int i = 0; i < x.Length; i++)
         {
             if (Math.Abs(x[i] - y[i]) > epsilon)
             {
-                // Console.WriteLine(Math.Abs(x[i] - y[i]));
                 return false;
             }
         }
@@ -485,6 +482,10 @@ public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
 
     public int Compare(float[]? x, float[]? y)
     {
+        if (x==null && y==null) return 0;
+        if (x==null ) return -1;
+        if (y==null ) return 1;
+
         return x.Equals(y) ? 0 : x.GetHashCode() - y.GetHashCode();
     }
 }

@@ -40,10 +40,8 @@ public class TestHexCells
         }
 
 
-        var trianglesOrientationSystem = TerrainSettings.OrientationSystem;
-        //TestForProvidedFrame(trianglesOrientationSystem);
-
-        trianglesOrientationSystem = TerrainSettings.OrientationSystem.OffsetBy(new Vector2D(1d, 1d));
+        var trianglesOrientationSystem =
+            TerrainSettings.OrientationSystem.OffsetBy(new Vector2D(1d, 1d));
         TestForProvidedFrame(trianglesOrientationSystem);
     }
 }

@@ -4,6 +4,7 @@ using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using MathNet.Spatial.Euclidean;
 using MathNet.Spatial.Units;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 
@@ -205,19 +206,23 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
 
     public RegularUniformFrame OffsetBy(Vector2D cartesianOffset)
     {
-        DoubleDeltaTileOrientationSystem newFrame = Clone() as DoubleDeltaTileOrientationSystem;
-        var newOrigin = (Vector2D.OfVector(newFrame.TransformOffset) + cartesianOffset).ToVector();
-        newFrame.TransformOffset = newOrigin;
-        newFrame.DualSeeds =
-            new Tuple<Vector2D, Vector2D>(DualSeeds.Item1 + cartesianOffset, DualSeeds.Item2 + cartesianOffset);
-        newFrame.TransformInverseOffset = newOrigin;
-
-        for (var i = 0; i < UnscaledOriginCellCentroidPositions.Length; i++)
+        if (Clone() is DoubleDeltaTileOrientationSystem newFrame)
         {
-            newFrame.UnscaledOriginCellCentroidPositions[i] += cartesianOffset;
+            var newOrigin = (Vector2D.OfVector(newFrame.TransformOffset) + cartesianOffset).ToVector();
+            newFrame.TransformOffset = newOrigin;
+            newFrame.DualSeeds =
+                new Tuple<Vector2D, Vector2D>(DualSeeds.Item1 + cartesianOffset, DualSeeds.Item2 + cartesianOffset);
+            newFrame.TransformInverseOffset = newOrigin;
+
+            for (var i = 0; i < UnscaledOriginCellCentroidPositions.Length; i++)
+            {
+                newFrame.UnscaledOriginCellCentroidPositions[i] += cartesianOffset;
+            }
+
+            return newFrame;
         }
 
-        return newFrame;
+        throw new InvalidCastException();
     }
 
     protected bool Equals(DoubleDeltaTileOrientationSystem other)
@@ -228,7 +233,7 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
                TilingScale.Equals(other.TilingScale);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null) return false;
         if (ReferenceEquals(this, obj)) return true;
@@ -240,8 +245,6 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
     {
         return HashCode.Combine(
             _offSetAngleInRad,
-            DualSeeds.Item1,
-            DualSeeds.Item2,
             UnscaledOriginCellCentroidPositions[0],
             UnscaledOriginCellCentroidPositions[1], 
             Transform,

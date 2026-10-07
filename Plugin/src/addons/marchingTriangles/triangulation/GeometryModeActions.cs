@@ -80,6 +80,11 @@ public static class GeometryModeActions
             : //Cell center point, we cant rely on the cell
             htCell.VertexPositionsInPlane[vertexInHtCellIdx]; //Usual vertex
 
+        if (htCell.GetEdgeAvgHeight == null)
+        {
+            return;
+        }
+        
         var height = secondTriangulationFlag
             ? htCell.GetEdgeAvgHeight(EngineUtils.Mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
             : htCell.GetEdgeAvgHeight(vertexInHtCellIdx);

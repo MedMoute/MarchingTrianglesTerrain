@@ -91,7 +91,7 @@ public class TerrainColorMaps(
     public void SetDualCellGeometryMode(Vector3I cellDataIdx, Vector2I value)
     {
         EnsureRange(cellDataIdx,parent.Dimensions);
-        foreach (var hexTerrainCell in parent._terrainDualGrid.CompleteCells.Where(cell=> cell.Visits.ContainsKey(cellDataIdx)))
+        foreach (var hexTerrainCell in parent.TerrainDualGrid.CompleteCells.Where(cell=> cell.Visits.ContainsKey(cellDataIdx)))
         {
             hexTerrainCell.GeometryModesOverride = new Tuple<GeometryMode, GeometryMode>((GeometryMode)value.X, (GeometryMode)value.Y);
         }

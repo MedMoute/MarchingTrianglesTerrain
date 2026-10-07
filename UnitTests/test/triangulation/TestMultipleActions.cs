@@ -15,20 +15,20 @@ internal class TestMultipleActions
 
     private Triangulation t;
 
-    private static readonly Func<Triangulation, TriangulationEditAction<int>> Displace0 = _ =>
+    private static readonly Func<Triangulation, ITriangulationEditAction<int>> Displace0 = _ =>
         new DisplaceEdgeAlongYAxis(0, 30, 200);
 
-    private static readonly Func<Triangulation, TriangulationEditAction<int>> MovePoint0 = _ =>
+    private static readonly Func<Triangulation, ITriangulationEditAction<int>> MovePoint0 = _ =>
         new MovePointAlongYAxisAction(0, 100);
 
-    private static readonly Func<Triangulation, TriangulationEditAction<int>> AddTriangle0 = t => new AddTriangleFan(
+    private static readonly Func<Triangulation, ITriangulationEditAction<int>> AddTriangle0 = t => new AddTriangleFan(
         (0, t.ToTriangleInfoList().Count == 1 ? 1 : 3),
         new Vector3(
             A.X,
             t.ToTriangleInfoList().Count == 1 ? 50 : 100,
             A.Z));
 
-    private static readonly Func<Triangulation, TriangulationEditAction<int>> SplitEdge0 = t => new SplitSubEdgeAction(
+    private static readonly Func<Triangulation, ITriangulationEditAction<int>> SplitEdge0 = t => new SplitSubEdgeAction(
         0,
         0,
         //Pick the correct endpoint, if a triangle fan was added, the sub edge is still (0,1),
@@ -40,7 +40,7 @@ internal class TestMultipleActions
             .Count(p => !p.IsEqualApprox(A) && !p.IsEqualApprox(B) && !p.IsEqualApprox(C)) == 1) ? 1 : 3
         , 0.5f);
 
-    private static readonly Func<Triangulation, TriangulationEditAction<int>> AddTriOnEdge0 = t =>
+    private static readonly Func<Triangulation, ITriangulationEditAction<int>> AddTriOnEdge0 = t =>
         new AddTrianglesOnBorderEdge(
             0,
             new Vector3(
@@ -51,10 +51,10 @@ internal class TestMultipleActions
 
     internal class TestData
     {
-        internal readonly Func<Triangulation, TriangulationEditAction<int>> _action;
+        internal readonly Func<Triangulation, ITriangulationEditAction<int>> _action;
         private readonly string _className;
 
-        internal TestData(Func<Triangulation, TriangulationEditAction<int>> action, string className)
+        internal TestData(Func<Triangulation, ITriangulationEditAction<int>> action, string className)
         {
             _action = action;
             _className = className;

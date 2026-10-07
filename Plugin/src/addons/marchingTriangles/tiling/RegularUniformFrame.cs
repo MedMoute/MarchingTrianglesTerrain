@@ -102,7 +102,7 @@ public interface RegularUniformFrame : RegularUniformTiling, ICloneable
         return vertices;
     }
 
-    
+
     //TODO : don't go through Cartesian coords
     Vector3I GetVertexIndexInDualSpace(Vector3I cellIdx, RegularUniformFrame dualFrame, int vertexIdx)
     {
@@ -112,7 +112,7 @@ public interface RegularUniformFrame : RegularUniformTiling, ICloneable
         var pos2D = centroid + new Vector2D(xDelta, yDelta);
 
         Vector2I cell = dualFrame.GetCell(pos2D);
-        Vector3I fullCell = new Vector3I(cell.X, cell.Y, dualFrame.GetPolygonIndexFromCartesian(pos2D,cell));
+        Vector3I fullCell = new Vector3I(cell.X, cell.Y, dualFrame.GetPolygonIndexFromCartesian(pos2D, cell));
         return fullCell;
     }
 
@@ -158,16 +158,20 @@ public interface RegularUniformFrame : RegularUniformTiling, ICloneable
     /// <returns></returns>
     RegularUniformFrame OffsetBy(Vector2D cartesianOffset)
     {
-        RegularUniformFrame newFrame = Clone() as RegularUniformFrame;
-        var newOrigin = (Vector2D.OfVector(newFrame.TransformOffset) + cartesianOffset).ToVector();
-        newFrame.TransformOffset = newOrigin;
-        newFrame.TransformInverseOffset = newOrigin;
-
-        for (var i = 0; i < UnscaledOriginCellCentroidPositions.Length; i++)
+        if (Clone() is RegularUniformFrame newFrame)
         {
-            newFrame.UnscaledOriginCellCentroidPositions[i] += cartesianOffset;
+            var newOrigin = (Vector2D.OfVector(newFrame.TransformOffset) + cartesianOffset).ToVector();
+            newFrame.TransformOffset = newOrigin;
+            newFrame.TransformInverseOffset = newOrigin;
+
+            for (var i = 0; i < UnscaledOriginCellCentroidPositions.Length; i++)
+            {
+                newFrame.UnscaledOriginCellCentroidPositions[i] += cartesianOffset;
+            }
+
+            return newFrame;
         }
 
-        return newFrame;
+        throw new InvalidCastException();
     }
 }

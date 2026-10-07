@@ -278,14 +278,14 @@ public class HexTileTests
         Assert.That(() => offset.Transform.Column(2).ToArray(),
             Is.EqualTo((Vector2D.OfVector(tilingSystem.Transform.Column(2)) + off).ToVector().ToArray())
                 .AsCollection.Within(1E-5));
-        
+
         //Random offsets
         var rand = new Random();
         for (int i = 0; i < 10; i++)
         {
             var ox = rand.NextDouble();
             var oy = rand.NextDouble();
-            off = new Vector2D(ox, oy); 
+            off = new Vector2D(ox, oy);
             offset = tilingSystem.OffsetBy(off);
             // Check that the square submatrix is unchanged
             Assert.That(() => tilingSystem.Transform.SubMatrix(0, 2, 0, 2).ToArray(),
@@ -303,7 +303,7 @@ public class HexTileTests
         RegularUniformFrame tilingSystem = new HexTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0));
-        Assert.That(() => (tilingSystem.Clone() as HexTileOrientationSystem).Transform.ToArray(),
+        Assert.That(() => (tilingSystem.Clone() as HexTileOrientationSystem)?.Transform.ToArray(),
             Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
 
         //Random clones : 
@@ -318,7 +318,7 @@ public class HexTileTests
             var o = new Vector2D(ox, oy);
             var v = new Vector2D(vx, vy);
             tilingSystem = new HexTileOrientationSystem(o, v);
-            Assert.That(() => (tilingSystem.Clone() as HexTileOrientationSystem).Transform.ToArray(),
+            Assert.That(() => (tilingSystem.Clone() as HexTileOrientationSystem)?.Transform.ToArray(),
                 Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
         }
     }

@@ -98,6 +98,11 @@ public class TerrainToolPluginHelper
         Vector3? drawPosition,
         EditorUndoRedoManager? redoManager)
     {
+        if (redoManager == null)
+        {
+            return;
+        }
+
         if (inputEvent.IsPressed())
         {
             if (terrainToolMode == TerrainToolMode.ChunkManagement && node3D is MarchingTrianglesTerrain terrain)
@@ -116,7 +121,7 @@ public class TerrainToolPluginHelper
                     terrain.Chunks.TryGetValue(CurrentHoveredChunk, out var selectedChunk);
                     if (selectedChunk != null) // Left-click on an already existing chunk => removal
                     {
-                        redoManager?.CreateAction("Remove Chunk");
+                        redoManager.CreateAction("Remove Chunk");
                         redoManager.AddDoMethod(terrain, MarchingTrianglesTerrain.MethodName.RemoveChunkFromTree,
                             CurrentHoveredChunk, _parent);
                         redoManager.AddUndoMethod(terrain, MarchingTrianglesTerrain.MethodName.AddChunk,
@@ -125,7 +130,7 @@ public class TerrainToolPluginHelper
                     }
                     else if (terrain.CanAddEmptyChunk(CurrentHoveredChunk))
                     {
-                        redoManager?.CreateAction("Add chunk");
+                        redoManager.CreateAction("Add chunk");
                         redoManager.AddDoMethod(terrain, MarchingTrianglesTerrain.MethodName.AddNewChunk,
                             CurrentHoveredChunk, _parent);
                         redoManager.AddUndoMethod(terrain, MarchingTrianglesTerrain.MethodName.RemoveChunk,
@@ -175,14 +180,20 @@ public class TerrainToolPluginHelper
                 else if (Input.IsKeyPressed(Key.Shift))
                 {
                     Drawing = true;
-                    BrushPosition = drawPosition.Value;
+                    if (drawPosition != null)
+                    {
+                        BrushPosition = drawPosition.Value;
+                    }
                 }
                 else
                 {
                     HeightDragging = true;
                     if (!_toolAttributes.Flatten)
                     {
-                        DrawHeight = drawPosition.Value.Y;
+                        if (drawPosition != null)
+                        {
+                            DrawHeight = drawPosition.Value.Y;
+                        }
                     }
                 }
             }
@@ -211,7 +222,7 @@ public class TerrainToolPluginHelper
 
                 if (terrainToolMode is TerrainToolMode.Smooth)
                 {
-                    //Smoothing or Vertex painting dont need to draw on release since the job is already done
+                    //Smoothing or Vertex painting don't need to draw on release since the job is already done
                     _curDrawPattern.Clear();
                 }
             }
@@ -236,9 +247,9 @@ public class TerrainToolPluginHelper
     }
 
     // Brush scaling on Shift Left
-    private void HandleShiftClickEvent(Node3D node3D, InputEvent inputEvent, TerrainToolMode terrainToolMode,
-        bool drawAreaHovered,
-        Vector3? drawPosition)
+    private void HandleShiftClickEvent(Node3D _0, InputEvent _1, TerrainToolMode _2,
+        bool _3,
+        Vector3? _4)
     {
         // TerrainPlugin.gd => ll.431 - 447
         throw new NotImplementedException();
@@ -264,24 +275,22 @@ public class TerrainToolPluginHelper
 
             if (intersection.HasValue)
             {
-                Vector2I? chunksCoords =
+                Vector2I chunksCoords =
                     MarchingTrianglesTerrain.GetChunkCoordsFromCartesian(
                         new Vector2D(intersection.Value.X, intersection.Value.Z),
                         (terrainNode as MarchingTrianglesTerrain)!.TerrainSettings.ChunkDimensions);
 
-                if (chunksCoords.HasValue)
-                {
-                    if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Left })
-                    {
-                        HandleLeftClickEvent(terrainNode, @event, mode, false, intersection, undoRedoManager);
-                    }
 
-                    if (CurrentHoveredChunk != chunksCoords.Value)
-                    {
-                        CurrentHoveredChunk = chunksCoords.Value;
-                        ChunkPlaneHovered = true;
-                        _gizmoPlugin.TriggerRedraw(terrainNode);
-                    }
+                if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Left })
+                {
+                    HandleLeftClickEvent(terrainNode, @event, mode, false, intersection, undoRedoManager);
+                }
+
+                if (CurrentHoveredChunk != chunksCoords)
+                {
+                    CurrentHoveredChunk = chunksCoords;
+                    ChunkPlaneHovered = true;
+                    _gizmoPlugin.TriggerRedraw(terrainNode);
                 }
             }
             else
@@ -291,8 +300,8 @@ public class TerrainToolPluginHelper
 
             // Consume clicks but allow other click / mouse motion types to reach the gui, for camera movement, etc
             // => why here but not on the other  ?
-            if (@event is InputEventMouseButton _mouseEvent && @event.IsPressed() &&
-                _mouseEvent.ButtonIndex == MouseButton.Left)
+            if (@event is InputEventMouseButton mouseEvent && @event.IsPressed() &&
+                mouseEvent.ButtonIndex == MouseButton.Left)
                 return (int)EditorPlugin.AfterGuiInput.Stop;
 
             return (int)EditorPlugin.AfterGuiInput.Pass;
@@ -421,7 +430,11 @@ public class TerrainToolPluginHelper
 
             if (drawAreaHovered && @event is InputEventMouseMotion)
             {
-                BrushPosition = drawPosition.Value;
+                if (drawPosition != null)
+                {
+                    BrushPosition = drawPosition.Value;
+                }
+
                 if (Drawing && mode is TerrainToolMode.Smooth)
                 {
                     CommitDrawnPattern(terrainNode);
@@ -451,6 +464,13 @@ public class TerrainToolPluginHelper
 
     private static void PrintDebugInfoOnHoverPoint(Vector3 drawPosition)
     {
+        if (MarchingTrianglesTerrainPlugin.Instance == null ||
+            MarchingTrianglesTerrainPlugin.Instance.PluginHelper == null ||
+            MarchingTrianglesTerrainPlugin.Instance.CurTerrainNode == null)
+        {
+            throw new Exception();
+        }
+
         // DEBUG Statement
         var sb = new StringBuilder();
 
@@ -494,10 +514,15 @@ public class TerrainToolPluginHelper
     /// <summary>
     /// Commits the action planed by the drawn pattern to Godot's undo/redo manager.
     /// </summary>
-    /// <param name="terrainNode"></param>
+    /// <param name="node"></param>
     /// <exception cref="NotImplementedException"></exception>
-    private void CommitDrawnPattern(Node3D terrainNode)
+    private void CommitDrawnPattern(Node3D node)
     {
+        if (MarchingTrianglesTerrainPlugin.Instance == null)
+        {
+            return;
+        }
+
         var undoRedoManager = MarchingTrianglesTerrainPlugin.Instance.GetUndoRedo();
         // WARNING : We're relying on godot's dictionaries from now on
         // This is due to the fact that the Undo-Redo manager needs Variant compatible types (Godot's dictionary is one)
@@ -508,133 +533,137 @@ public class TerrainToolPluginHelper
             new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>>();
         var restorePatternCellCoords =
             new Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Vector2I>>();
-
-        // Process the pattern entries
-        foreach (var chunkCoord in CurrentDrawPattern.Keys)
+        
+        
+        if (node is MarchingTrianglesTerrain terrain)
         {
-            pattern[chunkCoord] = new();
-            patternCellCoords[chunkCoord] = new();
-            restorePattern[chunkCoord] = new();
-            restorePatternCellCoords[chunkCoord] = new();
-
-            var hasData = _curDrawPattern.TryGetValue(chunkCoord, out var chunkDataDrawn);
-            if (hasData)
+            // Process the pattern entries
+            foreach (var chunkCoord in CurrentDrawPattern.Keys)
             {
-                var chunk = (terrainNode as MarchingTrianglesTerrain)?.Chunks[chunkCoord];
-                foreach (var drawCellCoords in chunkDataDrawn.Keys)
+                pattern[chunkCoord] = new();
+                patternCellCoords[chunkCoord] = new();
+                restorePattern[chunkCoord] = new();
+                restorePatternCellCoords[chunkCoord] = new();
+
+                var hasData = _curDrawPattern.TryGetValue(chunkCoord, out var chunkDataDrawn);
+                if (hasData && chunkDataDrawn != null)
                 {
-                    var cellCoord = new Vector2I(drawCellCoords.X, drawCellCoords.Y);
-                    var polyIdx = drawCellCoords.Z;
-                    var pos = chunk.Underlying.DataGrid.OrientationSystem.GetCellCentroid(cellCoord, polyIdx);
-
-                    float sample = Mathf.Clamp(chunkDataDrawn[drawCellCoords], 0.001f, 0.999f); // why not 0 - 1 ?
-                    Variant? drawValue = 0f;
-                    Variant? restoreValue = 0f;
-
-                    switch (_parent.SelectedMode)
+                    var chunk = terrain.Chunks[chunkCoord];
+                    foreach (var drawCellCoords in chunkDataDrawn.Keys)
                     {
-                        case TerrainToolMode.Level:
-                            restoreValue = chunk.Underlying.GetHeightFromCartesianCoords(pos);
-                            drawValue = Mathf.Lerp(restoreValue.Value.AsSingle(), DrawHeight, sample);
-                            break;
-                        case TerrainToolMode.Smooth:
-                        case TerrainToolMode.Bridge:
-                        case TerrainToolMode.DebugBrush:
+                        var cellCoord = new Vector2I(drawCellCoords.X, drawCellCoords.Y);
+                        var polyIdx = drawCellCoords.Z;
+                        var pos = chunk.Underlying.DataGrid.OrientationSystem.GetCellCentroid(cellCoord, polyIdx);
 
-                            break; // TODO
-                        case TerrainToolMode.Brush:
-                            restoreValue = chunk.Underlying.GetHeightFromTriCellCoords(drawCellCoords);
-                            if (_parent.ToolAttributes.Flatten)
-                            {
-                                drawValue = Mathf.Lerp(restoreValue.Value.AsSingle(), BrushPosition.Y, sample);
-                            }
-                            else
-                            {
-                                float heightDiff = BrushPosition.Y - DrawHeight;
-                                drawValue = Mathf.Lerp(restoreValue.Value.AsSingle(),
-                                    restoreValue.Value.AsSingle() + heightDiff,
-                                    sample);
-                            }
+                        float sample = Mathf.Clamp(chunkDataDrawn[drawCellCoords], 0.001f, 0.999f); // why not 0 - 1 ?
+                        Variant? drawValue = 0f;
+                        Variant? restoreValue = 0f;
 
-                            break;
-                        case TerrainToolMode.ChunkManagement:
-                        case TerrainToolMode.TerrainSettings:
-                            break;
-                        case TerrainToolMode.GeometryEdit:
-                            var cell = chunk.Underlying._terrainDualGrid.CompleteCells
-                                .FirstOrDefault(c => c.Visits.ContainsKey(new Vector3I(cellCoord.X,cellCoord.Y,0)));
-                            if (cell is null)
-                            {
-                                restoreValue = null;
-                                drawValue = null;
+                        switch (_parent.SelectedMode)
+                        {
+                            case TerrainToolMode.Level:
+                                restoreValue = chunk.Underlying.GetHeightFromCartesianCoords(pos);
+                                drawValue = Mathf.Lerp(restoreValue.Value.AsSingle(), DrawHeight, sample);
                                 break;
-                            }
+                            case TerrainToolMode.Smooth:
+                            case TerrainToolMode.Bridge:
+                            case TerrainToolMode.DebugBrush:
 
-                            var cellValue = cell.GeometryModesOverride;
-                            restoreValue = cellValue is not null
-                                ? new Vector2I((int)cellValue.Item1, (int)cellValue.Item2)
-                                : new Vector2I((int)chunk.Underlying.DefaultGeometryModes.Item1,
-                                    (int)chunk.Underlying.DefaultGeometryModes.Item2);
-                            drawValue = _parent.ToolAttributes.GeometryModes;
-                            break;
-                        default:
-                            throw new NotSupportedException($"Behavior not implemented for {_parent.SelectedMode}");
-                    }
+                                break; // TODO
+                            case TerrainToolMode.Brush:
+                                restoreValue = chunk.Underlying.GetHeightFromTriCellCoords(drawCellCoords);
+                                if (_parent.ToolAttributes.Flatten)
+                                {
+                                    drawValue = Mathf.Lerp(restoreValue.Value.AsSingle(), BrushPosition.Y, sample);
+                                }
+                                else
+                                {
+                                    float heightDiff = BrushPosition.Y - DrawHeight;
+                                    drawValue = Mathf.Lerp(restoreValue.Value.AsSingle(),
+                                        restoreValue.Value.AsSingle() + heightDiff,
+                                        sample);
+                                }
 
-                    if (restoreValue != null && drawValue != null)
-                    {
-                        restorePattern[chunkCoord][drawCellCoords] = restoreValue.Value;
-                        pattern[chunkCoord][drawCellCoords] = drawValue.Value;
+                                break;
+                            case TerrainToolMode.ChunkManagement:
+                            case TerrainToolMode.TerrainSettings:
+                                break;
+                            case TerrainToolMode.GeometryEdit:
+                                var cell = chunk.Underlying.TerrainDualGrid.CompleteCells
+                                    .FirstOrDefault(c =>
+                                        c.Visits.ContainsKey(new Vector3I(cellCoord.X, cellCoord.Y, 0)));
+                                if (cell is null)
+                                {
+                                    restoreValue = null;
+                                    drawValue = null;
+                                    break;
+                                }
+
+                                var cellValue = cell.GeometryModesOverride;
+                                restoreValue = cellValue is not null
+                                    ? new Vector2I((int)cellValue.Item1, (int)cellValue.Item2)
+                                    : new Vector2I((int)chunk.Underlying.DefaultGeometryModes!.Item1,
+                                        (int)chunk.Underlying.DefaultGeometryModes!.Item2);
+                                drawValue = _parent.ToolAttributes.GeometryModes;
+                                break;
+                            default:
+                                throw new NotSupportedException($"Behavior not implemented for {_parent.SelectedMode}");
+                        }
+
+                        if (restoreValue != null && drawValue != null)
+                        {
+                            restorePattern[chunkCoord][drawCellCoords] = restoreValue.Value;
+                            pattern[chunkCoord][drawCellCoords] = drawValue.Value;
+                        }
                     }
                 }
             }
+
+            bool isQuickPaint = false; //TODO Not supported
+            var doPatternVariant =
+                new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
+                    Godot.Collections.Dictionary<Vector3I, Variant>>>();
+            var undoPatternVariant =
+                new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
+                    Godot.Collections.Dictionary<Vector3I, Variant>>>();
+
+            if (isQuickPaint)
+            {
+                ProcessQuickPaintBrushPattern(
+                    node,
+                    pattern, restorePattern, out var doPattern, out var undoPattern);
+                doPatternVariant = doPattern;
+                undoPatternVariant = undoPattern;
+            }
+            else
+            {
+                ProcessBrushPattern(
+                    _parent.SelectedMode,
+                    pattern,
+                    restorePattern,
+                    out var doPattern,
+                    out var undoPattern);
+                doPatternVariant = doPattern;
+                undoPatternVariant = undoPattern;
+            }
+
+            // Use delegate method since "this" helper is not a Godot object (but the plugin itself is)
+            undoRedoManager.CreateAction("Terrain height draw" + (isQuickPaint ? " with quick paint brush" : ""));
+            undoRedoManager.AddDoMethod(_parent, nameof(
+                    MarchingTrianglesTerrainPlugin.DelegateCompositePatternAction),
+                terrain,
+                doPatternVariant);
+            undoRedoManager.AddUndoMethod(_parent, nameof(
+                    MarchingTrianglesTerrainPlugin.DelegateCompositePatternAction),
+                terrain,
+                undoPatternVariant);
+            undoRedoManager.CommitAction();
         }
-
-
-        bool isQuickPaint = false; //TODO Not supported
-        var doPatternVariant =
-            new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
-                Godot.Collections.Dictionary<Vector3I, Variant>>>();
-        var undoPatternVariant =
-            new Godot.Collections.Dictionary<string, Godot.Collections.Dictionary<Vector2I,
-                Godot.Collections.Dictionary<Vector3I, Variant>>>();
-
-        if (isQuickPaint)
-        {
-            ProcessQuickPaintBrushPattern(
-                terrainNode as MarchingTrianglesTerrain,
-                pattern, restorePattern, out var doPattern, out var undoPattern);
-            doPatternVariant = doPattern;
-            undoPatternVariant = undoPattern;
-        }
-        else
-        {
-            ProcessBrushPattern(
-                _parent.SelectedMode,
-                pattern,
-                restorePattern,
-                out var doPattern,
-                out var undoPattern);
-            doPatternVariant = doPattern;
-            undoPatternVariant = undoPattern;
-        }
-
-        // Use delegate method since "this" helper is not a Godot object (but the plugin itself is)
-        undoRedoManager.CreateAction("Terrain height draw" + (isQuickPaint ? " with quick paint brush" : ""));
-        undoRedoManager.AddDoMethod(_parent, nameof(
-                MarchingTrianglesTerrainPlugin.DelegateCompositePatternAction),
-            terrainNode as MarchingTrianglesTerrain,
-            doPatternVariant);
-        undoRedoManager.AddUndoMethod(_parent, nameof(
-                MarchingTrianglesTerrainPlugin.DelegateCompositePatternAction),
-            terrainNode as MarchingTrianglesTerrain,
-            undoPatternVariant);
-        undoRedoManager.CommitAction();
     }
 
 
     private void ProcessQuickPaintBrushPattern(
-        MarchingTrianglesTerrain terrainNode,
+        Node3D node,
         Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> pattern,
         Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> restorePattern,
         out Godot.Collections.Dictionary<
@@ -659,8 +688,6 @@ public class TerrainToolPluginHelper
     /// NON-QUICK PAINT MODE: Apply height + default wall texture
     /// Use the terrain's default_wall_texture for wall colors
     /// </summary>
-    /// <param name="pattern"></param>
-    /// <param name="restorePattern"></param>
     private void ProcessBrushPattern(
         TerrainToolMode operationMode,
         Godot.Collections.Dictionary<Vector2I, Godot.Collections.Dictionary<Vector3I, Variant>> pattern,
@@ -733,13 +760,18 @@ public class TerrainToolPluginHelper
             {
                 foreach (var kvp in colorData)
                 {
-                    terrain.Chunks.TryGetValue(kvp.Key, out GdPluginHexTerrainChunk chunk);
+                    terrain.Chunks.TryGetValue(kvp.Key, out var chunk);
                     if (chunk != null)
                     {
                         affectedChunks[chunk.Underlying.Coordinates] = chunk;
                         foreach (var data in colorData[chunk.Underlying.Coordinates])
                         {
-                            stringActionPair.Value.Invoke(chunk.Underlying.ColorMaps, data.Key, data.Value);
+                            stringActionPair.Value.Invoke(
+                                chunk.Underlying.ColorMaps ??
+                                throw new Exception(
+                                    "Cannot apply change to underlying data as the data container is null"),
+                                data.Key,
+                                data.Value);
                         }
                     }
                 }
@@ -752,7 +784,7 @@ public class TerrainToolPluginHelper
         {
             if (hexTerrainChunk.GetActiveMaterial(0) is ShaderMaterial mat)
             {
-                hexTerrainChunk.GenerateTerrainMesh(false,mat.Shader.ResourcePath);
+                hexTerrainChunk.GenerateTerrainMesh(false, mat.Shader.ResourcePath);
             }
             else
             {

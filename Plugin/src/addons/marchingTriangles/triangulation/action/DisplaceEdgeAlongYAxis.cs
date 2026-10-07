@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
@@ -11,7 +10,6 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 /// The forceSnap parameter determines whether the points defined by the sub-edges of the
 /// edges should
 /// </summary>
-/// <param name="forceSnap"></param>
 public class DisplaceEdgeAlongYAxis : DelegatedTriangulationEditAction<int>
 {
     private readonly int _edgeIdx;
