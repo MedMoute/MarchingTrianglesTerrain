@@ -10,7 +10,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 /// </summary>
 public static class EngineUtils
 {
-    public static Node GetRootNode(Node node)
+    public static Node? GetRootNode(Node node)
     {
         Node rootNode;
         if (Engine.IsEditorHint())

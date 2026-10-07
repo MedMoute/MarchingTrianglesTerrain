@@ -37,7 +37,7 @@ public abstract class MttDataHandler
         }
 
         var rootNode = EngineUtils.GetRootNode(terrain);
-        if (rootNode.SceneFilePath.Length == 0)
+        if (rootNode==null || rootNode.SceneFilePath.Length == 0)
         {
             return "";
         }
@@ -241,7 +241,7 @@ public abstract class MttDataHandler
         }
 
         var rootOfScene = EngineUtils.GetRootNode(terrain);
-        if (rootOfScene.SceneFilePath.Length == 0)
+        if (rootOfScene==null || rootOfScene.SceneFilePath.Length == 0)
         {
             return;
         }
@@ -800,6 +800,10 @@ public abstract class MttDataHandler
         }
 
         var sceneRoot = EngineUtils.GetRootNode(terrain);
+        if (sceneRoot==null || sceneRoot.SceneFilePath.Length == 0)
+        {
+            return false;
+        }
         var dirs = CollectTerrainDirsRecursive(sceneRoot,
             new Dictionary<string, List<MarchingTrianglesTerrain>>());
 
