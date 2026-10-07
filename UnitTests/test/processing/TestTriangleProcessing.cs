@@ -1,6 +1,7 @@
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Numerics;
+
 // ReSharper disable AccessToModifiedClosure
 // ReSharper disable UnusedVariable
 namespace UnitTests.test.processing;
@@ -55,10 +56,11 @@ public class TestTriangleProcessing
             _src1, _src2)
         {
             DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode),
-            DefaultThreshold = new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference)
+            DefaultThreshold =
+                new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference),
+            Dirty = true,
+            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
         };
-
-        _chunk.Dirty = true;
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
 
@@ -80,12 +82,16 @@ public class TestTriangleProcessing
                     TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
                     //Check all heights are identical and equal to the cell avg
-                    Assert.That(keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight))),Is.True);
+                    Assert.That(
+                        keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight))),
+                        Is.True);
                     break;
                 case GeometryMode.FlatHexagonsNoFans:
                     TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
-                    Assert.That(keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight))),Is.True);
+                    Assert.That(
+                        keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight))),
+                        Is.True);
                     break;
                 case GeometryMode.FlatTrianglesNoFans:
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
@@ -102,7 +108,6 @@ public class TestTriangleProcessing
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6 + 12));
                     TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
                     break;
-
             }
         }
 
@@ -110,7 +115,7 @@ public class TestTriangleProcessing
         var flattenedOutput = output.SelectMany(kvp => kvp.Value).ToList();
         switch (geometryMode)
         {
-            case GeometryMode.FlatTrianglesNoFans:
+            case GeometryMode.FlatTrianglesNoFans: // Output is not manifold
                 break;
             default:
                 TestUtils.AssertIsTriangleListManifold(flattenedOutput);
@@ -133,25 +138,46 @@ public class TestTriangleProcessing
             _src1, _src2)
         {
             DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode),
-            DefaultThreshold = new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference)
+            DefaultThreshold =
+                new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference),
+            Dirty = true,
+            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
         };
-
-        _chunk.Dirty = true;
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
 
         Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(); });
 
-
+            int expectedCount;
+            switch (geometryMode)
+            {
+                case GeometryMode.FlatTrianglesNoFans:
+                case GeometryMode.FlatHexagons:
+                case GeometryMode.FlatTriangles:
+                case GeometryMode.FlatHexagonsNoFans:
+                case GeometryMode.SmoothLinear:
+                    expectedCount = 6;
+                    break;
+                case GeometryMode.Foothill:
+                case GeometryMode.Plateau:
+                    expectedCount = 6 + 12;
+                    break;
+                case GeometryMode.BendingEdge:
+                    expectedCount = 6 + 12 + 12;
+                    break;
+                default: throw new NotSupportedException();
+            }
         //Per cell manifold checks
         foreach (var keyValuePair in output)
         {
-            Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
+
+
+            Assert.That(keyValuePair.Value, Has.Count.EqualTo(expectedCount));
         }
 
         //Global checks
         var flattenedOutput = output.SelectMany(kvp => kvp.Value).ToList();
-        Assert.That(flattenedOutput, Has.Count.EqualTo(output.Count * 6));
+        Assert.That(flattenedOutput, Has.Count.EqualTo(output.Count * expectedCount));
     }
 
     /// <summary>
@@ -182,7 +208,8 @@ public class TestTriangleProcessing
             DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode),
             DefaultThreshold =
                 new Tuple<float, ThresholdComputationMode>(0.5f, ThresholdComputationMode.HeightDifference),
-            Dirty = true
+            Dirty = true,
+            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
         };
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = _chunk.ProcessGeometry();
@@ -195,6 +222,7 @@ public class TestTriangleProcessing
 
             var curCell = keyValuePair.Key;
             var triangulation = keyValuePair.Value;
+            //Extra checks depending on the selected mode
             switch (geometryMode)
             {
                 case GeometryMode.SmoothLinear:
@@ -220,9 +248,8 @@ public class TestTriangleProcessing
                     Assert.That(triangulation.Count(tri => tri.Points
                         .All(p => p.Y.AlmostEqual(curCell.AverageHeight))), Is.EqualTo(6));
                     //Count the amount of neighbor cells : Each adds one triangle to the final triangulation 
-                    var neighborCellEdgesCount = _chunk.GetHexCells(
-                        c => c.IsReady() && c.GetNeighborCellsCoordinates()
-                            .Any(cIdx => curCell.CellCoords == cIdx)).Count();
+                    var neighborCellEdgesCount = _chunk.GetHexCells(c => c.IsReady() && c.GetNeighborCellsCoordinates()
+                        .Any(cIdx => curCell.CellCoords == cIdx)).Count();
 
                     Assert.That(triangulation, Has.Count.EqualTo(6 + neighborCellEdgesCount));
                     break;
@@ -253,7 +280,7 @@ public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
 
     public bool Equals(float[]? x, float[]? y)
     {
-        if (x==null || y==null) return false;
+        if (x == null || y == null) return false;
         if (x.Length != y.Length)
             return false;
         for (int i = 0; i < x.Length; i++)
@@ -281,9 +308,9 @@ public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
 
     public int Compare(float[]? x, float[]? y)
     {
-        if (x==null && y==null) return 0;
-        if (x==null ) return -1;
-        if (y==null ) return 1;
+        if (x == null && y == null) return 0;
+        if (x == null) return -1;
+        if (y == null) return 1;
 
         return x.Equals(y) ? 0 : x.GetHashCode() - y.GetHashCode();
     }

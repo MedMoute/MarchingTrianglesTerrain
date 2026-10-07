@@ -13,6 +13,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action
 /// point defined by a weight between the sub-edge's starting and ending vertices.
 /// The provided starting indexes must be registered as part of an edge's border  
 /// </summary>
+/// Note : edges are oriented and so are split
 public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
 {
     /// <summary>

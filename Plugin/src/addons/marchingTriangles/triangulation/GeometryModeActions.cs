@@ -175,11 +175,10 @@ public static class GeometryModeActions
         var value = invert
             ? Mathf.Lerp(p2.Y, p1.Y, operationParameters.Item2)
             : Mathf.Lerp(p1.Y, p2.Y, operationParameters.Item2);
-        var weight = invert  ? operationParameters.Item1 : 1 - operationParameters.Item1;
-        
-        if (applyOnEdgeStart && vertexInTriIdx!=1)
-        {
+        var weight = invert ? operationParameters.Item1 : 1 - operationParameters.Item1;
 
+        if (applyOnEdgeStart && vertexInTriIdx != 1)
+        {
             editor.RegisterAction(new ComposedTriangularEditAction(triangulation =>
                 {
                     var newPt = new SplitSubEdgeAction(
@@ -193,39 +192,32 @@ public static class GeometryModeActions
 
                     if (applyOnEdgeEnd)
                     {
-                        float splitWeight  = invert  ? 
-                            operationParameters.Item1/(1 - operationParameters.Item1) :
-                            (1 - operationParameters.Item1)/operationParameters.Item1;
-                        
-                        if (splitWeight > 1)
+                        if (weight < 0.5)
                         {
                             newPt = new SplitSubEdgeAction(
                                     vertexInTriIdx,
                                     newPt,
-                                    EngineUtils.Mod(vertexInTriIdx+1,3),
-                                    1/splitWeight)
+                                    EngineUtils.Mod(vertexInTriIdx + 1, 3),
+                                    (1 - 2 * weight) / (1 - weight))
                                 .Apply(triangulation);
-
-                            new MovePointAlongYAxisAction(newPt, value).Apply(triangulation);
-                        }
-                        else
+                        }else
                         {
                             newPt = new SplitSubEdgeAction(
                                     vertexInTriIdx,
                                     vertexInTriIdx,
                                     newPt,
-                                    splitWeight)
+                                    (1-weight) /weight)
                                 .Apply(triangulation);
-
-                            new MovePointAlongYAxisAction(newPt, value).Apply(triangulation);
                         }
+
+                        new MovePointAlongYAxisAction(newPt, value).Apply(triangulation);
                     }
 
                     return newPt;
                 }
             ), tri);
-         }
-        else if (applyOnEdgeEnd && vertexInTriIdx!=1)
+        }
+        else if (applyOnEdgeEnd && vertexInTriIdx != 1)
         {
             float splitWeight = (1 - weight);
             editor.RegisterAction(new ComposedTriangularEditAction(triangulation =>
