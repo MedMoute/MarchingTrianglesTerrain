@@ -89,9 +89,13 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
     {
         if (GetParent() != null && GetParent() is MarchingTrianglesTerrain terrain)
         {
-            Underlying.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(
-                terrain.TerrainSettings.ChunkBlendMode,
-                terrain.TerrainSettings.ChunkBlendModeFallBack);
+            //Set the Geometry mode too the terrain default if not already set 
+            if (Underlying.DefaultGeometryModes == null)
+            {
+                Underlying.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(
+                    terrain.TerrainSettings.ChunkBlendMode,
+                    terrain.TerrainSettings.ChunkBlendModeFallBack);
+            }
 
             Underlying.DefaultThreshold = new Tuple<float, ThresholdComputationMode>(
                 terrain.TerrainSettings.ThresholdValue,
@@ -228,7 +232,6 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             _st.SetCustomFormat(2, SurfaceTool.CustomFormat.RgbaFloat);
             // Used for GeometryEditor
             _st.SetCustomFormat(3, SurfaceTool.CustomFormat.RgbaFloat);
-
         }
 
         //Free the lock so the thread workers can take it

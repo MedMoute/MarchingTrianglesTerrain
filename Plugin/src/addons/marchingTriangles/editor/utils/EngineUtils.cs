@@ -61,7 +61,9 @@ public static class EngineUtils
     
     public static Texture2D Resize2DTexture(string imagePath,int targetX,int targetY)
     {
-        var image = GD.Load<Image>(FileUtils.ApplyCustomDirectoryPath(imagePath));
+        var image = Image.LoadFromFile(
+            //Globalize path to remove warning (https://github.com/godotengine/godot/issues/24222#issuecomment-1792530771)
+            ProjectSettings.GlobalizePath(FileUtils.ApplyCustomDirectoryPath(imagePath)));
         image.Resize(targetX,targetY);
         return ImageTexture.CreateFromImage(image);
     }

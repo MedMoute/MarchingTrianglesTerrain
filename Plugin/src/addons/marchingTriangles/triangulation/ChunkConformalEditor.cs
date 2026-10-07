@@ -291,7 +291,7 @@ public class ChunkConformalEditor
             var requestedGeometryMode =
                 neighborCells[localVertexIndexing[i].Item1].GeometryModesOverride ?? chunkGeometryMode;
             requestedGeometryOperation.Add(localVertexIndexing[i].Item1,
-                (thresholdMask ^ (1 << i)) == 0 ? requestedGeometryMode.Item1 : requestedGeometryMode.Item2);
+                thresholdMask == 0 ? requestedGeometryMode.Item1 : requestedGeometryMode.Item2);
         }
 
         // Now that we know which operations are requested by each cell, we check if there are incompatibilities
@@ -300,7 +300,7 @@ public class ChunkConformalEditor
         //Single type of operation, all the triangulations will be edited similarly
         var geometryModes = differentGeometryModes as GeometryMode[] ?? [.. differentGeometryModes];
 
-        if (geometryModes.Count() == 1)
+        if (geometryModes.Length == 1)
         {
             foreach (var cellAndVertexIndex in localTriangulations.Keys)
             {
@@ -362,7 +362,7 @@ public class ChunkConformalEditor
 
             Vector3 otherVertex = new Vector3((float)otherVertex2D.X, otherVertexY, (float)otherVertex2D.Y);
 
-            //Get the threshold for this cell (per cell threshold not used atm)
+            //Get the threshold for this chunk (per cell threshold not used atm)
             Tuple<float, ThresholdComputationMode> threshold = chunkThreshold;
 
             thresholdMask += threshold.Item2.IsOverThreshold(threshold.Item1, posVertex, otherVertex)

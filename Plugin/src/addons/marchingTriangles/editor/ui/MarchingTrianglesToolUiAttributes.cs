@@ -113,7 +113,7 @@ public partial class MarchingTrianglesToolUiAttributes
                     }
                 }
 
-                return propertiesAttributes == null ? throw new Exception() : propertiesAttributes;
+                return propertiesAttributes ?? throw new Exception();
             }).ToList();
 
         foreach (var toolAttribute in toolAttributes)
@@ -696,7 +696,6 @@ public partial class MarchingTrianglesToolUiAttributes
                     .GetMethod("As")!
                     .MakeGenericMethod(curValue.Obj!.GetType())
                     .Invoke(curValue, null);
-                Variant boxed;
                 if (curValue.VariantType is Variant.Type.Vector2I or Variant.Type.Vector3I
                     or Variant.Type.Vector4I)
                 {
@@ -707,7 +706,7 @@ public partial class MarchingTrianglesToolUiAttributes
                     field.SetValue(curValue.Obj, v);
                 }
 
-                boxed = (Variant)typeof(Variant)
+                var boxed = (Variant)typeof(Variant)
                     .GetMethod("From")!
                     .MakeGenericMethod(curValue.Obj.GetType())
                     .Invoke(null, new[] { unboxed })!;
