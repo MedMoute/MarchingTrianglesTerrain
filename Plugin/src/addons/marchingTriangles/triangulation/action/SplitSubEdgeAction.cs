@@ -69,7 +69,7 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
 
     protected override int DoApply(Triangulation t)
     {
-        Console.WriteLine($"Split {_startIdx} => {_endIdx} @{_weight}");
+        //Console.WriteLine($"Split {_startIdx} => {_endIdx} @{_weight}");
         var subEdgeIdx = t.SubEdges.IndexOf((_startIdx, _endIdx));
         //Register a dictionary of the edited edges with their initial positions and their edited positions
         var editedSubEdges =

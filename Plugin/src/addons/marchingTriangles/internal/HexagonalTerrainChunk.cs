@@ -24,9 +24,6 @@ public class HexagonalTerrainChunk
     /// </summary>
     public Vector2I Coordinates { get; set; }
 
-    public ((int, int), (int, int)) GeometryModeParameters;
-
-
     /// <summary>
     /// The size of the chunk (measured in cells)
     /// </summary>
@@ -95,6 +92,12 @@ public class HexagonalTerrainChunk
     /// Default geometry mode value 
     /// </summary>
     public Tuple<GeometryMode, GeometryMode>? DefaultGeometryModes { get; set; }
+    
+    /// <summary>
+    /// Default chunk geometry mode parameters 
+    /// </summary>
+    public ((float, float), (float, float))? GeometryModeParameters;
+
 
     /// <summary>
     /// Default threshold computation method and value
@@ -383,13 +386,13 @@ public class HexagonalTerrainChunk
         var color1 = (cell.GeometryModesOverride 
                       ?? DefaultGeometryModes
                       ?? throw new InvalidOperationException("DefaultGeometryModes should have been set")).Item1.GetModePalette()(
-            parameters.Item1.Item1,
-            parameters.Item1.Item2);
+            parameters!.Value.Item1.Item1,
+            parameters.Value.Item1.Item2);
         var color2 = (cell.GeometryModesOverride 
                       ?? DefaultGeometryModes
                       ?? throw new InvalidOperationException("DefaultGeometryModes should have been set")).Item2.GetModePalette()(
-            parameters.Item1.Item1,
-            parameters.Item1.Item2);
+            parameters.Value.Item1.Item1,
+            parameters.Value.Item1.Item2);
 
         var bytesR = BitConverter.GetBytes((Half)color1.R).Concat(BitConverter.GetBytes((Half)color2.R)).ToArray();
         var bytesG = BitConverter.GetBytes((Half)color1.G).Concat(BitConverter.GetBytes((Half)color2.G)).ToArray();
@@ -446,9 +449,9 @@ public enum GeometryMode
     FlatHexagons = 0,
     FlatTriangles = 1,
     SmoothLinear = 2,
-    Foothill = 3,
-    Plateau = 4,
-    BendingEdge = 5,
+    BendingEdge = 3,
+    Foothill = 4,
+    Plateau = 5,
     FlatHexagonsNoFans = 6,
     FlatTrianglesNoFans = 7
 }

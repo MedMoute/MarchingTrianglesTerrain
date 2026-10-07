@@ -33,13 +33,12 @@ public static class GeometryModeActions
             {
                 //To find the other matching edge, we fetch the other point of the triangulation that is not
                 // the cell center
-                Vector3 otherPos = tri.SourceTriangle.Where(pos =>
-                {
-                    return !new Vector2(pos.X, pos.Z).IsEqualApprox(new Vector2((float)htCell.CenterPosition.X,
-                               (float)htCell.CenterPosition.Y)) &&
-                           !new Vector2(pos.X, pos.Z).IsEqualApprox(new Vector2((float)pInit.X,
-                               (float)pInit.Y));
-                }).First();
+                Vector3 otherPos = tri.SourceTriangle.First(pos => !new Vector2(pos.X, pos.Z).IsEqualApprox(new Vector2(
+                                                                       (float)htCell.CenterPosition.X,
+                                                                       (float)htCell.CenterPosition.Y)) &&
+                                                                   !new Vector2(pos.X, pos.Z).IsEqualApprox(new Vector2(
+                                                                       (float)pInit.X,
+                                                                       (float)pInit.Y)));
                 //We find the other cell containing that point
                 List<HexTerrainCell> otherCells = appliedGeometryOperations.Keys.Select(t =>
                     t.Item2).Where(oCell => oCell != htCell
@@ -66,8 +65,8 @@ public static class GeometryModeActions
             }
         }
     }
-    
-        public static void ProcessVertexOperationsForFlatTriangles(
+
+    public static void ProcessVertexOperationsForFlatTriangles(
         VertexConformalGeometryEdit editor,
         Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations,
         HexTerrainCell htCell,
@@ -86,7 +85,7 @@ public static class GeometryModeActions
         {
             return;
         }
-        
+
         var height = secondTriangulationFlag
             ? htCell.GetEdgeAvgHeight(EngineUtils.Mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
             : htCell.GetEdgeAvgHeight(vertexInHtCellIdx);
@@ -135,7 +134,7 @@ public static class GeometryModeActions
                 }
             }
             else //The action is on an internal edge of the cell, we essentially do
-                //the same thing except we dont need to find either the index
+                //the same thing except we don't need to find either the index
                 //(0=> VertexInHtCellIdx-1; 2=>VertexInHtCellIdx-1), or  the cell
             {
                 height = vertexInTriIdx == 0
@@ -145,6 +144,105 @@ public static class GeometryModeActions
                     new AddTrianglesOnBorderEdge(vertexInTriIdx, new Vector3((float)pInit.X, height, (float)pInit.Y)),
                     tri);
             }
+        }
+    }
+
+    public static void ProcessVertexOperationsForBendingEdge(
+        VertexConformalGeometryEdit editor,
+        Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations,
+        (float, float) operationParameters,
+        HexTerrainCell htCell,
+        int vertexInHtCellIdx,
+        int vertexInTriIdx,
+        Triangulation tri,
+        bool secondTriangulationOfCell, bool applyOnEdgeStart, bool applyOnEdgeEnd)
+    {
+        if (operationParameters.Item1 is < 0 or > 1 ||
+            operationParameters.Item2 is < 0 or > 1)
+        {
+            throw new ArgumentException("operationParameters must be between 0 and 1.");
+        }
+
+        if (operationParameters.Item1 == 0 || operationParameters.Item2 == 0)
+        {
+            return;
+        }
+
+        var p1 = tri.Vertices[vertexInTriIdx];
+        var p2 = tri.Vertices[EngineUtils.Mod(vertexInTriIdx + 1, 3)];
+
+        var invert = secondTriangulationOfCell;
+        var value = invert
+            ? Mathf.Lerp(p2.Y, p1.Y, operationParameters.Item2)
+            : Mathf.Lerp(p1.Y, p2.Y, operationParameters.Item2);
+        var weight = invert  ? operationParameters.Item1 : 1 - operationParameters.Item1;
+        
+        if (applyOnEdgeStart && vertexInTriIdx!=1)
+        {
+
+            editor.RegisterAction(new ComposedTriangularEditAction(triangulation =>
+                {
+                    var newPt = new SplitSubEdgeAction(
+                            vertexInTriIdx,
+                            vertexInTriIdx,
+                            EngineUtils.Mod(vertexInTriIdx + 1, 3),
+                            weight)
+                        .Apply(triangulation);
+
+                    new MovePointAlongYAxisAction(newPt, value).Apply(triangulation);
+
+                    if (applyOnEdgeEnd)
+                    {
+                        float splitWeight  = invert  ? 
+                            operationParameters.Item1/(1 - operationParameters.Item1) :
+                            (1 - operationParameters.Item1)/operationParameters.Item1;
+                        
+                        if (splitWeight > 1)
+                        {
+                            newPt = new SplitSubEdgeAction(
+                                    vertexInTriIdx,
+                                    newPt,
+                                    EngineUtils.Mod(vertexInTriIdx+1,3),
+                                    1/splitWeight)
+                                .Apply(triangulation);
+
+                            new MovePointAlongYAxisAction(newPt, value).Apply(triangulation);
+                        }
+                        else
+                        {
+                            newPt = new SplitSubEdgeAction(
+                                    vertexInTriIdx,
+                                    vertexInTriIdx,
+                                    newPt,
+                                    splitWeight)
+                                .Apply(triangulation);
+
+                            new MovePointAlongYAxisAction(newPt, value).Apply(triangulation);
+                        }
+                    }
+
+                    return newPt;
+                }
+            ), tri);
+         }
+        else if (applyOnEdgeEnd && vertexInTriIdx!=1)
+        {
+            float splitWeight = (1 - weight);
+            editor.RegisterAction(new ComposedTriangularEditAction(triangulation =>
+                {
+                    var newPt = new SplitSubEdgeAction(
+                            vertexInTriIdx,
+                            vertexInTriIdx,
+                            EngineUtils.Mod(vertexInTriIdx + 1, 3),
+                            splitWeight)
+                        .Apply(triangulation);
+
+                    new MovePointAlongYAxisAction(newPt, value).Apply(triangulation);
+
+
+                    return newPt;
+                }
+            ), tri);
         }
     }
 }

@@ -55,7 +55,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     private string? _initError;
 
     /// <summary>
-    /// Current selected moode for the plugin.
+    /// Current selected mode for the plugin.
     /// </summary>
     private TerrainToolMode _selectedMode = TerrainToolMode.Brush;
 
@@ -208,10 +208,9 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         return _init;
     }
 
-    private void OnChunkDimensionsChanged(int height, Vector2I value)
+    private void OnChunkDimensionsChanged(Vector2I value)
     {
-        //Keep the ratio same I guess ?
-        //ToolAttributes.BrushSize *= (value.X / 33d + value.Y / 33d) / 2.0;
+        //NOOP
     }
 
     public override void _ExitTree()

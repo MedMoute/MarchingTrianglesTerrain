@@ -30,23 +30,26 @@ public class VertexConformalGeometryEdit
     /// </summary>
     public void RegisterLocalVertexAction(
         Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations,
+        Dictionary<(int, HexTerrainCell), Tuple<(float,float),(float,float)?>> appliedGeometryParameters,
         Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)?>> localTriangulations)
     {
         foreach (var kvp in appliedGeometryOperations)
         {
-            var cell = kvp.Key;
+            var cellAndVertexIndexKey = kvp.Key;
             //First triangulation
 
-            var target = localTriangulations[cell].Item1;
+            var target = localTriangulations[cellAndVertexIndexKey].Item1;
+            var parameters = appliedGeometryParameters[cellAndVertexIndexKey].Item1;
             var operationType = kvp.Value.Item1;
 
-            var htCell = cell.Item2;
-            var vertexInHtCellIdx = EngineUtils.Mod(cell.Item1, HexTerrainCell.VertexCount);
+            var htCell = cellAndVertexIndexKey.Item2;
+            var vertexInHtCellIdx = EngineUtils.Mod(cellAndVertexIndexKey.Item1, HexTerrainCell.VertexCount);
 
             var tri = target.Item1;
             var vertexInTriIdx = target.Item2;
             RegisterVertexActionDependingOnGeometry(
                 operationType,
+                parameters,
                 htCell,
                 vertexInHtCellIdx,
                 vertexInTriIdx,
@@ -54,15 +57,17 @@ public class VertexConformalGeometryEdit
                 false);
             //Second triangulation, we reduce the index for the cell indexing
             //(Note that this is not used for cell center vertex processing)
-            if (localTriangulations[cell].Item2.HasValue)
+            if (localTriangulations[cellAndVertexIndexKey].Item2.HasValue)
             {
-                target = localTriangulations[cell].Item2!.Value;
+                target = localTriangulations[cellAndVertexIndexKey].Item2!.Value;
                 operationType = kvp.Value.Item2!.Value;
+                parameters = appliedGeometryParameters[cellAndVertexIndexKey].Item2!.Value;
 
                 tri = target.Item1;
                 vertexInTriIdx = target.Item2;
                 RegisterVertexActionDependingOnGeometry(
                     operationType,
+                    parameters,
                     htCell,
                     vertexInHtCellIdx,
                     vertexInTriIdx,
@@ -73,6 +78,7 @@ public class VertexConformalGeometryEdit
 
         void RegisterVertexActionDependingOnGeometry(
             GeometryMode operationType,
+            (float,float) operationParameters,
             HexTerrainCell htCell,
             int vertexInHtCellIdx,
             int vertexInTriIdx,
@@ -95,12 +101,20 @@ public class VertexConformalGeometryEdit
                     //NOOP
                     break;
                 case GeometryMode.Foothill:
-                //TODO
-                //throw new NotImplementedException();
+                    GeometryModeActions.ProcessVertexOperationsForBendingEdge(this, appliedGeometryOperations,operationParameters, htCell,
+                        vertexInHtCellIdx,
+                        vertexInTriIdx, tri, secondTriangulationOfCell, false, true);
+                    break;
                 case GeometryMode.Plateau:
-                //TODO
-                //throw new NotImplementedException();
+                    GeometryModeActions.ProcessVertexOperationsForBendingEdge(this, appliedGeometryOperations, operationParameters,htCell,
+                        vertexInHtCellIdx,
+                        vertexInTriIdx, tri, secondTriangulationOfCell, true, false);
+                    break;
                 case GeometryMode.BendingEdge:
+                    GeometryModeActions.ProcessVertexOperationsForBendingEdge(this, appliedGeometryOperations,operationParameters, htCell,
+                        vertexInHtCellIdx,
+                        vertexInTriIdx, tri, secondTriangulationOfCell, true, true);
+                    break;
                 //TODO
                 //throw new NotImplementedException();
                 case GeometryMode.FlatHexagonsNoFans:
@@ -129,6 +143,6 @@ public class CopyOnlyGeometryEdit : VertexConformalGeometryEdit
 
     public void RegisterAction(ITriangulationEditAction<int> action)
     {
-        base.RegisterAction(action,null!);
+        base.RegisterAction(action, null!);
     }
 }

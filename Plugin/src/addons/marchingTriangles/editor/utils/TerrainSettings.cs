@@ -11,33 +11,15 @@ public partial class TerrainSettings(
     ShaderMaterial? shaderMaterial) : Node
 {
     [Signal]
-    public delegate void ChunkDimensionsChangedEventHandler(int height, Vector2I chunkSize);
-
-    private int _maxHeight = 32;
+    public delegate void ChunkDimensionsChangedEventHandler(Vector2I chunkSize);
     
     /// Chunks Global orientation.
     /// DO NOT USE for local computations !
     public static IRegularUniformFrame OrientationSystem { get; } = new DoubleDeltaTileOrientationSystem(
         new Vector2D(0.5,1/(2*Math.Sqrt(3))),
-        new Vector2D(1,1/Math.Sqrt(3))
-        );
+        new Vector2D(1,1/Math.Sqrt(3)));
 
     public ShaderMaterial? ShaderMaterial => shaderMaterial;
-
-    [Export]
-    public int MaxHeight
-    {
-        get => _maxHeight;
-        set
-        {
-            _maxHeight = value;
-            shaderMaterial?.SetShaderParameter("height", _maxHeight);
-            if (Engine.IsEditorHint())
-            {
-                EmitSignal(nameof(ChunkDimensionsChanged), _maxHeight, _chunkDimensions);
-            }
-        }
-    }
 
     /// <summary>
     /// The default size value, in triangular cells, for the chunk dimensions.
@@ -55,13 +37,15 @@ public partial class TerrainSettings(
             shaderMaterial?.SetShaderParameter("chunkDimensions", _chunkDimensions);
             if (Engine.IsEditorHint())
             {
-                EmitSignal(nameof(ChunkDimensionsChanged), _maxHeight, _chunkDimensions);
+                EmitSignal(nameof(ChunkDimensionsChanged), _chunkDimensions);
             }
         }
     }
 
     private float _cellScale = 1f;
-
+    /// <summary>
+    /// The setting defining the default scaling of cells in a terrain.
+    /// </summary>
     [Export]
     public float CellScale
     {
@@ -74,7 +58,9 @@ public partial class TerrainSettings(
     }
 
     private GeometryMode _defaultChunkGeometryMode = GeometryMode.SmoothLinear;
-
+    /// <summary>
+    /// The setting defining the default geometry behaviour of a chunk when the geometry threshold is not crossed.
+    /// </summary>
     [Export]
     public GeometryMode ChunkBlendMode
     {
@@ -84,6 +70,9 @@ public partial class TerrainSettings(
     
     private GeometryMode _defaultChunkGeometryModeOverThreshold = GeometryMode.FlatTriangles;
 
+    /// <summary>
+    /// The setting defining the default geometry behaviour of a chunk when the geometry threshold is crossed.
+    /// </summary>
     [Export]
     public GeometryMode ChunkBlendModeFallBack
     {
@@ -91,6 +80,19 @@ public partial class TerrainSettings(
         set => _defaultChunkGeometryModeOverThreshold = value;
     }
 
+    private Vector4 _defaultParameterValues = new Vector4(0.3f, 1f, 0.3f,1f);
+    
+    /// <summary>
+    /// The setting defining the default geometry parameter values for chunks
+    /// </summary>
+    [Export]
+    public Vector4 ChunkGeometryParameters
+    {
+        get => _defaultParameterValues;
+        set => _defaultParameterValues = value;
+    }
+    
+    
     private int _collisionLayerIdx = 9;
 
     [Export]
