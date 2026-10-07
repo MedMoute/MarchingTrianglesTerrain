@@ -1,8 +1,11 @@
+using System;
+using System.Diagnostics.CodeAnalysis;
 using Godot;
 using Godot.Collections;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.gizmo;
-using MarchingTrianglesTerrain.addons.marchingTriangles.ui;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrainUi = MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui.MarchingTrianglesTerrainUi;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 
@@ -17,7 +20,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     /// <summary>
     /// Singleton plugin instance.
     /// </summary>
-    public static MarchingTrianglesTerrainPlugin Instance { get; set; }
+    public static MarchingTrianglesTerrainPlugin? Instance { get; set; }
 
     /// <summary>
     /// Gizmo Plugin instance.
@@ -29,7 +32,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     /// <summary>
     /// Component storing the plugin's Editor UI subcomponents. 
     /// </summary>
-    public MarchingTrianglesTerrainUi Ui { get; private set; }
+    public MarchingTrianglesTerrainUi? Ui { get; private set; }
 
     /// <summary>
     /// Component for computing physics-related information (raycast etc...)
@@ -49,7 +52,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     /// <summary>
     /// Internal initialization Error hint.
     /// </summary>
-    private string _initError;
+    private string? _initError;
 
     /// <summary>
     /// Current selected moode for the plugin.
@@ -58,7 +61,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
 
     public TerrainToolAttributes ToolAttributes { get; } = new();
 
-    public TerrainToolPluginHelper PluginHelper { get; private set; }
+    public TerrainToolPluginHelper? PluginHelper { get; private set; }
 
     public TerrainToolMode SelectedMode
     {
@@ -66,7 +69,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         set
         {
             _selectedMode = value;
-            PluginHelper.ClearDrawPattern();
+            PluginHelper?.ClearDrawPattern();
         }
     }
 
@@ -121,7 +124,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         }
         else
         {
-            if (Ui != null)
+            if (Ui != null && PluginHelper != null)
             {
                 Ui.SetVisible(false);
                 PluginHelper.CurrentDrawPattern.Clear();
@@ -173,7 +176,8 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
         if (terrainScript != null && chunkScript != null)
         {
             var terrainIcon =
-                FileUtils.Load("res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Icon.svg") as Texture2D;
+                FileUtils.Load("res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Icon.svg") as
+                    Texture2D;
             var chunkIcon =
                 FileUtils.Load("res://addons/marchingTriangles/editor/icons/Marching_Squares_Terrain_Chunk_Icon.svg") as
                     Texture2D;
@@ -186,17 +190,10 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
             return false;
         }
 
-        if (GizmoPlugin != null)
-        {
-            AddNode3DGizmoPlugin(GizmoPlugin);
-        }
-        else
-        {
-            _initError = "Failed to create gizmo plugin";
-            return false;
-        }
 
-        if (Ui != null)
+        AddNode3DGizmoPlugin(GizmoPlugin);
+
+        if (Ui != null && Instance != null)
         {
             Ui.Plugin = Instance;
             AddChild(Ui);
@@ -227,12 +224,8 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
 
         RemoveCustomType(nameof(MarchingTrianglesTerrain));
         RemoveCustomType(nameof(GdPluginHexTerrainChunk));
-        if (GizmoPlugin != null)
-        {
-            RemoveNode3DGizmoPlugin(GizmoPlugin);
-            GizmoPlugin.Dispose();
-            GizmoPlugin = null;
-        }
+        RemoveNode3DGizmoPlugin(GizmoPlugin);
+        GizmoPlugin.Dispose();
 
         _init = false;
         _initError = "";
@@ -242,7 +235,7 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
     {
         // To counteract the default setter I think, seems weird.
         ToolAttributes.Flatten = false;
-        Ui.BrushMaterial.SetShaderParameter("FalloffVisible", ToolAttributes.Falloff);
+        Ui?.BrushMaterial.SetShaderParameter("FalloffVisible", ToolAttributes.Falloff);
     }
 
     /// <summary>
@@ -266,15 +259,18 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
             return (int)AfterGuiInput.Pass;
         }
 
-        if (@event is InputEventMouseButton || @event is InputEventMouseMotion)
+        if (@event is InputEventMouseButton or InputEventMouseMotion 
+            && PluginHelper != null 
+            && selected[0] is Node3D node)
         {
-            return PluginHelper.HandleMouseEvent(viewportCamera, selected[0] as Node3D, @event, _selectedMode,
+            return PluginHelper.HandleMouseEvent(viewportCamera, node, @event, _selectedMode,
                 GetUndoRedo());
         }
 
         return (int)AfterGuiInput.Pass;
     }
 
+    [SuppressMessage("ReSharper", "RedundantNameQualifier")]
     public void DelegateCompositePatternAction(MarchingTrianglesTerrain terrain,
         Godot.Collections.Dictionary<
             string,
@@ -284,16 +280,21 @@ public partial class MarchingTrianglesTerrainPlugin : EditorPlugin
                     Vector3I,
                     Variant>>> patternActionData)
     {
+        if (PluginHelper == null)
+        {
+            throw new InvalidOperationException("Plugin helper instance is not set.");
+        }
+
         PluginHelper.ApplyCompositePatternAction(terrain, patternActionData);
     }
 }
 
 internal class MarchingTrianglesPhysicsDelegate
 {
-    private bool _raycastQueued = false;
+    private bool _raycastQueued;
     private Vector3 _rayOrigin;
     private Vector3 _rayDir;
-    private Camera3D _rayCamera;
+    private Camera3D? _rayCamera;
 
     public Dictionary QueuedRayResult { get; private set; } = new();
 
@@ -308,7 +309,7 @@ internal class MarchingTrianglesPhysicsDelegate
     internal void DoDelegatedPhysicsComputations()
     {
         //TODO : Fixme => only intersect terrain
-        if (!_raycastQueued)
+        if (!_raycastQueued || _rayCamera == null)
             return;
         _raycastQueued = false;
 

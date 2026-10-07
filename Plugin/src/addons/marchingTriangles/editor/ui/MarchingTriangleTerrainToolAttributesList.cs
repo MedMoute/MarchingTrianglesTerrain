@@ -1,6 +1,6 @@
 using Godot;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui;
 
 /// <summary>
 /// List of entries for each possible attribute.

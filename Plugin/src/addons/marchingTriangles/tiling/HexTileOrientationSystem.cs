@@ -1,17 +1,20 @@
 using System;
-using System.Text;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using MathNet.Spatial.Euclidean;
 using MathNet.Spatial.Units;
+using Microsoft.VisualBasic.CompilerServices;
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 
 /// <summary>
 /// Uniform frame of the Euclidean plane creating a hexagonal tiling.
 /// </summary>
-public class HexTileOrientationSystem : RegularUniformFrame
+public class HexTileOrientationSystem : IRegularUniformFrame
 {
     public int PolygonCount => 1;
     public double TilingScale { get; }
@@ -23,15 +26,15 @@ public class HexTileOrientationSystem : RegularUniformFrame
     public  Matrix<double> Transform
     {
         get => _transform;
-        private set
+        private init
         {
             _transform = value;
-            _transformSquare = _transform.SubMatrix(0, 2, 0, 2);
+            TransformSquare = _transform.SubMatrix(0, 2, 0, 2);
             _transformOffset = _transform.Column(2);
         }
     }
 
-    public Matrix<double> TransformSquare => _transformSquare;
+    public Matrix<double> TransformSquare { get; private set; }
 
     public Vector<double> TransformOffset
     {
@@ -43,8 +46,7 @@ public class HexTileOrientationSystem : RegularUniformFrame
         }
     }
 
-    private Matrix<double> _transform;
-    private Matrix<double> _transformSquare;
+    private readonly Matrix<double> _transform;
     private Vector<double> _transformOffset;
 
     public Matrix<double> TransformInverse
@@ -91,8 +93,15 @@ public class HexTileOrientationSystem : RegularUniformFrame
         Transform = BuildBasis(origin, seedVector);
         TilingAngle =
             Angle.FromRadians(Math.Atan2(-(seedVector - origin).Y, -(seedVector - origin).X) - 2 * Math.PI / 3);
-        var inverse = TransformSquare.Inverse();
-        TransformInverse = inverse.Append(TransformOffset.ToColumnMatrix());
+        if (TransformSquare != null)
+        {
+            var inverse = TransformSquare.Inverse();
+            TransformInverse = inverse.Append(TransformOffset.ToColumnMatrix());
+        }
+        else
+        {
+            throw new IncompleteInitialization();
+        }
     }
 
     /// <summary>
@@ -138,11 +147,11 @@ public class HexTileOrientationSystem : RegularUniformFrame
 
     public Vector2I GetCell(Vector2D cartesianPos)
     {
-        var localPos = ((RegularUniformFrame)this).CartesianToLocal.Invoke(cartesianPos);
+        var localPos = ((IRegularUniformFrame)this).CartesianToLocal.Invoke(cartesianPos);
         return HexagonGrid.CubeRound(localPos);
     }
 
-    public RegularUniformFrame GetDual()
+    public IRegularUniformFrame GetDual()
     {
         // // Debug statement
         // Console.WriteLine("Dual prep :");
@@ -159,8 +168,8 @@ public class HexTileOrientationSystem : RegularUniformFrame
         // Console.WriteLine("{0} \n     Points : {1}", Vector2I.Zero, sb);
 
         return new DoubleDeltaTileOrientationSystem(
-            ((RegularUniformFrame)this).GetVertex(Vector2I.Zero, GetPolygonVertexCount(0) - 2, 0),
-            ((RegularUniformFrame)this).GetVertex(Vector2I.Zero, GetPolygonVertexCount(0) - 1, 0)
+            ((IRegularUniformFrame)this).GetVertex(Vector2I.Zero, GetPolygonVertexCount(0) - 2, 0),
+            ((IRegularUniformFrame)this).GetVertex(Vector2I.Zero, GetPolygonVertexCount(0) - 1, 0)
         );
     }
     
@@ -188,7 +197,7 @@ public class HexTileOrientationSystem : RegularUniformFrame
                TilingAngle.Equals(other.TilingAngle);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null) return false;
         if (ReferenceEquals(this, obj)) return true;

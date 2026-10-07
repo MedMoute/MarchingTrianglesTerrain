@@ -1,12 +1,11 @@
 #pragma warning disable NUnit2021
-using System;
-using System.Linq;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MathNet.Spatial.Euclidean;
-using NUnit.Framework;
+// ReSharper disable AccessToModifiedClosure
+// ReSharper disable UnusedVariable
 
-namespace UnitTests;
+namespace UnitTests.test;
 
 public class SquareTilingTests
 {
@@ -18,15 +17,18 @@ public class SquareTilingTests
             var tilingSystem = new SquareTileFrame(new Vector2D(0, 0), new Vector2D(1, 0));
         });
 
-        Assert.Throws<ArgumentException>(() => new SquareTileFrame(new Vector2D(0, 0), new Vector2D(0, 0)));
+        Assert.Throws<ArgumentException>(() =>
+        {
+            var squareTileFrame = new SquareTileFrame(new Vector2D(0, 0), new Vector2D(0, 0));
+        });
     }
 
     [Test]
     public void CheckSquareTilingVertexLengths()
     {
         // [0,0] Cell with [1,1] vector
-        var Vec1 = new Vector2D(1, 1);
-        RegularUniformFrame tilingSystem = new SquareTileFrame(new Vector2D(0, 0), Vec1);
+        var vec1 = new Vector2D(1, 1);
+        IRegularUniformFrame tilingSystem = new SquareTileFrame(new Vector2D(0, 0), vec1);
         foreach (var vec in tilingSystem.GetVertexPositions(Vector2I.Zero))
         {
             Assert.That(() => vec.Item1.Length, Is.EqualTo(Mathf.Sqrt2).Within(1E-5));
@@ -61,10 +63,10 @@ public class SquareTilingTests
 
         // Random cells with Random vector
         {
-            Vec1 = new Vector2D(
+            vec1 = new Vector2D(
                 rand.NextDouble() * 20 - 10,
                 rand.NextDouble() * 20 - 10);
-            tilingSystem = new SquareTileFrame(new Vector2D(0, 0), Vec1);
+            tilingSystem = new SquareTileFrame(new Vector2D(0, 0), vec1);
 
             var x1 = rand.Next(-10, 10);
             var y1 = rand.Next(-10, 10);
@@ -79,7 +81,7 @@ public class SquareTilingTests
                     .Using<Vector2D, Vector2D>((o1, o2) =>
                         Math.Abs((o2 - o1).X) < 1E-5 && Math.Abs((o2 - o1).Y) < 1E-5));
 
-                Assert.That(() => (vec.Item1 - pcenter).Length, Is.EqualTo(Vec1.Length).Within(1E-5));
+                Assert.That(() => (vec.Item1 - pcenter).Length, Is.EqualTo(vec1.Length).Within(1E-5));
             }
         }
     }
@@ -88,8 +90,8 @@ public class SquareTilingTests
     public void EnsureDualHasVertexForCenter()
     {
         // [0,0] Case
-        RegularUniformFrame tilingSystem = new SquareTileFrame(new Vector2D(0, 0), new Vector2D(1, 1));
-        RegularUniformFrame dual = tilingSystem.GetDual();
+        IRegularUniformFrame tilingSystem = new SquareTileFrame(new Vector2D(0, 0), new Vector2D(1, 1));
+        IRegularUniformFrame dual = tilingSystem.GetDual();
 
         Assert.That(() => dual, Is.Not.Null);
 
@@ -122,6 +124,7 @@ public class SquareTilingTests
                     .Using((Vector2D o1, Vector2D o2) =>(o2 - o1).Length< 1E-5));
 
             Assert.That(
+                // ReSharper disable once AccessToModifiedClosure
                 () => tilingSystem.GetCellCentroid(Vector2I.Zero, 0),
                 Is.AnyOf(dual.GetVertexPositions(Vector2I.Zero).Select(p => p.Item1).ToList())
                     .Using((Vector2D o1, Vector2D o2) =>(o2 - o1).Length < 1E-5));
@@ -132,8 +135,8 @@ public class SquareTilingTests
     public void EnsureDualHasSameOrientation()
     {
         // [0;0] case
-        RegularUniformFrame tilingSystem = new SquareTileFrame(new Vector2D(0, 0), new Vector2D(1, 1));
-        RegularUniformFrame dual = tilingSystem.GetDual();
+        IRegularUniformFrame tilingSystem = new SquareTileFrame(new Vector2D(0, 0), new Vector2D(1, 1));
+        IRegularUniformFrame dual = tilingSystem.GetDual();
         Assert.That(() => (tilingSystem as SquareTileFrame)!.TilingAngle.Radians,
             Is.EqualTo((dual as SquareTileFrame)!.TilingAngle.Radians).Within(1E-5));
 

@@ -1,12 +1,13 @@
 using System;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui;
 
 /// <summary>
 /// UI-related properties of a plugin tool.
 /// </summary>
+// ReSharper disable once Godot.MissingParameterlessConstructor
 public partial class MarchingTrianglesTool(
     Texture2D icon,
     String label,

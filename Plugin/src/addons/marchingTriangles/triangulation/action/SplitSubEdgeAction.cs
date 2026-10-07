@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using Godot;
-using Godot.Collections;
-using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
 
 /// <summary>
 /// Action that splits a triangulation's sub-edge at a given
@@ -71,10 +70,10 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
     protected override int DoApply(Triangulation t)
     {
         Console.WriteLine($"Split {_startIdx} => {_endIdx} @{_weight}");
-        var subEdgeIdx = t.SubEdges.IndexOf((startIdx: _startIdx, endIdx: _endIdx));
+        var subEdgeIdx = t.SubEdges.IndexOf((_startIdx, _endIdx));
         //Register a dictionary of the edited edges with their initial positions and their edited positions
         var editedSubEdges =
-            new System.Collections.Generic.Dictionary<(int, int), Tuple<int, int?>>(UnorderedTupleComparer.Instance);
+            new Dictionary<(int, int), Tuple<int, int?>>(UnorderedTupleComparer.Instance);
         var idx = t.Vertices.Count;
 
         
@@ -111,7 +110,7 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
             var removedVertexes = t.TrianglesByVertices[affectedTriangle];
             // we obtain the vertex opposite to the removed edge
             var oppositeVertexList = new List<int>(removedVertexes);
-            oppositeVertexList.RemoveAll(idx => idx == _startIdx || idx == _endIdx);
+            oppositeVertexList.RemoveAll(index => index == _startIdx || index == _endIdx);
             if (oppositeVertexList.Count != 1)
             {
                 throw new Exception("Unexpected state");
@@ -175,7 +174,7 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
                 {
                     editedSubEdges.Remove(implicitEdge);
                     editedSubEdges.Add(implicitEdge,
-                        new Tuple<int, int?>(indexChanges.Item1, t.SubEdges.IndexOf(implicitEdge)));
+                        new Tuple<int, int?>(indexChanges!.Item1, t.SubEdges.IndexOf(implicitEdge)));
                 }
             }
 
@@ -188,7 +187,7 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
                 t.SubEdges[implicitEdge]++;
                 //If the sub-edge was previously removed, register its new index
                 var wasRemoved = editedSubEdges.TryGetValue(implicitEdge, out var indexChanges);
-                if (wasRemoved)
+                if (wasRemoved && indexChanges!=null)
                 {
                     editedSubEdges.Remove(implicitEdge);
                     editedSubEdges.Add(implicitEdge,
@@ -205,7 +204,7 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
                     if (find != null)
                     {
                         // ReSharper disable once PossibleInvalidOperationException
-                        find.Value = editedSubEdge.Value.Item2.Value;
+                        find.Value = editedSubEdge.Value.Item2!.Value;
                     }
                 }
             }
@@ -215,8 +214,8 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
         }
         //We edit the Edges list for the edge that was split 
         var subEdgeList = t.Edges[_edgeIdx];
-        var firstSubEdge = t.SubEdges.IndexOf((startIdx: _startIdx, idx));
-        var secondSubEdge = t.SubEdges.IndexOf((idx, endIdx: _endIdx));
+        var firstSubEdge = t.SubEdges.IndexOf((_startIdx, idx));
+        var secondSubEdge = t.SubEdges.IndexOf((idx, _endIdx));
         if (firstSubEdge == -1 || secondSubEdge == -1)
         {
             throw new Exception("Bad state");

@@ -4,10 +4,11 @@ using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 using MathNet.Spatial.Euclidean;
 using MathNet.Spatial.Units;
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 
-public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
+public class DoubleDeltaTileOrientationSystem : IRegularUniformFrame
 {
     public Angle TilingAngle => Angle.FromRadians(_offSetAngleInRad);
 
@@ -99,35 +100,34 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
         }
 
         // Due to barycentric properties of equilateral triangles
-        Vector2D dPos = c2 + j;
         Vector2D cPos = c1 - j;
         // Be E the Intersection point of [C1 C2] with [AB] :
         // E is the middle of [C1 C2]
         Vector2D ePos = c1 + j / 2;
-        double ECnorm = (cPos - ePos).Length;
+        double eCnorm = (cPos - ePos).Length;
         // EA's length is half the length L of the triangles 
         // ABE is rectangle in E
         // ECnorm² + L²/4 = L²
         // => L²  = 4 * ECnorm²/3 
         // => L = 2*ECnorm/sqrt(3)
-        var L = 2 * ECnorm / Math.Sqrt(3);
-        var EBvec = j.Normalize().Orthogonal * (float)(L / 2);
+        var l = 2 * eCnorm / Math.Sqrt(3);
+        var eBvec = j.Normalize().Orthogonal * (float)(l / 2);
         // Invert as Orthogonal is not the expected rotation
-        EBvec = -EBvec;
+        eBvec = -eBvec;
 
 
-        var aPos = EBvec + ePos;
-        var bPos = ePos - EBvec;
+        var aPos = eBvec + ePos;
+        var bPos = ePos - eBvec;
 
         // The dual will be built from the [B C2 segment]
         DualSeeds = new Tuple<Vector2D, Vector2D>(bPos, c2);
 
-        var CA = aPos - cPos;
-        _offSetAngleInRad = Math.Atan2(CA.Y, CA.X);
+        var ca = aPos - cPos;
+        _offSetAngleInRad = Math.Atan2(ca.Y, ca.X);
         TilingScale = j.Length;
 
         UnscaledOriginCellCentroidPositions = [c1, c2];
-        var col1 = CA.ToVector().AsArray();
+        var col1 = ca.ToVector().AsArray();
         var col2 = (bPos - cPos).ToVector().AsArray();
         var col3 = cPos.ToVector().AsArray();
         Transform = Matrix.Build.DenseOfColumnArrays(col1, col2, col3);
@@ -163,7 +163,7 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
 
     public int GetPolygonIndexFromCartesian(Vector2D cartesianPos, Vector2I cell1)
     {
-        var localPos = ((RegularUniformFrame)this).CartesianToLocal.Invoke(cartesianPos);
+        var localPos = ((IRegularUniformFrame)this).CartesianToLocal.Invoke(cartesianPos);
         var cell = GetCell(cartesianPos);
         return localPos.X - cell.X > 1 - (localPos.Y - cell.Y) ? 1 : 0;
     }
@@ -176,12 +176,12 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
 
     public Vector2I GetCell(Vector2D cartesianPos)
     {
-        var localPos = ((RegularUniformFrame)this).CartesianToLocal.Invoke(cartesianPos);
+        var localPos = ((IRegularUniformFrame)this).CartesianToLocal.Invoke(cartesianPos);
         return new Vector2I((int)Math.Floor(localPos.X), (int)Math.Floor(localPos.Y));
     }
 
 
-    public RegularUniformFrame GetDual()
+    public IRegularUniformFrame GetDual()
     {
         return new HexTileOrientationSystem(DualSeeds.Item1, DualSeeds.Item2);
     }
@@ -203,21 +203,25 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
         return newFrame;
     }
 
-    public RegularUniformFrame OffsetBy(Vector2D cartesianOffset)
+    public IRegularUniformFrame OffsetBy(Vector2D cartesianOffset)
     {
-        DoubleDeltaTileOrientationSystem newFrame = Clone() as DoubleDeltaTileOrientationSystem;
-        var newOrigin = (Vector2D.OfVector(newFrame.TransformOffset) + cartesianOffset).ToVector();
-        newFrame.TransformOffset = newOrigin;
-        newFrame.DualSeeds =
-            new Tuple<Vector2D, Vector2D>(DualSeeds.Item1 + cartesianOffset, DualSeeds.Item2 + cartesianOffset);
-        newFrame.TransformInverseOffset = newOrigin;
-
-        for (var i = 0; i < UnscaledOriginCellCentroidPositions.Length; i++)
+        if (Clone() is DoubleDeltaTileOrientationSystem newFrame)
         {
-            newFrame.UnscaledOriginCellCentroidPositions[i] += cartesianOffset;
+            var newOrigin = (Vector2D.OfVector(newFrame.TransformOffset) + cartesianOffset).ToVector();
+            newFrame.TransformOffset = newOrigin;
+            newFrame.DualSeeds =
+                new Tuple<Vector2D, Vector2D>(DualSeeds.Item1 + cartesianOffset, DualSeeds.Item2 + cartesianOffset);
+            newFrame.TransformInverseOffset = newOrigin;
+
+            for (var i = 0; i < UnscaledOriginCellCentroidPositions.Length; i++)
+            {
+                newFrame.UnscaledOriginCellCentroidPositions[i] += cartesianOffset;
+            }
+
+            return newFrame;
         }
 
-        return newFrame;
+        throw new InvalidCastException();
     }
 
     protected bool Equals(DoubleDeltaTileOrientationSystem other)
@@ -228,7 +232,7 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
                TilingScale.Equals(other.TilingScale);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is null) return false;
         if (ReferenceEquals(this, obj)) return true;
@@ -240,8 +244,6 @@ public class DoubleDeltaTileOrientationSystem : RegularUniformFrame
     {
         return HashCode.Combine(
             _offSetAngleInRad,
-            DualSeeds.Item1,
-            DualSeeds.Item2,
             UnscaledOriginCellCentroidPositions[0],
             UnscaledOriginCellCentroidPositions[1], 
             Transform,

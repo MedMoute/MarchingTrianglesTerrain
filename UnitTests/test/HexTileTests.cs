@@ -1,17 +1,15 @@
 #pragma warning disable NUnit2021
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Spatial.Euclidean;
 using MathNet.Spatial.Units;
-using NUnit.Framework;
+// ReSharper disable UnusedVariable
+// ReSharper disable AccessToModifiedClosure
 
-namespace UnitTests;
+namespace UnitTests.test;
 
 public class HexTileTests
 {
@@ -33,7 +31,7 @@ public class HexTileTests
     public void CheckBasicFlatTopCellsVertices()
     {
         double eps = 1E-5;
-        RegularUniformFrame tilingSystem = new HexTileOrientationSystem(
+        IRegularUniformFrame tilingSystem = new HexTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0)
         );
@@ -174,8 +172,8 @@ public class HexTileTests
         ib0 = denom * new Vector2D(b1.Y, -b0.Y);
         ib1 = denom * new Vector2D(-b1.X, b0.X);
 
-        uvExpected = (Vector2D vec) => HexagonGrid.CubeRound(new Vector2D(ib0.X * (vec - o).X + ib1.X * (vec - o).Y,
-            ib0.Y * (vec - o).X + ib1.Y * (vec - o).Y));
+        uvExpected = uv => HexagonGrid.CubeRound(new Vector2D(ib0.X * (uv - o).X + ib1.X * (uv - o).Y,
+            ib0.Y * (uv - o).X + ib1.Y * (uv - o).Y));
 
 
         for (int i = 0; i < 50; i++)
@@ -190,7 +188,7 @@ public class HexTileTests
     [Test]
     public void TestTransformMatrix()
     {
-        RegularUniformFrame tilingSystem = new HexTileOrientationSystem(
+        IRegularUniformFrame tilingSystem = new HexTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0)
         );
@@ -219,7 +217,7 @@ public class HexTileTests
             var vy = rand.NextDouble();
             var o = new Vector2D(ox, oy);
             var v = new Vector2D(vx, vy);
-            RegularUniformFrame tilingSystem = new HexTileOrientationSystem(o, v);
+            IRegularUniformFrame tilingSystem = new HexTileOrientationSystem(o, v);
             for (int j = 0; j < 10; j++)
             {
                 var x = rand.NextDouble();
@@ -246,7 +244,7 @@ public class HexTileTests
             var vy = rand.NextDouble();
             var o = new Vector2D(ox, oy);
             var v = new Vector2D(vx, vy);
-            RegularUniformFrame tilingSystem = new HexTileOrientationSystem(o, v);
+            IRegularUniformFrame tilingSystem = new HexTileOrientationSystem(o, v);
             for (int j = 0; j < 10; j++)
             {
                 var x = rand.NextDouble();
@@ -263,7 +261,7 @@ public class HexTileTests
     [Test]
     public void TestOffsetFrame()
     {
-        RegularUniformFrame tilingSystem = new HexTileOrientationSystem(
+        IRegularUniformFrame tilingSystem = new HexTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0));
 
@@ -278,14 +276,14 @@ public class HexTileTests
         Assert.That(() => offset.Transform.Column(2).ToArray(),
             Is.EqualTo((Vector2D.OfVector(tilingSystem.Transform.Column(2)) + off).ToVector().ToArray())
                 .AsCollection.Within(1E-5));
-        
+
         //Random offsets
         var rand = new Random();
         for (int i = 0; i < 10; i++)
         {
             var ox = rand.NextDouble();
             var oy = rand.NextDouble();
-            off = new Vector2D(ox, oy); 
+            off = new Vector2D(ox, oy);
             offset = tilingSystem.OffsetBy(off);
             // Check that the square submatrix is unchanged
             Assert.That(() => tilingSystem.Transform.SubMatrix(0, 2, 0, 2).ToArray(),
@@ -300,10 +298,10 @@ public class HexTileTests
     [Test]
     public void TestClone()
     {
-        RegularUniformFrame tilingSystem = new HexTileOrientationSystem(
+        IRegularUniformFrame tilingSystem = new HexTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0));
-        Assert.That(() => (tilingSystem.Clone() as HexTileOrientationSystem).Transform.ToArray(),
+        Assert.That(() => (tilingSystem.Clone() as HexTileOrientationSystem)?.Transform.ToArray(),
             Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
 
         //Random clones : 
@@ -318,7 +316,7 @@ public class HexTileTests
             var o = new Vector2D(ox, oy);
             var v = new Vector2D(vx, vy);
             tilingSystem = new HexTileOrientationSystem(o, v);
-            Assert.That(() => (tilingSystem.Clone() as HexTileOrientationSystem).Transform.ToArray(),
+            Assert.That(() => (tilingSystem.Clone() as HexTileOrientationSystem)?.Transform.ToArray(),
                 Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
         }
     }

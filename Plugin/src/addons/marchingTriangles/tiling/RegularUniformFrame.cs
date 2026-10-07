@@ -11,7 +11,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 /// based on a regular (only regular polygons) uniform (vertex transitive) tiling of the
 /// Euclidean plane, where the origin of the frame is the centroid of the tiling polygon.
 /// </summary>
-public interface RegularUniformFrame : RegularUniformTiling, ICloneable
+public interface IRegularUniformFrame : IRegularUniformTiling, ICloneable
 {
     /// <summary>
     /// The list of the cartesian coordinates of the polygon centroids of the Origin Cell
@@ -37,7 +37,7 @@ public interface RegularUniformFrame : RegularUniformTiling, ICloneable
 
     public Vector2I GetCell(Vector2D pos);
 
-    RegularUniformFrame GetDual();
+    IRegularUniformFrame GetDual();
 
     public List<Vector2D> GetGentroids(Vector2I idx)
     {
@@ -102,9 +102,9 @@ public interface RegularUniformFrame : RegularUniformTiling, ICloneable
         return vertices;
     }
 
-    
+
     //TODO : don't go through Cartesian coords
-    Vector3I GetVertexIndexInDualSpace(Vector3I cellIdx, RegularUniformFrame dualFrame, int vertexIdx)
+    Vector3I GetVertexIndexInDualSpace(Vector3I cellIdx, IRegularUniformFrame dualFrame, int vertexIdx)
     {
         var centroid = GetCellCentroid(cellIdx);
         var xDelta = Math.Cos(GetVertexAngleInRad(vertexIdx, cellIdx.Z)) * TilingScale;
@@ -112,7 +112,7 @@ public interface RegularUniformFrame : RegularUniformTiling, ICloneable
         var pos2D = centroid + new Vector2D(xDelta, yDelta);
 
         Vector2I cell = dualFrame.GetCell(pos2D);
-        Vector3I fullCell = new Vector3I(cell.X, cell.Y, dualFrame.GetPolygonIndexFromCartesian(pos2D,cell));
+        Vector3I fullCell = new Vector3I(cell.X, cell.Y, dualFrame.GetPolygonIndexFromCartesian(pos2D, cell));
         return fullCell;
     }
 
@@ -143,8 +143,8 @@ public interface RegularUniformFrame : RegularUniformTiling, ICloneable
             for (int j = 0; j < n; j++)
             {
                 var p = GetVertex(Vector2I.Zero, j, i);
-                var p_next = GetVertex(Vector2I.Zero, (j + 1) % n, i);
-                area += (p.X * p_next.Y - p.Y * p_next.X) / 2;
+                var pNext = GetVertex(Vector2I.Zero, (j + 1) % n, i);
+                area += (p.X * pNext.Y - p.Y * pNext.X) / 2;
             }
         }
 
@@ -156,18 +156,22 @@ public interface RegularUniformFrame : RegularUniformTiling, ICloneable
     /// </summary>
     /// <param name="cartesianOffset">the offset value, expressed in the cartesian frame.</param>
     /// <returns></returns>
-    RegularUniformFrame OffsetBy(Vector2D cartesianOffset)
+    IRegularUniformFrame OffsetBy(Vector2D cartesianOffset)
     {
-        RegularUniformFrame newFrame = Clone() as RegularUniformFrame;
-        var newOrigin = (Vector2D.OfVector(newFrame.TransformOffset) + cartesianOffset).ToVector();
-        newFrame.TransformOffset = newOrigin;
-        newFrame.TransformInverseOffset = newOrigin;
-
-        for (var i = 0; i < UnscaledOriginCellCentroidPositions.Length; i++)
+        if (Clone() is IRegularUniformFrame newFrame)
         {
-            newFrame.UnscaledOriginCellCentroidPositions[i] += cartesianOffset;
+            var newOrigin = (Vector2D.OfVector(newFrame.TransformOffset) + cartesianOffset).ToVector();
+            newFrame.TransformOffset = newOrigin;
+            newFrame.TransformInverseOffset = newOrigin;
+
+            for (var i = 0; i < UnscaledOriginCellCentroidPositions.Length; i++)
+            {
+                newFrame.UnscaledOriginCellCentroidPositions[i] += cartesianOffset;
+            }
+
+            return newFrame;
         }
 
-        return newFrame;
+        throw new InvalidCastException();
     }
 }

@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
 /// <summary>
 /// Utility class for File and IO related operations.
@@ -36,6 +36,7 @@ internal static class FileUtils
             }
             else
             {
+                // ReSharper disable once RedundantNameQualifier
                 totalSize += Godot.FileAccess.GetFileAsBytes(nextPath).Length;
             }
 
@@ -74,7 +75,7 @@ internal static class FileUtils
     }
 
     /// <summary>
-    /// Wrapper around FileUtils.Load<T> to apply the Custom Directory path if needed.
+    /// Wrapper around  FileUtils.Load&lt;T&gt; to apply the Custom Directory path if needed.
     /// </summary>
     /// <param name="path"></param>
     /// <returns></returns>

@@ -1,8 +1,8 @@
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
-namespace UnitTests;
+namespace UnitTests.test;
 
 public class TestChunkSerialization
 {
@@ -37,6 +37,8 @@ public class TestChunkSerialization
 
         var newChunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null);
         MttDataHandler.FillChunkFromData(dataStructImpl, newChunk);
+        
+        Assert.That(newChunk,Is.Not.Null);
 
         Assert.That(newChunk.Coordinates, Is.EqualTo(chunk.Coordinates));
         Assert.That(newChunk.Dimensions, Is.EqualTo(chunk.Dimensions));
@@ -50,19 +52,19 @@ public class TestChunkSerialization
         Assert.That(newChunk.DataGrid.Points, Is.EqualTo(chunk.DataGrid.Points));
         Assert.That(newChunk.DataGrid.Size, Is.EqualTo(chunk.DataGrid.Size));
 
-        Assert.That(newChunk.existingNeighbors, Is.EqualTo(chunk.existingNeighbors));
+        Assert.That(newChunk.ExistingNeighbors, Is.EqualTo(chunk.ExistingNeighbors));
 
         // No easy Equals check on TerrainColorMaps as the arrays are not exposed : instead used a looped getter
         foreach (var cellIdx in chunk.DataGrid.Data.Keys)
         {
-            Assert.That(newChunk.ColorMaps.GetGroundColor0(cellIdx),
-                Is.EqualTo(chunk.ColorMaps.GetGroundColor0(cellIdx)));
-            Assert.That(newChunk.ColorMaps.GetGroundColor1(cellIdx),
-                Is.EqualTo(chunk.ColorMaps.GetGroundColor1(cellIdx)));
-            Assert.That(newChunk.ColorMaps.GetWallColor0(cellIdx),
-                Is.EqualTo(chunk.ColorMaps.GetWallColor0(cellIdx)));
-            Assert.That(newChunk.ColorMaps.GetWallColor1(cellIdx),
-                Is.EqualTo(chunk.ColorMaps.GetWallColor1(cellIdx)));
+            Assert.That(newChunk.ColorMaps?.GetGroundColor0(cellIdx),
+                Is.EqualTo(chunk.ColorMaps?.GetGroundColor0(cellIdx)));
+            Assert.That(newChunk.ColorMaps?.GetGroundColor1(cellIdx),
+                Is.EqualTo(chunk.ColorMaps?.GetGroundColor1(cellIdx)));
+            Assert.That(newChunk.ColorMaps?.GetWallColor0(cellIdx),
+                Is.EqualTo(chunk.ColorMaps?.GetWallColor0(cellIdx)));
+            Assert.That(newChunk.ColorMaps?.GetWallColor1(cellIdx),
+                Is.EqualTo(chunk.ColorMaps?.GetWallColor1(cellIdx)));
         }
     }
 }

@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
+
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui;
 
 /// <summary>
 /// The plugin toolbar.
@@ -43,12 +44,6 @@ public partial class MarchingTrianglesToolbar : VFlowContainer
 
     private void AddTools()
     {
-        if (ToolBox == null)
-        {
-            GD.PrintErr("Cannot instantiate MTT plugin's toolbar. The toolbox was null.");
-            return;
-        }
-
         Alignment = AlignmentMode.Center;
         for (int i = 0; i < MarchingTrianglesToolbox.Tools.Count; i++)
         {

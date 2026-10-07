@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
 using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
@@ -13,21 +15,21 @@ public static class GeometryModeActions
         VertexConformalGeometryEdit editor,
         Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations,
         HexTerrainCell htCell,
-        int VertexInHtCellIdx,
-        int VertexInTriIdx,
+        int vertexInHtCellIdx,
+        int vertexInTriIdx,
         Triangulation tri,
-        bool ApplyFans = true)
+        bool applyFans = true)
     {
-        var pInit = htCell.VertexPositionsInPlane[VertexInHtCellIdx];
+        var pInit = htCell.VertexPositionsInPlane[vertexInHtCellIdx];
         var height = htCell.AverageHeight;
 
-        editor.RegisterAction(new MovePointAlongYAxisAction(VertexInTriIdx, height), tri);
+        editor.RegisterAction(new MovePointAlongYAxisAction(vertexInTriIdx, height), tri);
 
-        if (ApplyFans)
+        if (applyFans)
         {
             // If the action target edge is a cell border (e.g. target.Item2 ==1)
             // We find the other cell and add a fan from the vertex to the vertex @ other cell's height 
-            if (VertexInTriIdx == 1)
+            if (vertexInTriIdx == 1)
             {
                 //To find the other matching edge, we fetch the other point of the triangulation that is not
                 // the cell center
@@ -80,6 +82,11 @@ public static class GeometryModeActions
             : //Cell center point, we cant rely on the cell
             htCell.VertexPositionsInPlane[vertexInHtCellIdx]; //Usual vertex
 
+        if (htCell.GetEdgeAvgHeight == null)
+        {
+            return;
+        }
+        
         var height = secondTriangulationFlag
             ? htCell.GetEdgeAvgHeight(EngineUtils.Mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
             : htCell.GetEdgeAvgHeight(vertexInHtCellIdx);
@@ -118,6 +125,7 @@ public static class GeometryModeActions
                 int idx = otherCell.VertexPositionsInPlane.FindIndex(v => v.Equals(pInit, 1e-5));
                 if (otherCell.GetEdgeAvgHeight != null)
                 {
+                    // ReSharper disable once UnusedVariable
                     var hOtherCell = otherCell.GetEdgeAvgHeight(idx);
                     // TODO : FIXME 
                     // RegisterAction(

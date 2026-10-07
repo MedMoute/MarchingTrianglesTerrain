@@ -2,9 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Spatial.Euclidean;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+#pragma warning disable CS0169 // Field is never used
+
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 
 /// <summary>
 /// Helper component for computing/interpolating cell colors.
@@ -45,7 +49,7 @@ public class VertexColorHelper
     /// </summary>
     private Func<HexTerrainCell, Func<Vector3I, Color>[]> ColorSourceGetterProvider { get; }
 
-    public VertexColorHelper(Func<Vector2I, HexagonalTerrainChunk> neighborChunksProvider)
+    public VertexColorHelper(Func<Vector2I, HexagonalTerrainChunk?> neighborChunksProvider)
     {
         ColorSourceGetterProvider = cell =>
         [
@@ -53,36 +57,36 @@ public class VertexColorHelper
             {
                 var chunk = ComputeChunkAndOffset(neighborChunksProvider, cell, idx, out var offsetCoords);
                 return !cell.FloorMode
-                    ? chunk.ColorMaps.GetWallColor0(offsetCoords)
-                    : chunk.ColorMaps.GetGroundColor0(offsetCoords);
+                    ? chunk.ColorMaps!.GetWallColor0(offsetCoords)
+                    : chunk.ColorMaps!.GetGroundColor0(offsetCoords);
             },
             idx =>
             {
                 var chunk = ComputeChunkAndOffset(neighborChunksProvider, cell, idx, out var offsetCoords);
                 return !cell.FloorMode
-                    ? chunk.ColorMaps.GetWallColor1(offsetCoords)
-                    : chunk.ColorMaps.GetGroundColor1(offsetCoords);
+                    ? chunk.ColorMaps!.GetWallColor1(offsetCoords)
+                    : chunk.ColorMaps!.GetGroundColor1(offsetCoords);
             },
             idx =>
             {
                 var chunk = ComputeChunkAndOffset(neighborChunksProvider, cell, idx, out var offsetCoords);
-                return chunk.ColorMaps.GetWallColor0(offsetCoords);
+                return chunk.ColorMaps!.GetWallColor0(offsetCoords);
             },
             idx =>
             {
                 var chunk = ComputeChunkAndOffset(neighborChunksProvider, cell, idx, out var offsetCoords);
-                return chunk.ColorMaps.GetWallColor1(offsetCoords);
+                return chunk.ColorMaps!.GetWallColor1(offsetCoords);
             }
         ];
     }
 
     private static HexagonalTerrainChunk ComputeChunkAndOffset(
-        Func<Vector2I, HexagonalTerrainChunk> neighborChunksProvider, HexTerrainCell cell,
+        Func<Vector2I, HexagonalTerrainChunk?> neighborChunksProvider, HexTerrainCell cell,
         Vector3I idx, out Vector3I offsetCoords)
     {
         var offset = cell.Visits[idx];
         var chunk = neighborChunksProvider(offset);
-        var offsetCoords2D = offset * chunk.Dimensions2D;
+        var offsetCoords2D = offset * chunk!.Dimensions2D;
         offsetCoords = idx - new Vector3I(offsetCoords2D.X, offsetCoords2D.Y, 0);
         return chunk;
     }
@@ -101,7 +105,7 @@ public class VertexColorHelper
         float centerHeight = cell.AverageHeight;
         for (int i = 0; i < HexTerrainCell.VertexCount; i++)
         {
-            vertexHeights.Add(cell.GetVertexData(i));
+            vertexHeights.Add(cell.GetVertexData!(i));
         }
 
         List<float> edgeHeightDiffs = new();
@@ -128,10 +132,10 @@ public class VertexColorHelper
         //Calculate vertex colors using appropriate interpolation method
         Color lower0 = useWallColors ? _wallLowerColor0 : _floorLowerColor0;
         Color upper0 = useWallColors ? _wallUpperColor0 : _floorUpperColor0;
-        colors["color_0"] = InterpolateVertexColor( cell, vertex, sources[0], diagMidPoint, lower0, upper0);
+        colors["color_0"] = InterpolateVertexColor(cell, vertex, sources[0], diagMidPoint, lower0, upper0);
         Color lower1 = useWallColors ? _wallLowerColor1 : _floorLowerColor1;
         Color upper1 = useWallColors ? _wallUpperColor1 : _floorUpperColor1;
-        colors["color_1"] = InterpolateVertexColor( cell, vertex, sources[1], diagMidPoint, lower1, upper1);
+        colors["color_1"] = InterpolateVertexColor(cell, vertex, sources[1], diagMidPoint, lower1, upper1);
 
         // isRidge & isLedge are already calculated above
         var custom = Colors.Green;
@@ -142,11 +146,11 @@ public class VertexColorHelper
         Color ridgeLedgeLower0 = _wallLowerColor0;
         Color ridgeLedgeUpper0 = _wallUpperColor0;
         var ridgeLedgeColor0 =
-            InterpolateVertexColor( cell, vertex, sources[2], diagMidPoint, ridgeLedgeLower0, ridgeLedgeUpper0);
+            InterpolateVertexColor(cell, vertex, sources[2], diagMidPoint, ridgeLedgeLower0, ridgeLedgeUpper0);
         Color ridgeLedgeLower1 = _wallLowerColor1;
         Color ridgeLedgeUpper1 = _wallUpperColor1;
         var ridgeLedgeColor1 =
-            InterpolateVertexColor( cell, vertex, sources[3], diagMidPoint, ridgeLedgeLower1, ridgeLedgeUpper1);
+            InterpolateVertexColor(cell, vertex, sources[3], diagMidPoint, ridgeLedgeLower1, ridgeLedgeUpper1);
 
         var ridgeLedgeTextureIdx = GetTextureIndexFromColors(ridgeLedgeColor0, ridgeLedgeColor1);
 
@@ -193,13 +197,13 @@ public class VertexColorHelper
 
         Vector2D qr = cell.GetHexCoordsOfPoint(new Vector2D(vertex.X, vertex.Z));
         float s = (float)(-qr.X - qr.Y);
-        float S = -cell.CellCoordsImplicit.X - cell.CellCoordsImplicit.Y;
+        float sS = -cell.CellCoordsImplicit.X - cell.CellCoordsImplicit.Y;
         vertexWeights.Add((float)(qr.X - cell.CellCoordsImplicit.X));
         vertexWeights.Add((float)(qr.Y - cell.CellCoordsImplicit.Y));
-        vertexWeights.Add(s - S);
+        vertexWeights.Add(s - sS);
         vertexWeights.Add((float)(1 - qr.X + cell.CellCoordsImplicit.X));
         vertexWeights.Add((float)(1 - qr.Y + cell.CellCoordsImplicit.Y));
-        vertexWeights.Add(1 - s + S);
+        vertexWeights.Add(1 - s + sS);
 
 
         // Accumulate weights for all 3 cell materials
@@ -225,9 +229,9 @@ public class VertexColorHelper
         }
 
         // Pack mat_a and mat_b into one channel (each is 0-15, so together 0-255)
-        float packed_mats = (_cellMatA + _cellMatB * 16.0f) / 255.0f;
+        float packedMats = (_cellMatA + _cellMatB * 16.0f) / 255.0f;
 
-        return new Color(packed_mats, _cellMatC / 15.0f, weightMatA, weightMatB);
+        return new Color(packedMats, _cellMatC / 15.0f, weightMatA, weightMatB);
     }
 
     ///Converts vertex color pair to texture index.
@@ -263,6 +267,7 @@ public class VertexColorHelper
 
         if (color1.B > c1Max)
         {
+            // ReSharper disable once RedundantAssignment
             c1Max = color1.B;
             c1Idx = 2;
         }
@@ -275,17 +280,20 @@ public class VertexColorHelper
         return c0Idx * 4 + c1Idx;
     }
 
+    // ReSharper disable UnusedParameter.Local
     private Color InterpolateVertexColor(
-        HexTerrainCell cell,
-        Vector3 vertex,
-        Func<Vector3I, Color> source,
-        bool diagMidPoint,
-        Color lower0,
-        Color upper0)
+            HexTerrainCell cell,
+            Vector3 vertex,
+            Func<Vector3I, Color> source,
+            bool diagMidPoint,
+            Color lower0,
+            Color upper0) 
+    // ReSharper enable UnusedParameter.Local
+
     {
         if (diagMidPoint)
         {
-            return CalcDiagonalColor( cell, source);
+            return CalcDiagonalColor(cell, source);
         }
 
         throw new NotImplementedException();
@@ -320,6 +328,5 @@ public class VertexColorHelper
         if (diag0.B > 0.99f || diag1.B > 0.99f || diag2.B > 0.99f) result.B = 1f;
         if (diag0.A > 0.99f || diag1.A > 0.99f || diag2.A > 0.99f) result.A = 1f;
         return result;
-        }
-
+    }
 }

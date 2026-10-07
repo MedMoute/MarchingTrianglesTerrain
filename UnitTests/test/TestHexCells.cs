@@ -1,21 +1,20 @@
 #pragma warning disable NUnit2021
-
-using System.Linq;
+// ReSharper disable AccessToModifiedClosure
+// ReSharper disable UnusedVariable
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Spatial.Euclidean;
-using NUnit.Framework;
 
-namespace UnitTests;
+namespace UnitTests.test;
 
 public class TestHexCells
 {
     [Test]
     public void TestGridVerticesAreDualCellCentroids()
     {
-        void TestForProvidedFrame(RegularUniformFrame regularUniformFrame)
+        void TestForProvidedFrame(IRegularUniformFrame regularUniformFrame)
         {
             int dimension = 2;
 
@@ -40,10 +39,8 @@ public class TestHexCells
         }
 
 
-        var trianglesOrientationSystem = TerrainSettings.OrientationSystem;
-        //TestForProvidedFrame(trianglesOrientationSystem);
-
-        trianglesOrientationSystem = TerrainSettings.OrientationSystem.OffsetBy(new Vector2D(1d, 1d));
+        var trianglesOrientationSystem =
+            TerrainSettings.OrientationSystem.OffsetBy(new Vector2D(1d, 1d));
         TestForProvidedFrame(trianglesOrientationSystem);
     }
 }

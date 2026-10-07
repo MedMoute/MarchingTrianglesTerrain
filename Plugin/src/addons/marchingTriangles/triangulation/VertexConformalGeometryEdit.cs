@@ -1,23 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
-using MathNet.Spatial.Euclidean;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
 public class VertexConformalGeometryEdit
 {
-    private Dictionary<TriangulationEditAction<int>, Triangulation> actionToTriangulationHandle = new();
+    private readonly Dictionary<ITriangulationEditAction<int>, Triangulation> _actionToTriangulationHandle = new();
 
-    private readonly List<TriangulationEditAction<int>> _actions = new();
+    private readonly List<ITriangulationEditAction<int>> _actions = new();
 
-    public void RegisterAction(TriangulationEditAction<int> action, Triangulation triangulation)
+    public void RegisterAction(ITriangulationEditAction<int> action, Triangulation triangulation)
     {
-        actionToTriangulationHandle.Add(action, triangulation);
+        _actionToTriangulationHandle.Add(action, triangulation);
         _actions.Add(action);
     }
 
@@ -25,7 +21,7 @@ public class VertexConformalGeometryEdit
     {
         foreach (var triangulationEditAction in _actions)
         {
-            triangulationEditAction.Apply(actionToTriangulationHandle[triangulationEditAction]);
+            triangulationEditAction.Apply(_actionToTriangulationHandle[triangulationEditAction]);
         }
     }
 
@@ -60,8 +56,8 @@ public class VertexConformalGeometryEdit
             //(Note that this is not used for cell center vertex processing)
             if (localTriangulations[cell].Item2.HasValue)
             {
-                target = localTriangulations[cell].Item2.Value;
-                operationType = kvp.Value.Item2.Value;
+                target = localTriangulations[cell].Item2!.Value;
+                operationType = kvp.Value.Item2!.Value;
 
                 tri = target.Item1;
                 vertexInTriIdx = target.Item2;
@@ -126,13 +122,13 @@ public class VertexConformalGeometryEdit
 
 public class CopyOnlyGeometryEdit : VertexConformalGeometryEdit
 {
-    public CopyOnlyGeometryEdit(Vector3I coords, HexagonalTerrainChunk chunk)
+    public CopyOnlyGeometryEdit()
     {
         throw new NotImplementedException();
     }
 
-    public new void RegisterAction(TriangulationEditAction<int> action)
+    public void RegisterAction(ITriangulationEditAction<int> action)
     {
-        base.RegisterAction(action,null);
+        base.RegisterAction(action,null!);
     }
 }

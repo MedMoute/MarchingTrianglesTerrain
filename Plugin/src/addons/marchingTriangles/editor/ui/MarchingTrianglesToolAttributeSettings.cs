@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui;
 
 /// <summary>
 /// Attribute Settings for each of the plugin tools.
 /// </summary>
 /// The settings are akin to flags that will enable or disable a given property/configuration in the Editor UI.
+// ReSharper disable once Godot.MissingParameterlessConstructor
 public partial class MarchingTrianglesToolAttributeSettings : Resource
 {
     internal MarchingTrianglesToolAttributeSettings(

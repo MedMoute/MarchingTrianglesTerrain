@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
-using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Spatial.Euclidean;
-using static MarchingTrianglesTerrain.addons.marchingTriangles.utils.EngineUtils;
+using static MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.EngineUtils;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
 public class HexTerrainCell
 {
@@ -23,8 +22,7 @@ public class HexTerrainCell
 
     public bool Verbose;
     public bool RunIntegrityChecks;
-    
-    
+
 
     /// <summary>
     /// The coordinates of the current cell in the paren chunk's hex frame.
@@ -36,7 +34,7 @@ public class HexTerrainCell
         private init
         {
             _cellCoordsImplicit = value;
-            _cellCoords = new Vector3I(value.X, value.Y, -value.X-value.Y);
+            _cellCoords = new Vector3I(value.X, value.Y, -value.X - value.Y);
         }
     }
 
@@ -75,7 +73,7 @@ public class HexTerrainCell
     /// <summary>
     ///  The underlying frame used for coordinates computations
     /// </summary>
-    private readonly RegularUniformFrame _orientationSystem;
+    private readonly IRegularUniformFrame _orientationSystem;
 
 
     /// <summary>
@@ -128,15 +126,15 @@ public class HexTerrainCell
 
     public HexTerrainCell(
         Vector2I cellCoordsImpl,
-        RegularUniformFrame orientationSystem,
-        RegularUniformFrame dualFrame)
+        IRegularUniformFrame orientationSystem,
+        IRegularUniformFrame dualFrame)
     {
         CellCoordsImplicit = cellCoordsImpl;
         _orientationSystem = orientationSystem;
         TempDataArrays = new CellDataArrays(cellCoordsImpl);
         DualCellsMapping = new Dictionary<int, Vector3I>();
         VertexPositionsInPlane = [];
-        CenterPosition = _orientationSystem.GetCellCentroid(new Vector3I(cellCoordsImpl.X,cellCoordsImpl.Y,0));
+        CenterPosition = _orientationSystem.GetCellCentroid(new Vector3I(cellCoordsImpl.X, cellCoordsImpl.Y, 0));
 
 
         for (int i = 0; i < VertexCount; i++)
@@ -148,7 +146,7 @@ public class HexTerrainCell
             DualCellsMapping.Add(
                 i,
                 _orientationSystem.GetVertexIndexInDualSpace(
-                    new Vector3I(CellCoords.X,CellCoords.Y,0), // Set by CellCoordsImplicit setter
+                    new Vector3I(CellCoords.X, CellCoords.Y, 0), // Set by CellCoordsImplicit setter
                     dualFrame,
                     i));
         }
@@ -171,10 +169,12 @@ public class HexTerrainCell
         {
             throw new ArgumentException("The two cells are the same.");
         }
-        if (cell._orientationSystem! != _orientationSystem)
+
+        if (!ReferenceEquals(cell._orientationSystem, _orientationSystem))
         {
             throw new ArgumentException("The two cells are defined in a different frame and thus are not comparable");
         }
+
         if (!cell.GetNeighborCellsCoordinates().Contains(_cellCoords))
         {
             return -1;
@@ -182,14 +182,17 @@ public class HexTerrainCell
         else
         {
             var borderVertexIndices = VertexPositionsInPlane.Index()
-                .Where(pos=> cell.VertexPositionsInPlane.Index().Any(v=> pos.Item.Equals(v.Item,1e-5)))
+                .Where(pos => cell.VertexPositionsInPlane.Index().Any(v => pos.Item.Equals(v.Item, 1e-5)))
                 .Select(pos => pos.Index).ToList();
             if (borderVertexIndices.Count > 2)
             {
-                throw new InvalidOperationException("Unexpected state: more than 2 coinciding vertices for 2 different bordering cells");
-            } else if (borderVertexIndices.Count < 2)
+                throw new InvalidOperationException(
+                    "Unexpected state: more than 2 coinciding vertices for 2 different bordering cells");
+            }
+            else if (borderVertexIndices.Count < 2)
             {
-                throw new InvalidOperationException("Unexpected state: less than 2 coinciding vertices for 2 different bordering cells");
+                throw new InvalidOperationException(
+                    "Unexpected state: less than 2 coinciding vertices for 2 different bordering cells");
             }
 
             var i0 = borderVertexIndices[0];
@@ -204,10 +207,10 @@ public class HexTerrainCell
             }
         }
     }
-    
+
     public void SetDataFetchingFunction(
         Vector2I dimensions2D,
-        Func<Vector2I, TriangleGrid> dataProviderProvider,
+        Func<Vector2I, TriangleGrid?> dataProviderProvider,
         Func<Vector2I, bool> doesNeighboringChunkExist)
     {
         // TODO Memoize
@@ -221,13 +224,9 @@ public class HexTerrainCell
 
             var scaledOffset = new Vector3I(offset.X * dimensions2D.X, offset.Y * dimensions2D.Y, 0);
 
-            var success = dataProviderProvider(offset).Data.TryGetValue(vertexIdxInDual - scaledOffset, out var value);
-            if (success)
-            {
-                return value;
-            }
+            var dataGrid = dataProviderProvider(offset);
 
-            return float.NaN;
+            return dataGrid == null ? float.NaN : dataGrid.Data.GetValueOrDefault(vertexIdxInDual - scaledOffset, float.NaN);
         };
 
         GetEdgeAvgHeight = i =>
@@ -239,9 +238,9 @@ public class HexTerrainCell
 
     internal static Vector2I GetChunkOffsetForDualCell(Vector2I chunkDimension, Vector3I dualIndex)
     {
-        return GetChunkOffsetForDualCell(chunkDimension, new Vector2I(dualIndex.X,dualIndex.Y));
+        return GetChunkOffsetForDualCell(chunkDimension, new Vector2I(dualIndex.X, dualIndex.Y));
     }
-    
+
     private static Vector2I GetChunkOffsetForDualCell(Vector2I chunkDimension, Vector2I dualIndex)
     {
         var offset = new Vector2I(
@@ -293,28 +292,6 @@ public class HexTerrainCell
             TerrainToolPluginHelper.FormatVector2(CenterPosition));
     }
 
-    private (Vector3[] tri, int Mask) ComputeTriangleAndMask(
-        int i, Dictionary<Vector2D,
-            float> dataArray,
-        HexagonalTerrainChunk chunk)
-    {
-        var center = CenterPosition;
-        var posB = VertexPositionsInPlane[i];
-        int index = (i + 1) % 6;
-        var posC = VertexPositionsInPlane[index];
-
-        var a = new Vector3((float)center.X, AverageHeight, (float)center.Y);
-        var b = new Vector3((float)posB.X, dataArray[posB], (float)posB.Y);
-        var c = new Vector3((float)posC.X, dataArray[posC], (float)posC.Y);
-
-        Vector3[] tri = [a, b, c];
-
-        int mask = (Math.Abs(a.Y - c.Y) > chunk.MergeThreshold ? 1 : 0) * 4 +
-                   (Math.Abs(b.Y - c.Y) > chunk.MergeThreshold ? 1 : 0) * 2 +
-                   (Math.Abs(a.Y - b.Y) > chunk.MergeThreshold ? 1 : 0) * 1;
-        return (tri, mask);
-    }
-
     internal void ProcessTrianglesIntoPoints(
         List<TriangleInfo> triangles,
         HexagonalTerrainChunk chunk)
@@ -329,7 +306,7 @@ public class HexTerrainCell
             }
         }
     }
-    
+
     /// <summary>
     /// Triangle processing output.
     /// </summary>
@@ -381,6 +358,7 @@ public class HexTerrainCell
         {
             throw new InvalidOperationException("GetVertexData is null");
         }
+
         Dictionary<Vector2D, float> tempHexagonData = new();
 
         for (int i = 0; i < VertexCount; i++)
@@ -393,7 +371,8 @@ public class HexTerrainCell
         return tempHexagonData;
     }
 
-    internal List<Vector2I> FetchNeighboringCellsData(Dictionary<Vector2I, HexTerrainCell> pendingDataDictionary,HexagonalTerrainChunk chunk)
+    internal List<Vector2I> FetchNeighboringCellsData(Dictionary<Vector2I, HexTerrainCell> pendingDataDictionary,
+        HexagonalTerrainChunk chunk)
     {
         var neighbors = GetNeighborCellsCoordinates();
 
@@ -414,14 +393,15 @@ public class HexTerrainCell
     {
         // Trivial with axial coordinates
         // https://www.redblobgames.com/grids/hexagons/#conversions
-        return [
-            CellCoords+Vector3I.Right-Vector3I.Up+Vector3I.Zero,
-            CellCoords+Vector3I.Right+Vector3I.Zero-Vector3I.Back,
-            CellCoords+Vector3I.Zero+Vector3I.Up-Vector3I.Back,
-            CellCoords-Vector3I.Right+Vector3I.Up+Vector3I.Zero,
-            CellCoords-Vector3I.Right+Vector3I.Zero+Vector3I.Back,
-            CellCoords+Vector3I.Zero-Vector3I.Up+Vector3I.Back
-        ];  
+        return
+        [
+            CellCoords + Vector3I.Right - Vector3I.Up + Vector3I.Zero,
+            CellCoords + Vector3I.Right + Vector3I.Zero - Vector3I.Back,
+            CellCoords + Vector3I.Zero + Vector3I.Up - Vector3I.Back,
+            CellCoords - Vector3I.Right + Vector3I.Up + Vector3I.Zero,
+            CellCoords - Vector3I.Right + Vector3I.Zero + Vector3I.Back,
+            CellCoords + Vector3I.Zero - Vector3I.Up + Vector3I.Back
+        ];
     }
 }
 

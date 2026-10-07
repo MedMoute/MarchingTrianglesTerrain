@@ -1,49 +1,48 @@
 using GdUnit4;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
-using static GdUnit4.Assertions;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 using NUnit.Framework;
+using static GdUnit4.Assertions;
 
-namespace UnitTests4Godot.test;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.test;
 
 [TestSuite]
 [RequireGodotRuntime]
 [GodotExceptionMonitor]
 public class TestLoadAction
 {
-    private MarchingTrianglesTerrainPlugin plugin;
-    private MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain terrain;
+    private MarchingTrianglesTerrainPlugin _plugin = null!;
+    private MarchingTrianglesTerrain _terrain = null!;
 
     [BeforeTest]
     public void Setup()
     {
-        plugin = AddNode(new MarchingTrianglesTerrainPlugin());
-        terrain = AddNode(new MarchingTrianglesTerrain.addons.marchingTriangles.MarchingTrianglesTerrain());
+        _plugin = AddNode(new MarchingTrianglesTerrainPlugin());
+        _terrain = AddNode(new MarchingTrianglesTerrain());
     }
 
     [GdUnit4.TestCase]
     public void TestLoadOnSingleChunk()
     {       
-        AssertThat(terrain.Chunks.Count).IsEqual(0);
+        AssertThat(_terrain.Chunks.Count).IsEqual(0);
         Vector2I chunkCoord = Vector2I.One;
-        terrain.TerrainSettings.ChunkDimensions = new Vector2I(3, 3);
-        terrain.AddNewChunk(chunkCoord, plugin);
-        AssertThat(terrain.Chunks.Count).IsEqual(1);
+        _terrain.TerrainSettings.ChunkDimensions = new Vector2I(3, 3);
+        _terrain.AddNewChunk(chunkCoord, _plugin ?? throw new InvalidOperationException());
+        AssertThat(_terrain.Chunks.Count).IsEqual(1);
         
-        Assert.That(terrain.Chunks[chunkCoord].Underlying.Dimensions,
+        Assert.That(_terrain.Chunks[chunkCoord].Underlying.Dimensions,
             Is.EqualTo(new Vector3I(3,3,2)));
         
-        terrain.DataDirectory = "res://resources/Chunks"; 
-        AssertThat(FileUtils.GetDirectorySizeRecursive(terrain.DataDirectory)).IsGreater(0);
+        _terrain.DataDirectory = "res://resources/Chunks"; 
+        AssertThat(FileUtils.GetDirectorySizeRecursive(_terrain.DataDirectory)).IsGreater(0);
         // Ensure the load does not fail catastrophically
-        Assert.DoesNotThrow(() => { MttDataHandler.LoadTerrainData(terrain); });
+        Assert.DoesNotThrow(() => { MttDataHandler.LoadTerrainData(_terrain); });
         // Ensure the load succeeds
-        Assert.That(MttDataHandler.LoadTerrainData(terrain),Is.True);       
+        Assert.That(MttDataHandler.LoadTerrainData(_terrain),Is.True);       
         // Ensure the dimensions of the chunk were changed
-        Assert.That(terrain.Chunks[chunkCoord].Underlying.Dimensions,
+        Assert.That(_terrain.Chunks[chunkCoord].Underlying.Dimensions,
             Is.EqualTo(new Vector3I(10, 10, 2)));
-        AssertThat(terrain.Chunks.Count).IsEqual(1);
+        AssertThat(_terrain.Chunks.Count).IsEqual(1);
 
     }
 }

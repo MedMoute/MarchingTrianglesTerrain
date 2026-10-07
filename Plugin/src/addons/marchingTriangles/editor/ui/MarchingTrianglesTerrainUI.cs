@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui;
 
 /// <summary>
 /// Component handling the Godot Editor's display of the plugin.
@@ -15,7 +15,7 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
 
     public MarchingTrianglesToolUiAttributes UiToolAttributes { get; private set; } = new(plugin);
 
-    public MarchingTrianglesToolbar Toolbar { get; set; }
+    public MarchingTrianglesToolbar? Toolbar { get; private set; }
 
     public MarchingTrianglesTerrainPlugin Plugin { get; set; } = plugin;
 
@@ -56,12 +56,6 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
             return;
         }
 
-        if (Plugin == null)
-        {
-            GD.PushError("Plugin is not available.");
-            return;
-        }
-
         Toolbar = new MarchingTrianglesToolbar();
         Toolbar.ToolChanged += OnToolChanged;
         Toolbar.Hide();
@@ -79,14 +73,14 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
         Plugin.RemoveControlFromContainer(EditorPlugin.CustomControlContainer.SpatialEditorSideLeft, Toolbar);
         Plugin.RemoveControlFromContainer(EditorPlugin.CustomControlContainer.SpatialEditorBottom, UiToolAttributes);
 
-        Toolbar.QueueFree();
+        Toolbar?.QueueFree();
         UiToolAttributes.QueueFree();
     }
 
     public void SetVisible(bool isVisible)
     {
         _isVisible = isVisible;
-        Toolbar.SetVisible(isVisible);
+        Toolbar?.SetVisible(isVisible);
         UiToolAttributes.SetVisible((isVisible));
 
         if (isVisible)

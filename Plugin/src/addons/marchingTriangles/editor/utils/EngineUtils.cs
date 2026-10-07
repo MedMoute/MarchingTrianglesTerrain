@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 using MathNet.Spatial.Euclidean;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 
 /// <summary>
 /// Utility class for Godot Engine-specific tasks.

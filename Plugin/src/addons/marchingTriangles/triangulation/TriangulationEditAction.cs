@@ -12,12 +12,12 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 /// </ul>
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public interface TriangulationEditAction<out T>
+public interface ITriangulationEditAction<out T>
 {
     public T Apply(Triangulation triangulation);
 }
 
-public abstract class DelegatedTriangulationEditAction<T> : TriangulationEditAction<T>
+public abstract class DelegatedTriangulationEditAction<T> : ITriangulationEditAction<T>
 {
     protected abstract T DoApply(Triangulation t);
 
@@ -28,7 +28,7 @@ public abstract class DelegatedTriangulationEditAction<T> : TriangulationEditAct
     protected virtual void ValidateAfter(Triangulation t)
     {
         t.EnsureIntegrity();
-        t.Debug(ToString());
+        t.Debug(ToString() ?? "");
     }
 
     public T Apply(Triangulation triangulation)
@@ -54,7 +54,16 @@ public abstract class DelegatedTriangulationEditAction<T> : TriangulationEditAct
             throw;
         }
 
-        ValidateAfter(triangulation);
+        try
+        {
+            ValidateAfter(triangulation);
+        }
+        catch (Exception e)
+        {
+            triangulation.Debug("Exception Caught during pre Action Validation: " + e.Message, true);
+            throw;
+        }
+
         return output;
     }
 }

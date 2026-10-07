@@ -1,12 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Godot;
-using Godot.Collections;
-using MarchingTrianglesTerrain.addons.marchingTriangles.ui;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.data;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor;
 
 /// <summary>
 /// Tool Attribute values.
@@ -15,11 +10,11 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles;
 /// </summary>
 public partial class TerrainToolAttributes : Node
 {
-    public int BrushIndex { get; set; } = 0;
+    public int BrushIndex { get; set; } 
     public double BrushSize { get; set; } = 5D;
     public double EaseValue { get; set; } = -1; // No ease
     public double Strength { get; set; } = 1;
-    public double Height { get; set; } = 0;
+    public double Height { get; set; } 
     public bool Flatten { get; set; } = true;
     public bool Falloff { get; set; } = true;
     
@@ -28,7 +23,7 @@ public partial class TerrainToolAttributes : Node
     public Vector4 GeometryModesParameters { get; set; } = new(-1f,-1f,-1f,-1f);
 
 
-    public bool MaskGrass { get; set; } = false;
+    public bool MaskGrass { get; set; } 
     
     public Curve FalloffCurve { get; private set; } = FileUtils
         .Load<Curve>("res://addons/marchingTriangles/editor/resources/plugin_materials/curve_falloff.tres");
@@ -42,7 +37,7 @@ public partial class TerrainToolAttributes : Node
     public Vector2I SelectedChunk { get; set; }
 
     // Only relevant for vertex painting
-    public bool PaintWalls { get; set; } = false;
+    public bool PaintWalls { get; set; } 
 
     private int _vertexColorIndex;
 

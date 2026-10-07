@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.utils;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
 /// <summary>
 /// Utility class for various triangle computations in 3D space

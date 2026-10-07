@@ -1,22 +1,24 @@
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
+// ReSharper disable UnusedVariable
 
-namespace UnitTests.triangulation;
+namespace UnitTests.test.triangulation;
 
 public class TestDisplaceEdge
 {
-    private static Vector3 A = Vector3.Up;
-    private static Vector3 B = Vector3.Back;
-    private static Vector3 C = Vector3.Right;
-    private Vector3[] tri = [A, B, C];
+    private static readonly Vector3 A = Vector3.Up;
+    private static readonly Vector3 B = Vector3.Back;
+    private static readonly Vector3 C = Vector3.Right;
+    private Vector3[] _tri = [A, B, C];
 
-    private Triangulation t;
+    private Triangulation _t;
 
 
     [SetUp]
     public void Setup()
     {
-        t = new Triangulation([A, B, C], false, true);
+        _t = new Triangulation(_tri, false, true);
     }
 
     [Test]
@@ -53,10 +55,10 @@ public class TestDisplaceEdge
         Assert.DoesNotThrow(() =>
         {
             var action = new DisplaceEdgeAlongYAxis(0, h0, h1,snapMode);
-            action.Apply(t);
+            action.Apply(_t);
         });
-        Assert.That(t.ToTriangleInfoList(), Has.Count.EqualTo(1));
-        Assert.That(t.ToTriangleInfoList()[0].Points, Has.One.With.Matches<Vector3>(v=> Math.Abs(v.Y - h0) < 1e-5));
-        Assert.That(t.ToTriangleInfoList()[0].Points, Has.One.With.Matches<Vector3>(v=> Math.Abs(v.Y - h1) < 1e-5));
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(1));
+        Assert.That(_t.ToTriangleInfoList()[0].Points, Has.One.With.Matches<Vector3>(v=> Math.Abs(v.Y - h0) < 1e-5));
+        Assert.That(_t.ToTriangleInfoList()[0].Points, Has.One.With.Matches<Vector3>(v=> Math.Abs(v.Y - h1) < 1e-5));
     }
 }

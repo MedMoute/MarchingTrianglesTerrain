@@ -1,15 +1,15 @@
 #pragma warning disable NUnit2021
-using System;
-using System.Linq;
+// ReSharper disable AccessToModifiedClosure
+// ReSharper disable UnusedVariable
 using Godot;
-using MarchingTrianglesTerrain.addons.marchingTriangles;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Spatial.Euclidean;
 using MathNet.Spatial.Units;
-using NUnit.Framework;
 
-namespace UnitTests;
+namespace UnitTests.test;
 
 public class TestHexesFromDual
 {
@@ -45,7 +45,7 @@ public class TestHexesFromDual
     [Test]
     public void TestDualTileAreaIsSameAsSelf()
     {
-        RegularUniformFrame frame = new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 1));
+        IRegularUniformFrame frame = new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 1));
         Assert.That(() => frame.GetDual().GetTileArea(),
             Is.EqualTo(frame.GetTileArea()).Within(1E-5));
 
@@ -57,7 +57,7 @@ public class TestHexesFromDual
     [Test]
     public void TestDualOfDualIsSelfForHex()
     {
-        RegularUniformFrame frame = new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 1));
+        IRegularUniformFrame frame = new HexTileOrientationSystem(new Vector2D(0, 0), new Vector2D(1, 1));
         
         var hexFrame = frame.GetDual();
 
@@ -68,7 +68,7 @@ public class TestHexesFromDual
         
         // Do the same for offset frame : 
         
-        RegularUniformFrame frame2 = new HexTileOrientationSystem(new Vector2D(10, 10), new Vector2D(11, 11));
+        IRegularUniformFrame frame2 = new HexTileOrientationSystem(new Vector2D(10, 10), new Vector2D(11, 11));
         Assert.That(() => frame2.GetDual().GetDual().Transform.ToArray(),
             Is.EqualTo(frame2.Transform.ToArray()).AsCollection.Within(1E-5));
     }
@@ -77,7 +77,7 @@ public class TestHexesFromDual
     public void TestDualOfDualIsSelfForTris()
     {
         // Test with usual system
-        RegularUniformFrame frame = TerrainSettings.OrientationSystem;
+        IRegularUniformFrame frame = TerrainSettings.OrientationSystem;
         
          Assert.That(() => frame.GetDual().GetDual().Transform.ToArray(),
              Is.EqualTo(frame.Transform.ToArray()).AsCollection.Within(1E-5));

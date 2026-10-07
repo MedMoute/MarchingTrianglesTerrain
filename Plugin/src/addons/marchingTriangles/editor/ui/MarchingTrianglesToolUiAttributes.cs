@@ -5,17 +5,18 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Godot;
-using Godot.Collections;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
-using Microsoft.VisualBasic.CompilerServices;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using Array = Godot.Collections.Array;
+using TerrainSettings = MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.TerrainSettings;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles.ui;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.editor.ui;
 
 /// <summary>
 /// UI-based attributes handler for the various plugin tools.
 /// </summary>
 [Tool]
+// ReSharper disable once Godot.MissingParameterlessConstructor
 public partial class MarchingTrianglesToolUiAttributes
     : ScrollContainer
 {
@@ -28,9 +29,9 @@ public partial class MarchingTrianglesToolUiAttributes
     private readonly MarchingTrianglesTerrainPlugin _terrainPlugin;
 
 
-    private readonly System.Collections.Generic.Dictionary<string, UiSettingType> _terrainSettingsData = new()
+    private readonly Dictionary<string, UiSettingType> _terrainSettingsData = new()
     {
-        { nameof(TerrainSettings.ChunkDimensions), UiSettingType.Vector2i },
+        { nameof(TerrainSettings.ChunkDimensions), UiSettingType.Vector2I },
         { nameof(TerrainSettings.CellScale), UiSettingType.EditorSpinSlider },
         { nameof(TerrainSettings.ChunkBlendMode), UiSettingType.OptionButton },
         { nameof(TerrainSettings.ChunkBlendModeFallBack), UiSettingType.OptionButton },
@@ -44,14 +45,12 @@ public partial class MarchingTrianglesToolUiAttributes
     private SettingType _lastSettingType = SettingType.Error;
     public GdPluginHexTerrainChunk? SelectedChunk { get; set; }
 
-    private readonly List<GdPluginHexTerrainChunk> _currentAvailableChunks = [];
-
-    private static StringName newChunk = "New Chunk";
+    private static readonly StringName NewChunk = "New Chunk";
 
     /// <summary>
     ///  The container for the tool settings
     /// </summary>
-    private HBoxContainer _hboxContainer;
+    private HBoxContainer _hboxContainer = new();
 
     public MarchingTrianglesToolUiAttributes(MarchingTrianglesTerrainPlugin terrainPlugin)
     {
@@ -89,7 +88,7 @@ public partial class MarchingTrianglesToolUiAttributes
         }
 
 
-        if (_terrainPlugin.Ui.Toolbar.ToolBox == null)
+        if (_terrainPlugin.Ui?.Toolbar?.ToolBox == null)
         {
             return;
         }
@@ -101,20 +100,20 @@ public partial class MarchingTrianglesToolUiAttributes
 
         // Get the tool's relevant attributes.
         List<Godot.Collections.Dictionary<string, Variant>> toolAttributes = settings.GetPropertiesFlagList()
-            .Where((data) => data.Item2)
-            .Select((filteredData) =>
+            .Where(data => data.Item2)
+            .Select(filteredData =>
             {
-                Godot.Collections.Dictionary<string, Variant> propertiesAttributes = null;
+                Godot.Collections.Dictionary<string, Variant>? propertiesAttributes = null;
                 foreach (var propertyInfo in Attributes.GetType().GetProperties())
                 {
                     if (propertyInfo.Name == filteredData.Item1)
                     {
                         propertiesAttributes =
-                            (Godot.Collections.Dictionary<string, Variant>)propertyInfo.GetValue(Attributes);
+                            (Godot.Collections.Dictionary<string, Variant>)propertyInfo.GetValue(Attributes)!;
                     }
                 }
 
-                return propertiesAttributes;
+                return propertiesAttributes == null ? throw new Exception() : propertiesAttributes;
             }).ToList();
 
         foreach (var toolAttribute in toolAttributes)
@@ -171,7 +170,6 @@ public partial class MarchingTrianglesToolUiAttributes
             _hboxContainer.AddChild(cCont, true);
         }
 
-        CenterContainer container = null;
         Variant savedSettingValue = GetCurrentPluginAttributeValue(settingName);
         //Process per setting type
         switch (settingType)
@@ -193,8 +191,7 @@ public partial class MarchingTrianglesToolUiAttributes
                 break;
             case SettingType.QuickPaint:
                 throw new NotSupportedException("Quickpaint not supported");
-                //ProcessQuickPaintSetting(savedSettingValue, toolSettingParameters);
-                break;
+            //ProcessQuickPaintSetting(savedSettingValue, toolSettingParameters);
             case SettingType.Chunk:
                 ProcessChunkSetting();
                 break;
@@ -220,8 +217,8 @@ public partial class MarchingTrianglesToolUiAttributes
         modes[0] = (GeometryMode)_terrainPlugin.ToolAttributes.GeometryModes.X;
         modes[1] = (GeometryMode)_terrainPlugin.ToolAttributes.GeometryModes.Y;
         var vBoxContainer = new VBoxContainer();
-        
-        EditorSpinSlider?[,] sliderArray= new EditorSpinSlider[2,2];
+
+        EditorSpinSlider?[,] sliderArray = new EditorSpinSlider[2, 2];
 
         for (int i = 0; i < 2; i++)
         {
@@ -233,7 +230,7 @@ public partial class MarchingTrianglesToolUiAttributes
 
                 Label label = new();
                 label.Text = $"Parameter {j}";
-                if (mode>=0 && mode.SupportsParameter(j))
+                if (mode >= 0 && mode.SupportsParameter(j))
                 {
                     EditorSpinSlider value = new();
                     sliderArray[i, j] = value;
@@ -251,6 +248,7 @@ public partial class MarchingTrianglesToolUiAttributes
                     unsupported.Text = "No parameter";
                     subCont.AddChild(unsupported);
                 }
+
                 cont.AddChild(label);
                 cont.AddChild(subCont);
             }
@@ -263,9 +261,11 @@ public partial class MarchingTrianglesToolUiAttributes
         {
             for (int j = 0; j < maxSupportedGeometryParameters; j++)
             {
-                if (sliderArray [i,j] != null)
+                if (sliderArray[i, j] is not null)
                 {
-                    sliderArray[i, j].ValueChanged += (val) =>
+                    var i1 = i;
+                    var j1 = j;
+                    sliderArray[i, j]!.ValueChanged += val =>
                     {
                         Vector4 result = new Vector4();
                         for (int k = 0; k < 2; k++)
@@ -274,19 +274,18 @@ public partial class MarchingTrianglesToolUiAttributes
                             {
                                 result[2 * k + l] = (float)(sliderArray[k, l] == null
                                     ? -1f
-                                    : sliderArray[k, l].Value);
+                                    : sliderArray[k, l]!.Value);
                             }
                         }
 
-                        result[2 * i + j] = (float)val;
+                        result[2 * i1 + j1] = (float)val;
                         OnSettingChanged("GeometryModeParameters", result);
                     };
                 }
             }
-            
         }
-        _hboxContainer.AddChild(vBoxContainer, true);
 
+        _hboxContainer.AddChild(vBoxContainer, true);
     }
 
     private void ProcessGeometryModePickerSetting()
@@ -320,13 +319,13 @@ public partial class MarchingTrianglesToolUiAttributes
             new Vector2I(optionButton.Selected - 1, (int)val - 1));
 
 
-        OptionButton OptionButton(int _iconSize)
+        OptionButton OptionButton(int iconSizeInternal)
         {
             OptionButton button = new();
             button.SetCustomMinimumSize(new Vector2(65, 35));
             button.SetFlat(true);
             var texture = EngineUtils.Resize2DTexture("res://addons/marchingTriangles/editor/icons/empty_texture.png",
-                _iconSize, _iconSize);
+                iconSizeInternal, iconSizeInternal);
             button.AddIconItem(texture, "Noop");
             foreach (GeometryMode mode in Enum.GetValues(typeof(GeometryMode)))
             {
@@ -334,16 +333,16 @@ public partial class MarchingTrianglesToolUiAttributes
                 gradient.SetColors([mode.GetModePalette()(0f, 0f)]);
                 var gradTexture = new GradientTexture2D();
                 gradTexture.SetGradient(gradient);
-                gradTexture.SetHeight(_iconSize);
-                gradTexture.SetWidth(_iconSize);
+                gradTexture.SetHeight(iconSizeInternal);
+                gradTexture.SetWidth(iconSizeInternal);
                 button.AddIconItem(gradTexture, mode.ToString()); // +1 is offset due
             }
 
             return button;
         }
 
-        optionButton.Select(_terrainPlugin.ToolAttributes.GeometryModes.X+1);
-        overThresholdOptionButton.Select(_terrainPlugin.ToolAttributes.GeometryModes.Y+1);
+        optionButton.Select(_terrainPlugin.ToolAttributes.GeometryModes.X + 1);
+        overThresholdOptionButton.Select(_terrainPlugin.ToolAttributes.GeometryModes.Y + 1);
     }
 
     /// <summary>
@@ -355,6 +354,11 @@ public partial class MarchingTrianglesToolUiAttributes
     /// </summary>
     private void ProcessTerrainSettings()
     {
+        if (_terrainPlugin.CurTerrainNode == null || _terrainPlugin.PluginHelper == null)
+        {
+            return;
+        }
+
         VBoxContainer vBox = new();
 
         void NestChildControl(Control nestedControl, HBoxContainer parentContainer)
@@ -402,7 +406,7 @@ public partial class MarchingTrianglesToolUiAttributes
             BindingFlags.Instance |
             BindingFlags.Static |
             BindingFlags.Public);
-        var enumSettings = new System.Collections.Generic.Dictionary<string, Type>();
+        var enumSettings = new Dictionary<string, Type>();
 
         foreach (var pInfo in properties)
         {
@@ -414,7 +418,7 @@ public partial class MarchingTrianglesToolUiAttributes
 
         foreach (var editorSetting in _terrainSettingsData)
         {
-            Func<Variant> pluginSettingValue = ()=>propertyInSettings.Contains(editorSetting.Key)
+            Func<Variant> pluginSettingValue = () => propertyInSettings.Contains(editorSetting.Key)
                 ? _terrainPlugin.CurTerrainNode.TerrainSettings.Get(editorSetting.Key)
                 : _terrainPlugin.CurTerrainNode.Get(editorSetting.Key);
 
@@ -437,8 +441,8 @@ public partial class MarchingTrianglesToolUiAttributes
 
             switch (editorSetting.Value) // Process every sub-control depending on its type
             {
-                case UiSettingType.Vector2i:
-                case UiSettingType.Vector3i:
+                case UiSettingType.Vector2I:
+                case UiSettingType.Vector3I:
                 case UiSettingType.Vector2:
                 case UiSettingType.Vector3:
                     var editor = _CreateVectorEditorContainer(
@@ -587,6 +591,7 @@ public partial class MarchingTrianglesToolUiAttributes
                     browseButton.TooltipText = "Browse for folder";
                     browseButton.Pressed += () =>
                     {
+                        // ReSharper disable once AccessToModifiedClosure
                         _OpenFolderDialog(editorSetting.Key, folderLineEdit,
                             propertyInSettings.Contains(editorSetting.Key));
                     };
@@ -638,7 +643,6 @@ public partial class MarchingTrianglesToolUiAttributes
         KeyValuePair<string, UiSettingType> setting,
         bool propertyInSettings)
     {
-
         var previousValue = valueSupplier.Invoke();
         var container = new HBoxContainer();
         int vectorMembers;
@@ -661,11 +665,12 @@ public partial class MarchingTrianglesToolUiAttributes
                 throw new ArgumentException("The provided argument is not Vector-typed Variant");
         }
 
-        SpinBox[] subSpinBoxes = new SpinBox[vectorMembers];
+        // ReSharper disable once CollectionNeverQueried.Local : edited via reflection
+        var subSpinBoxes = new SpinBox[vectorMembers];
         for (int i = 0; i < vectorMembers; i++)
         {
             string vectorFieldChar = ((char)('X' + i)).ToString();
-            FieldInfo field = previousValue.Obj?.GetType().GetField(vectorFieldChar);
+            FieldInfo? field = previousValue.Obj?.GetType().GetField(vectorFieldChar);
             if (field == null)
             {
                 throw new ArgumentException("The provided default value somehow doesnt have a +" + vectorFieldChar +
@@ -689,7 +694,7 @@ public partial class MarchingTrianglesToolUiAttributes
                 // Variant needs to be unboxed , updated, then re-boxed for this to be applied
                 var unboxed = typeof(Variant)
                     .GetMethod("As")!
-                    .MakeGenericMethod(curValue.Obj.GetType())
+                    .MakeGenericMethod(curValue.Obj!.GetType())
                     .Invoke(curValue, null);
                 Variant boxed;
                 if (curValue.VariantType is Variant.Type.Vector2I or Variant.Type.Vector3I
@@ -722,6 +727,11 @@ public partial class MarchingTrianglesToolUiAttributes
 
     private void OnTerrainPropertyChanged(string propertyName, Variant value, bool inTerrainSettings)
     {
+        if (_terrainPlugin.CurTerrainNode == null || _terrainPlugin.PluginHelper == null)
+        {
+            return;
+        }
+
         if (inTerrainSettings)
         {
             _terrainPlugin.CurTerrainNode.TerrainSettings.Set(propertyName, value);
@@ -735,11 +745,16 @@ public partial class MarchingTrianglesToolUiAttributes
     /// </summary>
     private void ProcessChunkSetting()
     {
+        if (_terrainPlugin.CurTerrainNode == null || _terrainPlugin.PluginHelper == null)
+        {
+            return;
+        }
+
         //Create the chunk selectors
         var xSelectorButton = new OptionButton();
         xSelectorButton.SetFlat(true);
         xSelectorButton.Text = "Chunk X coordinate";
-        xSelectorButton.AddItem(newChunk, int.MinValue);
+        xSelectorButton.AddItem(NewChunk, int.MinValue);
         foreach (var x in _terrainPlugin.CurTerrainNode.Chunks.Keys.Select(v => v.X).Distinct())
         {
             xSelectorButton.AddItem(x.ToString());
@@ -750,7 +765,7 @@ public partial class MarchingTrianglesToolUiAttributes
         var zSelectorButton = new OptionButton();
         zSelectorButton.SetFlat(true);
         zSelectorButton.Text = "Chunk Z coordinate";
-        zSelectorButton.AddItem(newChunk, int.MinValue);
+        zSelectorButton.AddItem(NewChunk, int.MinValue);
         foreach (var z in _terrainPlugin.CurTerrainNode.Chunks.Keys.Select(v => v.Y).Distinct())
         {
             zSelectorButton.AddItem(z.ToString());
@@ -794,7 +809,7 @@ public partial class MarchingTrianglesToolUiAttributes
             }
             else
             {
-                optionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item1);
+                optionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes!.Item1);
                 overThresholdOptionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item2);
             }
         };
@@ -813,7 +828,7 @@ public partial class MarchingTrianglesToolUiAttributes
             }
             else
             {
-                optionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item1);
+                optionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes!.Item1);
                 overThresholdOptionButton.Select((int)selectedChunk.Underlying.DefaultGeometryModes.Item2);
             }
         };
@@ -858,7 +873,12 @@ public partial class MarchingTrianglesToolUiAttributes
             var selectedText = updatedButton.GetItemText((int)index);
             var updatedIsChunk = int.TryParse(selectedText, out var selectedValue);
 
-            var terrain = _terrainPlugin.CurTerrainNode;
+            if (_terrainPlugin.CurTerrainNode == null)
+            {
+                return null;
+            }
+
+            var terrainNode = _terrainPlugin.CurTerrainNode;
             //Computed values for the affected button
             List<int> impactedButtonChunkValues;
 
@@ -866,7 +886,7 @@ public partial class MarchingTrianglesToolUiAttributes
 
             if (updatedIsChunk) //We selected an existing chunk row/column
             {
-                impactedButtonChunkValues = terrain.Chunks.Keys.Where(v => filter((v, selectedValue)))
+                impactedButtonChunkValues = terrainNode.Chunks.Keys.Where(v => filter((v, selectedValue)))
                     .Select(selector)
                     .Distinct().Order().ToList();
                 if (impactedPreviouslyWasChunk) // The impacted button was previously a chunk, we keep the value 
@@ -883,14 +903,14 @@ public partial class MarchingTrianglesToolUiAttributes
             else //We explicitly selected a non-existing chunk row/column, we set the other to non-existing as well and 
             {
                 // The values are not filtered
-                impactedButtonChunkValues = terrain.Chunks.Keys.Select(selector)
+                impactedButtonChunkValues = terrainNode.Chunks.Keys.Select(selector)
                     .Distinct().Order().ToList();
                 tmpChunkSelected = null;
                 computedImpactedButtonSelection = null;
             }
 
             impactedButton.Clear();
-            impactedButton.AddItem(newChunk, int.MinValue);
+            impactedButton.AddItem(NewChunk, int.MinValue);
             foreach (var chunkValue in impactedButtonChunkValues)
             {
                 if (chunkValue == -1) //Avoid id = -1 (https://github.com/godotengine/godot/issues/124037)
@@ -928,13 +948,13 @@ public partial class MarchingTrianglesToolUiAttributes
 
             Console.WriteLine("Selected  chunk : " + (tmpChunkSelected is null
                 ? "NONE"
-                : terrain.Chunks[tmpChunkSelected.Value].Underlying.Coordinates
-                  + " => Geometry state : < " +
-                  terrain.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes.Item1 + " ; " +
-                  terrain.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes.Item2 + " >"));
+                : terrainNode.Chunks[tmpChunkSelected.Value].Underlying.Coordinates
+                  + " => Geometry default state : < " +
+                  terrainNode.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes!.Item1 + " ; " +
+                  terrainNode.Chunks[tmpChunkSelected.Value].Underlying.DefaultGeometryModes!.Item2 + " >"));
 
             _terrainPlugin.PluginHelper.CurrentSelectedChunk =
-                tmpChunkSelected == null ? null : terrain.Chunks[tmpChunkSelected.Value];
+                tmpChunkSelected == null ? null : terrainNode.Chunks[tmpChunkSelected.Value];
 
             return _terrainPlugin.PluginHelper.CurrentSelectedChunk;
         }
@@ -994,15 +1014,13 @@ public partial class MarchingTrianglesToolUiAttributes
     /// <summary>
     /// Process a UI setting that will take shape of a TexturePreset selection in the Editor
     /// </summary>
-    /// <param name="savedSetting"> previously saved value for the setting</param>
-    /// <param name="toolParameters">internal parameters of the UI setting</param>
-    private void ProcessTexturePresetSetting(Variant savedSetting,
-        Godot.Collections.Dictionary<string, Variant> toolParameters)
+    private void ProcessTexturePresetSetting(Variant _,
+        Godot.Collections.Dictionary<string, Variant> _1)
     {
         throw new NotImplementedException();
     }
 
-    private void ProcessTextSetting(Variant savedSetting,
+    private void ProcessTextSetting(Variant _,
         Godot.Collections.Dictionary<string, Variant> toolParameters)
     {
         string settingName = toolParameters.GetValueOrDefault("name", "").AsString();
@@ -1063,18 +1081,24 @@ public partial class MarchingTrianglesToolUiAttributes
     private void ProcessSliderSetting(Variant savedSetting,
         Godot.Collections.Dictionary<string, Variant> toolParameters)
     {
+        var terrain = _terrainPlugin.CurTerrainNode;
+        if (terrain == null)
+        {
+            return;
+        }
+
         string settingName = toolParameters.GetValueOrDefault("name", "").AsString();
         var rangeData = toolParameters.GetValueOrDefault("rangeData", new Vector3(1.0f, 50f, 0.5f)).AsVector3();
         // Cell size vs Dimension
         var cellScaleFactor =
             Math.Clamp(
-                (_terrainPlugin.CurTerrainNode.TerrainSettings.CellScale +
-                 _terrainPlugin.CurTerrainNode.TerrainSettings.CellScale) / 4.0,
+                (terrain.TerrainSettings.CellScale +
+                 terrain.TerrainSettings.CellScale) / 4.0,
                 0.3f, 1f);
         var dimensionsScaleFactor =
             Math.Clamp(
-                (_terrainPlugin.CurTerrainNode.TerrainSettings.ChunkDimensions.X +
-                 _terrainPlugin.CurTerrainNode.TerrainSettings.ChunkDimensions.Y) / 4.0,
+                (terrain.TerrainSettings.ChunkDimensions.X +
+                 terrain.TerrainSettings.ChunkDimensions.Y) / 4.0,
                 0.3f, 1f);
         float scaleFactor = (float)(dimensionsScaleFactor * cellScaleFactor);
         float defVal = (float)toolParameters.GetValueOrDefault("default", 10f).AsDouble();
@@ -1159,12 +1183,15 @@ public partial class MarchingTrianglesToolUiAttributes
     //TODO : Use signal to help making UI structure-agnostic.
     public void OnChunkUpdated((GeometryMode, GeometryMode) state, GdPluginHexTerrainChunk? chunk)
     {
-        if (chunk == null)
+        if (_terrainPlugin.PluginHelper == null)
         {
-            //Update the plugin UI default geometry mode value for all modes
-            _terrainPlugin.ToolAttributes.GeometryModes=new Vector2I((int)state.Item1, (int)state.Item2);
+            throw new InvalidOperationException("Plugin helper was not initialized.");
         }
-        else
+
+        //Update the plugin UI default geometry mode value for all modes
+        _terrainPlugin.ToolAttributes.GeometryModes = new Vector2I((int)state.Item1, (int)state.Item2);
+
+        if (chunk != null)
         {
             chunk.Underlying.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(state.Item1, state.Item2);
             _terrainPlugin.PluginHelper.CurrentSelectedChunk = chunk;
@@ -1172,12 +1199,12 @@ public partial class MarchingTrianglesToolUiAttributes
             _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
         }
 
-        GD.Print("Updated  chunk : " + (_terrainPlugin.PluginHelper.CurrentSelectedChunk is null
+        Console.WriteLine("Updated  chunk : " + (_terrainPlugin.PluginHelper.CurrentSelectedChunk is null
             ? "NONE"
             : _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.Coordinates
-              + " => Geometry state : < " +
-              _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.DefaultGeometryModes.Item1 + " ; " +
-              _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.DefaultGeometryModes.Item2 + " >"));
+              + " => Geometry default state : < " +
+              _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.DefaultGeometryModes!.Item1 + " ; " +
+              _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.DefaultGeometryModes!.Item2 + " >"));
     }
 
     public void SetPluginAttributeValue(String settingName, Variant value)
@@ -1212,7 +1239,6 @@ public partial class MarchingTrianglesToolUiAttributes
             case "texturePreset":
             case "quickPaintSelection":
                 throw new NotSupportedException("Legacy attribute value.");
-                return;
             case "chunkManagement":
                 curToolAttributes.SelectedChunk = value.AsVector2I();
                 return;
@@ -1257,7 +1283,7 @@ public partial class MarchingTrianglesToolUiAttributes
             case "paintWalls": return curToolAttributes.PaintWalls;
             case "terrainSettings": return curToolAttributes.TerrainSettings;
             case "geometryMode": return curToolAttributes.GeometryModes;
-            case "geometryModeParameterEditor" : return curToolAttributes.GeometryModesParameters;
+            case "geometryModeParameterEditor": return curToolAttributes.GeometryModesParameters;
             default:
                 GD.PushError(
                     "Couldn't find the plugin's tool attributes value from the provided attribute setting name : " +
@@ -1282,7 +1308,7 @@ public partial class MarchingTrianglesToolUiAttributes
             child.QueueFree();
         }
 
-        if (_terrainPlugin.Ui.Toolbar?.ToolBox == null)
+        if (_terrainPlugin.Ui?.Toolbar == null)
         {
             return;
         }
@@ -1357,7 +1383,10 @@ public partial class MarchingTrianglesToolUiAttributes
 
         AddChild(_hboxContainer);
         _lastSettingType = SettingType.Error; //Reset the setting type for correct VSeparators
-        _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
+        if (_terrainPlugin.CurTerrainNode != null)
+        {
+            _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
+        }
     }
 
     /// <summary>
@@ -1400,9 +1429,9 @@ public enum SettingType
 /// </summary>
 public enum UiSettingType
 {
-    Vector2i,
+    Vector2I,
     Vector2,
-    Vector3i,
+    Vector3I,
     Vector3,
     SpinBox,
     EditorSpinSlider,

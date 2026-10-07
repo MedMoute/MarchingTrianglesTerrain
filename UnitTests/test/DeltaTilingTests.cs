@@ -1,16 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
-using MarchingTrianglesTerrain.addons.marchingTriangles.utils;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Spatial.Euclidean;
 using MathNet.Spatial.Units;
-using NUnit.Framework;
+// ReSharper disable AccessToModifiedClosure
+// ReSharper disable UnusedVariable
 
 #pragma warning disable NUnit2021
-namespace UnitTests;
+namespace UnitTests.test;
 
 public class DeltaTilingTests
 {
@@ -32,7 +30,7 @@ public class DeltaTilingTests
     public void EnsureBasicCellVertices()
     {
         double eps = 1E-5;
-        RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(
+        IRegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(
             new Vector2D(1d / 2, 1 / (2 * Math.Sqrt(3))),
             new Vector2D(1, 1 / Math.Sqrt(3)));
 
@@ -72,7 +70,7 @@ public class DeltaTilingTests
     {
         float eps = 1E-5f;
         List<Vector2D> seedVecs = [new(0, 0), new(1, 1)];
-        RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(seedVecs[0], seedVecs[1]);
+        IRegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(seedVecs[0], seedVecs[1]);
 
         // Check on random cells for [[0,0];[1,1]] cell Seeding pair
         Random rand = new Random(0);
@@ -87,7 +85,7 @@ public class DeltaTilingTests
         AssertGridVerticesDistances(eps, tilingSystem, checkedCells);
     }
 
-    private static void AssertGridVerticesOverlap(float eps, RegularUniformFrame tilingSystem,
+    private static void AssertGridVerticesOverlap(float eps, IRegularUniformFrame tilingSystem,
         List<Vector2I> checkedCells)
     {
         foreach (var cell in checkedCells)
@@ -107,7 +105,7 @@ public class DeltaTilingTests
         }
     }
 
-    private static void AssertGridVerticesDistances(float eps, RegularUniformFrame tilingSystem,
+    private static void AssertGridVerticesDistances(float eps, IRegularUniformFrame tilingSystem,
         List<Vector2I> checkedCells)
     {
         foreach (var cell in checkedCells)
@@ -127,7 +125,7 @@ public class DeltaTilingTests
     {
         // [0,0] Cell with [1,1] vector
         var seedVec = new Vector2D(1, 1);
-        RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(new Vector2D(0, 0), seedVec);
+        IRegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(new Vector2D(0, 0), seedVec);
         var cell = Vector2I.Zero;
         foreach (var vec in tilingSystem.GetVertexPositions(cell))
         {
@@ -146,15 +144,15 @@ public class DeltaTilingTests
     {
         //
         var seedVec = new Vector2D(15, 12);
-        RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(new Vector2D(0, 0), seedVec);
+        IRegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(new Vector2D(0, 0), seedVec);
 
         Assert.That(() => tilingSystem.GetCell(seedVec), Is.EqualTo(new Vector2I(0, 0)));
 
         //Use the Terrain tiling
         tilingSystem = TerrainSettings.OrientationSystem;
 
-        var u_expected = (Vector2D vec) => (int)Math.Floor(vec.X - vec.Y / Math.Sqrt(3));
-        var v_expected = (Vector2D vec) => (int)Math.Floor(vec.Y / (Math.Sqrt(3) / 2));
+        var uExpected = (Vector2D vec) => (int)Math.Floor(vec.X - vec.Y / Math.Sqrt(3));
+        var vExpected = (Vector2D vec) => (int)Math.Floor(vec.Y / (Math.Sqrt(3) / 2));
 
 
         var rand = new Random();
@@ -163,40 +161,40 @@ public class DeltaTilingTests
             var x = rand.NextDouble() * 1000;
             var y = rand.NextDouble() * 1000;
             var vec = new Vector2D(x, y);
-            Assert.That(() => new Vector2I(u_expected(vec), v_expected(vec)), Is.EqualTo(tilingSystem.GetCell(vec)));
+            Assert.That(() => new Vector2I(uExpected(vec), vExpected(vec)), Is.EqualTo(tilingSystem.GetCell(vec)));
         }
 
         //Test for random tilings
-        var c1x = rand.NextDouble();
-        var c2x = rand.NextDouble();
-        var c1y = rand.NextDouble();
-        var c2y = rand.NextDouble();
-        var c1 = new Vector2D(c1x, c1y);
-        var c2 = new Vector2D(c2x, c2y);
+        var c1X = rand.NextDouble();
+        var c2X = rand.NextDouble();
+        var c1Y = rand.NextDouble();
+        var c2Y = rand.NextDouble();
+        var c1 = new Vector2D(c1X, c1Y);
+        var c2 = new Vector2D(c2X, c2Y);
         tilingSystem = new DoubleDeltaTileOrientationSystem(c1, c2);
 
         // Manually recreate the expected basis
         var j = c2 - c1;
         var origin = c1 - (j);
-        var b_mid = Math.Sqrt(3) * j; // From construction + Pythagoras 
-        var b0 = b_mid.Rotate(Angle.FromDegrees(-30));
-        var b1 = b_mid.Rotate(Angle.FromDegrees(30));
+        var bMid = Math.Sqrt(3) * j; // From construction + Pythagoras 
+        var b0 = bMid.Rotate(Angle.FromDegrees(-30));
+        var b1 = bMid.Rotate(Angle.FromDegrees(30));
         // Compute the inverse
         var denom = 1/(b0.X*b1.Y-b1.X*b0.Y);
 
         var ib0 = denom * new Vector2D(b1.Y, -b0.Y);
         var ib1 = denom * new Vector2D(-b1.X, b0.X);
 
-        u_expected = vec => (int)Math.Floor( ib0.X * (vec-origin).X + ib1.X * (vec-origin).Y);
+        uExpected = vec => (int)Math.Floor( ib0.X * (vec-origin).X + ib1.X * (vec-origin).Y);
 
-        v_expected = vec => (int)Math.Floor( ib0.Y * (vec-origin).X + ib1.Y * (vec-origin).Y);
+        vExpected = vec => (int)Math.Floor( ib0.Y * (vec-origin).X + ib1.Y * (vec-origin).Y);
 
         for (int i = 0; i < 50; i++)
         {
             var x = rand.NextDouble() * 1000;
             var y = rand.NextDouble() * 1000;
             var vec = new Vector2D(x, y);
-            Assert.That(() => new Vector2I(u_expected(vec), v_expected(vec)), Is.EqualTo(tilingSystem.GetCell(vec)));
+            Assert.That(() => new Vector2I(uExpected(vec), vExpected(vec)), Is.EqualTo(tilingSystem.GetCell(vec)));
         }
     }
 
@@ -207,20 +205,20 @@ public class DeltaTilingTests
         var rand = new Random(0);
 
         //Check random tilings
-        var c1x = rand.NextDouble();
-        var c2x = rand.NextDouble();
-        var c1y = rand.NextDouble();
-        var c2y = rand.NextDouble();
-        var c1 = new Vector2D(c1x, c1y);
-        var c2 = new Vector2D(c2x, c2y);
+        var c1X = rand.NextDouble();
+        var c2X = rand.NextDouble();
+        var c1Y = rand.NextDouble();
+        var c2Y = rand.NextDouble();
+        var c1 = new Vector2D(c1X, c1Y);
+        var c2 = new Vector2D(c2X, c2Y);
         var tilingSystem = new DoubleDeltaTileOrientationSystem(c1, c2);
 
         // Manually recreate the expected basis
         var j = c2 - c1;
         var origin = c1 - (j);
-        var b_mid = Math.Sqrt(3) * j;
-        var b0 = b_mid.Rotate(Angle.FromDegrees(-30));
-        var b1 = b_mid.Rotate(Angle.FromDegrees(30));
+        var bMid = Math.Sqrt(3) * j;
+        var b0 = bMid.Rotate(Angle.FromDegrees(-30));
+        var b1 = bMid.Rotate(Angle.FromDegrees(30));
 
         Assert.That(() => Vector2D.OfVector(tilingSystem.Transform.Column(2)),
             Is.EqualTo(origin)
@@ -238,7 +236,7 @@ public class DeltaTilingTests
     [Test]
     public void TestTransformMatrices()
     {
-        RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(
+        IRegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0)
         );
@@ -266,7 +264,7 @@ public class DeltaTilingTests
             var vy = rand.NextDouble();
             var o = new Vector2D(ox, oy);
             var v = new Vector2D(vx, vy);
-            RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(o, v);
+            IRegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(o, v);
             for (int j = 0; j < 10; j++)
             {
                 var x = rand.NextDouble();
@@ -293,7 +291,7 @@ public class DeltaTilingTests
             var vy = rand.NextDouble();
             var o = new Vector2D(ox, oy);
             var v = new Vector2D(vx, vy);
-            RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(o, v);
+            IRegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(o, v);
             for (int j = 0; j < 10; j++)
             {
                 var x = rand.NextDouble();
@@ -310,7 +308,7 @@ public class DeltaTilingTests
     [Test]
     public void TestOffsetFrame()
     {
-        RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(
+        IRegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0));
 
@@ -347,10 +345,10 @@ public class DeltaTilingTests
     [Test]
     public void TestClone()
     {
-        RegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(
+        IRegularUniformFrame tilingSystem = new DoubleDeltaTileOrientationSystem(
             new Vector2D(0, 0),
             new Vector2D(1, 0));
-        Assert.That(() => (tilingSystem.Clone() as DoubleDeltaTileOrientationSystem).Transform.ToArray(),
+        Assert.That(() => (tilingSystem.Clone() as DoubleDeltaTileOrientationSystem)?.Transform.ToArray(),
             Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
 
         //Random clones : 
@@ -365,7 +363,7 @@ public class DeltaTilingTests
             var o = new Vector2D(ox, oy);
             var v = new Vector2D(vx, vy);
             tilingSystem = new DoubleDeltaTileOrientationSystem(o, v);
-            Assert.That(() => (tilingSystem.Clone() as DoubleDeltaTileOrientationSystem).Transform.ToArray(),
+            Assert.That(() => (tilingSystem.Clone() as DoubleDeltaTileOrientationSystem)?.Transform.ToArray(),
                 Is.EqualTo(tilingSystem.Transform.ToArray()).AsCollection.Within(1E-5));
         }
     }
@@ -373,7 +371,7 @@ public class DeltaTilingTests
     [Test]
     public void EnsureDualOfOffsetIsOffsetOfDual()
     {
-        RegularUniformFrame tilingSystem = TerrainSettings.OrientationSystem;
+        IRegularUniformFrame tilingSystem = TerrainSettings.OrientationSystem;
 
         var off = new Vector2D(10, -10);
 

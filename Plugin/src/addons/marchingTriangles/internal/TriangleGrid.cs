@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MathNet.Spatial.Euclidean;
 
-namespace MarchingTrianglesTerrain.addons.marchingTriangles;
+namespace MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
 /// <summary>
 /// Triangular tiling of a plan.
@@ -14,7 +15,7 @@ public class TriangleGrid
 {
     private readonly Dictionary<Vector3I, float> _data;
 
-    public RegularUniformFrame OrientationSystem { get;}
+    public IRegularUniformFrame OrientationSystem { get;}
 
     //TODO : move from float to object[] or smth
     public Dictionary<Vector3I, float>.KeyCollection Points => _data.Keys;
@@ -22,7 +23,7 @@ public class TriangleGrid
     public Dictionary<Vector3I, float> Data => _data;
 
 
-    private TriangleGrid(RegularUniformFrame os)
+    private TriangleGrid(IRegularUniformFrame os)
     {
         if (os is not DoubleDeltaTileOrientationSystem)
         {
@@ -53,6 +54,7 @@ public class TriangleGrid
         {
             if (ySize == null) // 
             {
+                // ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
                 if (dataT1[i] != null ^ dataT2[i] != null)
                 {
                     // STRICTLY One of the two is not null
@@ -66,6 +68,7 @@ public class TriangleGrid
                             "The provided arrays do not have the same size at the sub-array #[" + i + "].");
                     }
                 }
+                // ReSharper restore ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             }
             else
             {
@@ -81,8 +84,10 @@ public class TriangleGrid
 
         for (var i = 0; i < xSize ; i++)
         {
+            // ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             var emptyArrayT1 = dataT1[i] == null || dataT1[i].Length == 0;
             var emptyArrayT2 = dataT2[i] == null || dataT2[i].Length == 0;
+            // ReSharper restore ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
 
             for (var j = 0; j < ySize; j++)
             {
@@ -103,10 +108,8 @@ public class TriangleGrid
     /// Builds a triangle grid based on the data packed in a grid array. 
     /// </summary>
     /// The size of the data is obtained implicitly by looking at the array sizes
-    /// <param name="data"></param>
-    /// <param name="lowerTri"></param>
     /// <returns></returns>
-    public static TriangleGrid BuildFrom(float[][] dataT1, float[][] dataT2,RegularUniformFrame tilingSystem)
+    public static TriangleGrid BuildFrom(float[][] dataT1, float[][] dataT2,IRegularUniformFrame tilingSystem)
     {
         var grid =new TriangleGrid(tilingSystem);
         grid.FillWithDataFromTwoArray(dataT1, dataT2);
@@ -118,7 +121,8 @@ public class TriangleGrid
     /// </summary>
     /// <param name="data">the point data</param>
     /// <param name="dimensions">the chunk dimensions</param>
-    public static TriangleGrid BuildFrom(float[]data,Vector3I dimensions,RegularUniformFrame tilingSystem)
+    /// <param name="tilingSystem"></param>
+    public static TriangleGrid BuildFrom(float[]data,Vector3I dimensions,IRegularUniformFrame tilingSystem)
     {
         var grid =new TriangleGrid(tilingSystem);
         grid.FillWithDataFromFlatArray(data,dimensions);
@@ -164,9 +168,9 @@ public class TriangleGrid
         return new Vector3I(xy.X,xy.Y,OrientationSystem.GetPolygonIndexFromCartesian(cartesianPos,xy));
     }
 
-    public void PrintGridData(bool printCartesian = false,bool InGodotConsole = false)
+    public void PrintGridData(bool printCartesian = false,bool inGodotConsole = false)
     {
-        Action<String> stringAction = InGodotConsole ? GD.Print : Console.WriteLine;
+        Action<String> stringAction = inGodotConsole ? GD.Print : Console.WriteLine;
         
         foreach (KeyValuePair<Vector3I, float> kvp in _data)
         {

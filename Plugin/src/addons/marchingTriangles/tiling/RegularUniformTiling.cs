@@ -2,7 +2,7 @@ using MathNet.Spatial.Units;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 
-public interface RegularUniformTiling
+public interface IRegularUniformTiling
 {
     public int PolygonCount { get; }
     
