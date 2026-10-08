@@ -450,8 +450,24 @@ internal class CellDataArrays(Vector2I cellCoord)
     }
 }
 
+public class V2Comp : IComparer<Vector2>
+{
+    private V2Comp(){}
+
+    public static V2Comp Instance = new V2Comp();
+    public int Compare(Vector2 x, Vector2 y)
+    {
+        var xComparison = x.X.CompareTo(y.X);
+        if (xComparison != 0) return xComparison;
+        return x.Y.CompareTo(y.Y);
+    }
+}
+
 public class V3Comp : IComparer<Vector3>
 {
+    private V3Comp(){}
+
+    public static V3Comp Instance = new V3Comp();
     public int Compare(Vector3 x, Vector3 y)
     {
         var xComparison = x.X.CompareTo(y.X);

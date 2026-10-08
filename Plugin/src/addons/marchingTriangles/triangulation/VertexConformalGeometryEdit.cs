@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
@@ -29,25 +30,23 @@ public class VertexConformalGeometryEdit
     /// Registers the local vertex operations required to perform the GeometryMode's induced action upon application.
     /// </summary>
     public void RegisterLocalVertexAction(
-        Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations,
-        Dictionary<(int, HexTerrainCell), Tuple<(float,float),(float,float)?>> appliedGeometryParameters,
-        Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)?>> localTriangulations)
+        Dictionary<(int, Vector2I,Triangulation, int), (GeometryMode,(float,float))> appliedGeometryOperations,
+        Dictionary<Vector2I, HexTerrainCell> neighborCells)
     {
         foreach (var kvp in appliedGeometryOperations)
         {
             var cellAndVertexIndexKey = kvp.Key;
-            //First triangulation
 
-            var target = localTriangulations[cellAndVertexIndexKey].Item1;
-            var parameters = appliedGeometryParameters[cellAndVertexIndexKey].Item1;
+            var target = kvp.Key;
+            var parameters = appliedGeometryOperations[cellAndVertexIndexKey].Item2;
             var operationType = kvp.Value.Item1;
 
-            var htCell = cellAndVertexIndexKey.Item2;
+            var htCell = neighborCells[cellAndVertexIndexKey.Item2];
             var vertexInHtCellIdx = EngineUtils.Mod(cellAndVertexIndexKey.Item1, HexTerrainCell.VertexCount);
 
-            var tri = target.Item1;
-            var vertexInTriIdx = target.Item2;
-            RegisterVertexActionDependingOnGeometry(
+            var tri = target.Item3;
+            var vertexInTriIdx = target.Item4;
+            RegisterVertexActionDependingOnGeometry(neighborCells,
                 operationType,
                 parameters,
                 htCell,
@@ -55,28 +54,12 @@ public class VertexConformalGeometryEdit
                 vertexInTriIdx,
                 tri,
                 false);
-            //Second triangulation, we reduce the index for the cell indexing
-            //(Note that this is not used for cell center vertex processing)
-            if (localTriangulations[cellAndVertexIndexKey].Item2.HasValue)
-            {
-                target = localTriangulations[cellAndVertexIndexKey].Item2!.Value;
-                operationType = kvp.Value.Item2!.Value;
-                parameters = appliedGeometryParameters[cellAndVertexIndexKey].Item2!.Value;
 
-                tri = target.Item1;
-                vertexInTriIdx = target.Item2;
-                RegisterVertexActionDependingOnGeometry(
-                    operationType,
-                    parameters,
-                    htCell,
-                    vertexInHtCellIdx,
-                    vertexInTriIdx,
-                    tri, true);
-            }
         }
 
 
         void RegisterVertexActionDependingOnGeometry(
+            Dictionary<Vector2I, HexTerrainCell> neighborCells,
             GeometryMode operationType,
             (float,float) operationParameters,
             HexTerrainCell htCell,
@@ -88,12 +71,12 @@ public class VertexConformalGeometryEdit
             switch (operationType)
             {
                 case GeometryMode.FlatHexagons:
-                    GeometryModeActions.ProcessVertexOperationsForFlatHexes(this, appliedGeometryOperations, htCell,
+                    GeometryModeActions.ProcessVertexOperationsForFlatHexes(this, neighborCells, htCell,
                         vertexInHtCellIdx,
                         vertexInTriIdx, tri);
                     break;
                 case GeometryMode.FlatTriangles:
-                    GeometryModeActions.ProcessVertexOperationsForFlatTriangles(this, appliedGeometryOperations, htCell,
+                    GeometryModeActions.ProcessVertexOperationsForFlatTriangles(this, htCell,
                         vertexInHtCellIdx,
                         vertexInTriIdx, tri, secondTriangulationOfCell);
                     break;
@@ -101,29 +84,29 @@ public class VertexConformalGeometryEdit
                     //NOOP
                     break;
                 case GeometryMode.Foothill:
-                    GeometryModeActions.ProcessVertexOperationsForBendingEdge(this, appliedGeometryOperations,operationParameters, htCell,
+                    GeometryModeActions.ProcessVertexOperationsForBendingEdge(this, operationParameters, htCell,
                         vertexInHtCellIdx,
                         vertexInTriIdx, tri, secondTriangulationOfCell, false, true);
                     break;
                 case GeometryMode.Plateau:
-                    GeometryModeActions.ProcessVertexOperationsForBendingEdge(this, appliedGeometryOperations, operationParameters,htCell,
+                    GeometryModeActions.ProcessVertexOperationsForBendingEdge(this,  operationParameters,htCell,
                         vertexInHtCellIdx,
                         vertexInTriIdx, tri, secondTriangulationOfCell, true, false);
                     break;
                 case GeometryMode.BendingEdge:
-                    GeometryModeActions.ProcessVertexOperationsForBendingEdge(this, appliedGeometryOperations,operationParameters, htCell,
+                    GeometryModeActions.ProcessVertexOperationsForBendingEdge(this, operationParameters, htCell,
                         vertexInHtCellIdx,
                         vertexInTriIdx, tri, secondTriangulationOfCell, true, true);
                     break;
                 //TODO
                 //throw new NotImplementedException();
                 case GeometryMode.FlatHexagonsNoFans:
-                    GeometryModeActions.ProcessVertexOperationsForFlatHexes(this, appliedGeometryOperations, htCell,
+                    GeometryModeActions.ProcessVertexOperationsForFlatHexes(this,neighborCells, htCell,
                         vertexInHtCellIdx,
                         vertexInTriIdx, tri, false);
                     break;
                 case GeometryMode.FlatTrianglesNoFans:
-                    GeometryModeActions.ProcessVertexOperationsForFlatTriangles(this, appliedGeometryOperations, htCell,
+                    GeometryModeActions.ProcessVertexOperationsForFlatTriangles(this,  htCell,
                         vertexInHtCellIdx,
                         vertexInTriIdx, tri, secondTriangulationOfCell, false);
                     break;

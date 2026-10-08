@@ -1,6 +1,7 @@
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 using UnitTests.test.processing;
 
 namespace UnitTests;
@@ -14,12 +15,12 @@ public static class TestUtils
         var dico = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
         var borderEdgesAsSets = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
 
-        var vertexSet = new SortedSet<Vector3>(new V3Comp());
+        var vertexSet = new SortedSet<Vector3>(V3Comp.Instance);
         foreach (var tInfo in outputTriangles)
         {
             foreach (var edge in tInfo.GetEdges())
             {
-                var set = new SortedSet<Vector3>(new V3Comp());
+                var set = new SortedSet<Vector3>(V3Comp.Instance);
                 vertexSet.Add(edge.Item1);
                 vertexSet.Add(edge.Item2);
                 set.Add(edge.Item1);
@@ -37,7 +38,7 @@ public static class TestUtils
 
         foreach (var edge in outputTriangles.SelectMany(t => t.GetBorderEdges()))
         {
-            var set = new SortedSet<Vector3>(new V3Comp())
+            var set = new SortedSet<Vector3>(V3Comp.Instance)
             {
                 edge.Item1,
                 edge.Item2
@@ -80,7 +81,7 @@ public static class TestUtils
     {
         var borderVerticesEnumerable = setOfBorders.SelectMany(e =>
         {
-            var set = new SortedSet<Vector3>(new V3Comp());
+            var set = new SortedSet<Vector3>(V3Comp.Instance);
             set.Add(new Vector3(e[0], e[1], e[2]));
             set.Add(new Vector3(e[3], e[4], e[5]));
             return set;

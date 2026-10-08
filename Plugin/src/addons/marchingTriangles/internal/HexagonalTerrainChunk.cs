@@ -195,9 +195,14 @@ public class HexagonalTerrainChunk
 
             var offset = HexTerrainCell.GetChunkOffsetForDualCell(_dimension2D, cellCoords);
             var grid = _neighborChunksProvider(offset)?.DataGrid;
+            
+            if (grid is null)
+            {
+                return 0f;
+            }
 
             var scaledOffset = new Vector3I(offset.X * _dimension2D.X, offset.Y * _dimension2D.Y, 0);
-            return grid!.Data[cellCoords + scaledOffset];
+            return grid.Data[cellCoords + scaledOffset];
     }
 
     public Vector2D GetChunkGlobalPosition(Vector2I chunkIndex, IRegularUniformFrame referenceFrame)

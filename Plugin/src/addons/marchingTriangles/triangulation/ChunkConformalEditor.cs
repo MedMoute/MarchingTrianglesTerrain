@@ -171,11 +171,7 @@ public class ChunkConformalEditor
         }
 
         var appliedGeometryOperations =
-            new Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>>();
-        var appliedGeometryParameters =
-            new Dictionary<(int, HexTerrainCell), Tuple<(float, float), (float, float)?>>();
-        var appliedTriangulations =
-            new Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)?>>();
+            new Dictionary<(int, Vector2I,Triangulation,int), (GeometryMode,(float, float))>();
 
         var edit = new VertexConformalGeometryEdit();
         _cellCenterEditions.Add(hexTerrainCell.CellCoordsImplicit, edit);
@@ -190,18 +186,13 @@ public class ChunkConformalEditor
                                   _chunk.GeometryModeParameters ??
                                   throw new Exception("Chunk default should have been set")).Item1;
             appliedGeometryOperations.Add(
-                (i, hexTerrainCell), new Tuple<GeometryMode, GeometryMode?>(appliedMode, null));
-            appliedGeometryParameters.Add(
-                (i, hexTerrainCell), new Tuple<(float, float), (float, float)?>(cellParameters, null));
-            appliedTriangulations.Add((i, hexTerrainCell), new Tuple<(Triangulation, int), (Triangulation, int)?>(
-                (_triangulationsPerCell[hexTerrainCell.CellCoordsImplicit]?[i], 0)!,
-                null));
+                (i, hexTerrainCell.CellCoordsImplicit,_triangulationsPerCell[hexTerrainCell.CellCoordsImplicit]?[i]!, 0), (appliedMode,cellParameters));
+
         }
 
         edit.RegisterLocalVertexAction(
             appliedGeometryOperations,
-            appliedGeometryParameters,
-            appliedTriangulations);
+            new Dictionary<Vector2I, HexTerrainCell> {[hexTerrainCell.CellCoordsImplicit]=hexTerrainCell});
     }
 
     // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
@@ -293,10 +284,9 @@ public class ChunkConformalEditor
         }
 
         //For each cell, we extract the list of requested operations, the result is ordered by index
-        Dictionary<Vector2I, HashSet<GeometryMode>?[]> requestPerCell = new();
+        Dictionary<Vector2I, HashSet<(GeometryMode,(float,float))>?[]> requestPerCell = new();
 
-        Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> appliedGeometryOperations = new();
-        Dictionary<(int, HexTerrainCell), Tuple<(float, float), (float, float)?>> appliedGeometryParameters = new();
+        Dictionary<(int, Vector2I, Triangulation, int), (GeometryMode,(float, float))> appliedGeometryOperations = new();
 
         //Iterate over Neighboring cells of the vertex
         for (int i = 0; i < localVertexIndexing.Count; i++)
@@ -304,13 +294,14 @@ public class ChunkConformalEditor
             var curVertex = localVertexIndexing[i];
             var requestedGeometryMode =
                 neighborCells[curVertex.Item1].GeometryModesOverride ?? chunkGeometryMode;
-
+            var requestedParameters =
+                neighborCells[curVertex.Item1].ParametersOverride ?? chunkGeometryParameters;
 
             // Fetch the request list
             requestPerCell.TryGetValue(curVertex.Item1, out var listOfRequests);
             if (listOfRequests is null)
             {
-                listOfRequests = new HashSet<GeometryMode>[6];
+                listOfRequests = new HashSet<(GeometryMode,(float,float))>[6];
                 requestPerCell.Add(curVertex.Item1, listOfRequests);
             }
 
@@ -328,8 +319,8 @@ public class ChunkConformalEditor
             bool t1IsOverThreshold = (mask1 & (1 << t1.Item2)) != 0;
 
             vertexRegisteredRequests.Add(t1IsOverThreshold
-                ? requestedGeometryMode.Item1
-                : requestedGeometryMode.Item2);
+                ? (requestedGeometryMode.Item1,requestedParameters.Item1)
+                : (requestedGeometryMode.Item2,requestedParameters.Item2));
 
             var t2 = localTriangulations[(curVertex.Item2, neighborCells[curVertex.Item1])]
                 .Item2;
@@ -338,8 +329,8 @@ public class ChunkConformalEditor
                 var mask2 = t2.Value.Item1.ComputeMask(chunkThreshold);
                 bool t2IsOverThreshold = (mask2 & (1 << t2.Value.Item2)) != 0;
                 vertexRegisteredRequests.Add(t2IsOverThreshold
-                    ? requestedGeometryMode.Item1
-                    : requestedGeometryMode.Item2);
+                    ? (requestedGeometryMode.Item1,requestedParameters.Item1)
+                    : (requestedGeometryMode.Item2,requestedParameters.Item2));
             }
         }
 
@@ -351,21 +342,25 @@ public class ChunkConformalEditor
         if (geometryModes.Length == 1)
         {
             //Single type of operation, all the triangulations will be edited similarly
-            foreach (var cellAndVertexIndex in localTriangulations.Keys)
+            foreach (var kvp in localTriangulations)
             {
-                appliedGeometryOperations.Add(
-                    cellAndVertexIndex,
-                    new Tuple<GeometryMode, GeometryMode?>(
-                        geometryModes.First(),
-                        geometryModes.First()));
+                var fullKey = (
+                    kvp.Key.Item1,
+                    kvp.Key.Item2.CellCoordsImplicit,
+                    kvp.Value.Item1.Item1,
+                    kvp.Value.Item1.Item2);
 
-                var applyBaseMode = geometryModes.First() == chunkGeometryMode.Item1;
-                (float, float) parameters =
-                    applyBaseMode ? chunkGeometryParameters.Item1 : chunkGeometryParameters.Item2;
+                appliedGeometryOperations.Add(fullKey, geometryModes.First());
+                if (kvp.Value.Item2.HasValue)
+                {
+                    fullKey = (
+                        kvp.Key.Item1,
+                        kvp.Key.Item2.CellCoordsImplicit,
+                        kvp.Value.Item2.Value.Item1,
+                        kvp.Value.Item2.Value.Item2);
+                    appliedGeometryOperations.Add(fullKey, geometryModes.First());
 
-                appliedGeometryParameters.Add(
-                    cellAndVertexIndex,
-                    new Tuple<(float, float), (float, float)?>(parameters, parameters));
+                }
             }
         }
         else //At least two triangulations have different operation types for the current vertex:
@@ -374,40 +369,30 @@ public class ChunkConformalEditor
             // LOWEST ORDINAL will have priority.
             // That operation will be applied on the edge bordering the two
             // cells for BOTH of the triangulations (on each side of the edge). 
-            // TODO ^ Currenlty the method below just applies the lowest on the cell rather than edge by edge
         {
-            appliedGeometryOperations =
-                ProcessCellGeometryOperations(requestPerCell, neighborCells, localTriangulations);
-            //Get the correct pair of parameters
-            foreach (var appliedGeometryOperation in appliedGeometryOperations)
-            {
-                var parameters = appliedGeometryOperation.Key.Item2.ParametersOverride
-                                 ?? chunkGeometryParameters;
+            appliedGeometryOperations = ProcessCellGeometryOperations(
+                requestPerCell,
+                neighborCells,
+                localTriangulations);
 
-                var applyBaseMode1 = appliedGeometryOperation.Value.Item1 == chunkGeometryMode.Item1;
-                var applyBaseMode2 = appliedGeometryOperation.Value.Item2 == chunkGeometryMode.Item1;
-
-                var parameters1 = applyBaseMode1 ? parameters.Item1 : parameters.Item2;
-                var parameters2 = applyBaseMode2 ? parameters.Item1 : parameters.Item2;
-                appliedGeometryParameters.Add(
-                    appliedGeometryOperation.Key,
-                    new Tuple<(float, float), (float, float)?>(parameters1, parameters2));
-            }
         }
-
-//TODO : explicit the operation edge  by edge so we can apply the correct operations
-        editor.RegisterLocalVertexAction(appliedGeometryOperations, appliedGeometryParameters, localTriangulations);
+        editor.RegisterLocalVertexAction(appliedGeometryOperations, neighborCells);
     }
 
-    private static Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> ProcessCellGeometryOperations(
-        Dictionary<Vector2I, HashSet<GeometryMode>?[]> requestedGeometryOperation,
-        Dictionary<Vector2I, HexTerrainCell> hexTerrainCells,
-        Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)?>> neighborCells)
+    private static 
+        Dictionary<(int, Vector2I, Triangulation, int), (GeometryMode,(float, float))> ProcessCellGeometryOperations(
+            Dictionary<Vector2I, HashSet<(GeometryMode, (float, float))>?[]> requestPerCell,
+            Dictionary<Vector2I, HexTerrainCell> vertexNeigborCells,
+            Dictionary<(int, HexTerrainCell), Tuple<(Triangulation, int), (Triangulation, int)?>> localTriangulations)
     {
-        //TODO only apply pairwise operations
-        Dictionary<(int, HexTerrainCell), Tuple<GeometryMode, GeometryMode?>> perCellModes = new();
 
-        foreach (var entry in requestedGeometryOperation)
+
+        Dictionary<(int, Vector2I, Triangulation, int), (GeometryMode,(float, float))> resMode = new();
+        
+        Dictionary<float[], HashSet<(GeometryMode,(float, float))>> perEdgeRequests = new(new FloatArrayComparer(1e-5));
+        Dictionary<float[], List<(int indexInCell, Vector2I cellIndex, (Triangulation,int) edgeIndex)>> mapping =
+            new(new FloatArrayComparer(1e-5));
+        foreach (var entry in requestPerCell)
         {
             var cellIdx = entry.Key;
             var array = entry.Value;
@@ -416,18 +401,64 @@ public class ChunkConformalEditor
                 var modes = array[i];
                 if (modes is not null)
                 {
-                    int level = modes.Select(mode => (int)mode)
-                        .Prepend(int.MaxValue)
-                        .Min();
-                    perCellModes.Add(
-                        (i, hexTerrainCells[cellIdx]),
-                        new Tuple<GeometryMode, GeometryMode?>((GeometryMode)level, (GeometryMode)level));
+                    var cell = vertexNeigborCells[cellIdx];
+                    var posVertex = cell.VertexPositionsInPlane[i];
+
+                    
+                    var vertexOfEdge1Data = localTriangulations[(i, cell)].Item1;
+                    var posVertexOfEdge1 = vertexOfEdge1Data.Item1.SourceTriangle[EngineUtils.Mod(vertexOfEdge1Data.Item2+1,3)];
+
+                    
+                    float[] edge1Data =
+                        [(float)posVertex.X, (float)posVertex.Y, posVertexOfEdge1.X, posVertexOfEdge1.Z];
+
+                    if (perEdgeRequests.TryAdd(edge1Data, modes))
+                    {
+                        mapping.Add(edge1Data,[(i,cellIdx,vertexOfEdge1Data)]);            
+                    } else {
+                        foreach (var valueTuple in modes)
+                        {
+                            perEdgeRequests[edge1Data].Add(valueTuple);
+                            mapping[edge1Data].Add((i,cellIdx,vertexOfEdge1Data));
+                        }
+                    }
+         
+
+                    if (localTriangulations[(i, cell)].Item2.HasValue
+                        && localTriangulations[(i, cell)].Item2 != null)
+                    {
+                        var vertexOfEdge2Data = localTriangulations[(i, cell)].Item2.Value;
+                        var posVertexOfEdge2 = vertexOfEdge2Data.Item1.SourceTriangle[vertexOfEdge2Data.Item2];
+                        float[] edge2Data =
+                            [(float)posVertex.X, (float)posVertex.Y, posVertexOfEdge2.X, posVertexOfEdge2.Z];
+                        
+                        if (perEdgeRequests.TryAdd(edge2Data, modes))
+                        {
+                            mapping.Add(edge2Data,[(i,cellIdx,vertexOfEdge2Data)]);            
+                        } else {
+                            foreach (var valueTuple in modes)
+                            {
+                                perEdgeRequests[edge2Data].Add(valueTuple);
+                                mapping[edge2Data].Add((i,cellIdx,vertexOfEdge2Data));
+                            }
+                        }
+                    }
                 }
             }
         }
+        foreach (var request in perEdgeRequests)
+        {
+            var key = request.Key;
+            var minEntry = request.Value.First(t => t.Item1 == request.Value.Select(e => e.Item1).Min());
+            foreach (var indexes in mapping[key])
+            {
+                resMode.Add((indexes.indexInCell,indexes.cellIndex,indexes.edgeIndex.Item1,indexes.edgeIndex.Item2),minEntry);
+            }
+        }
 
-        return perCellModes;
+        return resMode;
     }
+
 
     private static int ComputeLocalMask(
         List<(Vector2I, int)> localVertexIndexing,

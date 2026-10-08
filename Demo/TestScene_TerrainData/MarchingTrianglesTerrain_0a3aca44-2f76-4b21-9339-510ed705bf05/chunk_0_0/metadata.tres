@@ -1,0 +1,32 @@
+[gd_resource type="Resource" format=4 uid="uid://bd1fchy40q0c7"]
+
+[ext_resource type="Shader" uid="uid://duifxvbxuw465" path="res://addons/marchingTriangles/editor/resources/shaders/geometryBehaviour.gdshader" id="1_qqh0c"]
+[ext_resource type="Script" uid="uid://bo7u10t6c3owm" path="res://addons/marchingTriangles/editor/data/MttChunkData.cs" id="6_u0joj"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5kgcx"]
+render_priority = 0
+shader = ExtResource("1_qqh0c")
+shader_parameter/WHITE = Vector3(1, 1, 1)
+shader_parameter/BLACK = Vector3(0, 0, 0)
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_nyreq"]
+_surfaces = [{
+"aabb": AABB(1, 0, 0.28867513, 1, 1e-05, 1.1547005),
+"attribute_data": PackedByteArray("AAAAAAAAAAAAAAAA2LNdPwAAAD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAAOs2TP6uqKj8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAA2LNdP1ZVVT8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAAOs0TP6uqKj8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAAOs0TP6uqqj4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAA2LNdP6uqKj4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAAOs2TP6uqqj4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8"),
+"format": 34393289727,
+"index_count": 18,
+"index_data": PackedByteArray("AAABAAIAAAACAAMAAAADAAQAAAAEAAUAAAAFAAYAAAAGAAEA"),
+"material": SubResource("ShaderMaterial_5kgcx"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 7,
+"vertex_data": PackedByteArray("AADAPwAAAADXs10/AAAAQAAAAAA6zZM/AADAPwAAAACJwLg/AACAPwAAAAA6zZM/AACAPwAAAAA6zRM/AADAPwAAAAA6zZM+AAAAQAAAAAA6zRM//3///////7//f///////v/9///////+//3///////7//f///////v/9///////+//3///////78=")
+}]
+
+[resource]
+script = ExtResource("6_u0joj")
+MergeMode = 1
+GroundTexturesIdx = null
+WallTexturesIdx = null
+Mesh = SubResource("ArrayMesh_nyreq")
+CollisionFaces = PackedVector3Array(1.5, 0, 0.866, 2, 0, 1.1546999, 1.5, 0, 1.4433999, 1.5, 0, 0.866, 1.5, 0, 1.4433999, 1, 0, 1.1546999, 1.5, 0, 0.866, 1, 0, 1.1546999, 1, 0, 0.57739997, 1.5, 0, 0.866, 1, 0, 0.57739997, 1.5, 0, 0.28869998, 1.5, 0, 0.866, 1.5, 0, 0.28869998, 2, 0, 0.57739997, 1.5, 0, 0.866, 2, 0, 0.57739997, 2, 0, 1.1546999)

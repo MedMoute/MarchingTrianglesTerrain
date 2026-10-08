@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Godot;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
@@ -99,5 +100,53 @@ public static class TriangleUtils
             if (projection < min) min = projection;
             if (projection > max) max = projection;
         }
+    }
+}
+
+
+public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
+{
+    public FloatArrayComparer(double epsilon)
+    {
+        this._epsilon = epsilon;
+    }
+
+    private double _epsilon;
+
+    public bool Equals(float[]? x, float[]? y)
+    {
+        if (x == null || y == null) return false;
+        if (x.Length != y.Length)
+            return false;
+        for (int i = 0; i < x.Length; i++)
+        {
+            if (Math.Abs(x[i] - y[i]) > _epsilon)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public int GetHashCode(float[] obj)
+    {
+        var v = 31;
+        for (int i = 0; i < obj.Length; i++)
+        {
+            // Proximity of hashcode so that buckets are similar for similar points 
+            v = v * 31 * (int)(100 * (obj[i])) + 7;
+        }
+
+        return v;
+    }
+
+    public int Compare(float[]? x, float[]? y)
+    {
+        if (x == null && y == null) return 0;
+        if (x == null) return -1;
+        if (y == null) return 1;
+
+        return x.Equals(y) ? 0 : x.GetHashCode() - y.GetHashCode();
     }
 }
