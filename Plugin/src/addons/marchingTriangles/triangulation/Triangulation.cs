@@ -53,7 +53,7 @@ public class Triangulation
     /// Position of the initial triangle's vertices.
     /// </summary>
     internal ImmutableArray<Vector3> SourceTriangle;
-    
+
     private readonly bool _verbose;
     private readonly bool _extensiveVerification;
 
@@ -127,7 +127,7 @@ public class Triangulation
         return result;
     }
 
-    public void Debug(string title = "",bool forcePrint = false) 
+    public void Debug(string title = "", bool forcePrint = false)
     {
         if (!forcePrint && !_verbose)
         {
@@ -181,13 +181,14 @@ public class Triangulation
 
         for (int i = 0; i < 3; i++)
         {
-            Console.WriteLine("Edge " + i + "  : [" + String.Join(",", Edges[i])+ "]");
+            Console.WriteLine("Edge " + i + "  : [" + String.Join(",", Edges[i]) + "]");
         }
+
         Console.WriteLine("Triangles : " + TrianglesByVertices.Count);
 
         foreach (var kvp in Vertices)
         {
-            Console.WriteLine("Vertex " + kvp.Key + "  : "+kvp.Value);
+            Console.WriteLine("Vertex " + kvp.Key + "  : " + kvp.Value);
         }
     }
 
@@ -231,25 +232,27 @@ public class Triangulation
             //Check sub edge border continuity
             var enumerator = Edges[i].GetEnumerator();
             enumerator.MoveNext();
-            bool flippedOrdering=false;
+            bool flippedOrdering = false;
             for (int j = 0; j < Edges.Length; j++)
             {
                 var subEdge = enumerator.Current;
                 if (enumerator.MoveNext())
                 {
                     var nextSubEdge = enumerator.Current;
-                    if ((flippedOrdering 
-                            ? SubEdges.ElementAt(subEdge).Key.Item1 :
-                            SubEdges.ElementAt(subEdge).Key.Item2) == SubEdges.ElementAt(nextSubEdge).Key.Item1)
+                    if ((flippedOrdering
+                            ? SubEdges.ElementAt(subEdge).Key.Item1
+                            : SubEdges.ElementAt(subEdge).Key.Item2) == SubEdges.ElementAt(nextSubEdge).Key.Item1)
                     {
                         flippedOrdering = false;
-                    } else if ((flippedOrdering
-                                   ? SubEdges.ElementAt(subEdge).Key.Item1
-                                   : SubEdges.ElementAt(subEdge).Key.Item2) ==
-                               SubEdges.ElementAt(nextSubEdge).Key.Item2)
+                    }
+                    else if ((flippedOrdering
+                                 ? SubEdges.ElementAt(subEdge).Key.Item1
+                                 : SubEdges.ElementAt(subEdge).Key.Item2) ==
+                             SubEdges.ElementAt(nextSubEdge).Key.Item2)
                     {
                         flippedOrdering = true;
-                    } else
+                    }
+                    else
                     {
                         throw new Exception(string.Format("Continuity Error between border sub edges {0} and {1}",
                             subEdge, nextSubEdge));
@@ -271,5 +274,17 @@ public class Triangulation
                 throw new Exception("Vertex dictionaries have inconsistent data.");
             }
         }
+    }
+
+    internal int ComputeMask(Tuple<float, ThresholdComputationMode> threshold)
+    {
+        var res = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            bool add = threshold.Item2.IsOverThreshold(threshold.Item1, SourceTriangle[i],
+                SourceTriangle[Mod(i + 1, 3)]);
+            res += (add?1:0) << i;
+        }
+        return res; 
     }
 }
