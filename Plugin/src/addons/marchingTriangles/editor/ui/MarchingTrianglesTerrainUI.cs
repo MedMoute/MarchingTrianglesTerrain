@@ -112,8 +112,13 @@ public partial class MarchingTrianglesTerrainUi(MarchingTrianglesTerrainPlugin p
     }
 
     //TODO : do not restart tool if same. also, this could be cleaner
-    private void OnToolChanged(int toolIndex)
+    private void OnToolChanged(int toolIndex = -1)
     {
+        // If no provided arg, just reload the active tool
+        if (toolIndex == -1)
+        {
+            toolIndex = _activeTool;
+        }
         if ((TerrainToolMode)toolIndex == TerrainToolMode.GeometryEdit)
         {
             Plugin.CurTerrainNode?.RebuildTerrain("res://addons/marchingTriangles/editor/resources/shaders/geometryBehaviour.gdshader");

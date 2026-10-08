@@ -328,10 +328,7 @@ public partial class MarchingTrianglesTerrain : Node3D
         // Handle the case where the selected chunk is the deleted one
         if (_chunks.Count == 0)
         {
-            var tmpChunk = new GdPluginHexTerrainChunk(new Vector2I(int.MaxValue, int.MinValue),
-                TerrainSettings.ChunkDimensions, v => NeighborChunkProviderProvider(coords, v));
-
-            plugin.PluginHelper.CurrentSelectedChunk = tmpChunk;
+            plugin.PluginHelper.CurrentSelectedChunk = null;
         }
         else
         {

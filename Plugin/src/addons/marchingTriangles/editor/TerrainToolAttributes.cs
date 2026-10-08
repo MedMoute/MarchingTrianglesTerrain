@@ -72,7 +72,7 @@ public partial class TerrainToolAttributes : Node
                 {
                     GeometryModesParameters = defaultParams;
                     //Force the UI reload by emitting signal
-                    EmitSignal(nameof(UiReloadRequested),(int)TerrainToolMode.GeometryEdit);
+                    EmitSignal(nameof(UiReloadRequested),-1);
                 }
             }
 

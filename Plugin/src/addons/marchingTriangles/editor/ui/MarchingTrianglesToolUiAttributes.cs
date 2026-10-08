@@ -27,7 +27,7 @@ public partial class MarchingTrianglesToolUiAttributes
     public delegate void TerrainSettingChangedEventHandler(string setting, Variant variant);
 
     private readonly MarchingTrianglesTerrainPlugin _terrainPlugin;
-    
+
 
     private readonly Dictionary<string, UiSettingType> _terrainSettingsData = new()
     {
@@ -781,6 +781,7 @@ public partial class MarchingTrianglesToolUiAttributes
         {
             optionButton.AddItem(mode.ToString());
         }
+        optionButton.Select((int)_terrainPlugin.CurTerrainNode.TerrainSettings.ChunkBlendMode);
 
 
         OptionButton overThresholdOptionButton = new();
@@ -790,7 +791,8 @@ public partial class MarchingTrianglesToolUiAttributes
         {
             overThresholdOptionButton.AddItem(mode.ToString());
         }
-
+        overThresholdOptionButton.Select((int)_terrainPlugin.CurTerrainNode.TerrainSettings
+            .ChunkBlendModeFallBack);
         //Add the update strategy for selected :
         // changing the value updates the list of provided chunks in the other button 
         // it also updates the 
@@ -833,12 +835,6 @@ public partial class MarchingTrianglesToolUiAttributes
             }
         };
 
-        var terrain = _terrainPlugin.CurTerrainNode;
-
-        if (terrain.Chunks.Count > 0)
-        {
-            _terrainPlugin.PluginHelper.CurrentSelectedChunk = terrain.Chunks.First().Value;
-        }
 
         overThresholdOptionButton.ItemSelected += item => OnChunkUpdated(
             ((GeometryMode)optionButton.Selected, (GeometryMode)item),
@@ -1158,8 +1154,12 @@ public partial class MarchingTrianglesToolUiAttributes
             throw new InvalidOperationException("Plugin helper was not initialized.");
         }
 
-        //Update the plugin UI default geometry mode value for all modes
-        _terrainPlugin.ToolAttributes.GeometryModes = new Vector2I((int)state.Item1, (int)state.Item2);
+        if (chunk == null && _terrainPlugin.CurTerrainNode != null)
+        {
+            //Update the default value for this terrain
+            _terrainPlugin.CurTerrainNode.TerrainSettings.ChunkBlendMode = state.Item1;
+            _terrainPlugin.CurTerrainNode.TerrainSettings.ChunkBlendModeFallBack = state.Item2;
+        }
 
         if (chunk != null)
         {
@@ -1169,12 +1169,16 @@ public partial class MarchingTrianglesToolUiAttributes
             _terrainPlugin.GizmoPlugin.TriggerRedraw(_terrainPlugin.CurTerrainNode);
         }
 
-        Console.WriteLine("Updated  chunk : " + (_terrainPlugin.PluginHelper.CurrentSelectedChunk is null
-            ? "NONE"
-            : _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.Coordinates
-              + " => Geometry default state : < " +
-              _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.DefaultGeometryModes!.Item1 + " ; " +
-              _terrainPlugin.PluginHelper.CurrentSelectedChunk.Underlying.DefaultGeometryModes!.Item2 + " >"));
+        //Update the plugin UI default geometry mode value for all modes
+        _terrainPlugin.ToolAttributes.GeometryModes = new Vector2I((int)state.Item1, (int)state.Item2);
+
+
+        Console.WriteLine("Updated  chunk : " + (chunk is null
+                                                  ? "NONE (future default value)"
+                                                  : chunk.Underlying.Coordinates)
+                                              + " => Geometry default state : < " +
+                                              state.Item1 + " ; " +
+                                              state.Item2 + " >");
     }
 
     public void SetPluginAttributeValue(String settingName, Variant value)
