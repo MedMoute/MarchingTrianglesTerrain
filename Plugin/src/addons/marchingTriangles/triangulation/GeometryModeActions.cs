@@ -12,7 +12,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 public static class GeometryModeActions
 {
     public static void ProcessVertexOperationsForFlatHexes(
-        VertexConformalGeometryEdit editor,
+        VertexGeometryEditor editor,
         Dictionary<Vector2I, HexTerrainCell> neighborCells,
         HexTerrainCell htCell,
         int vertexInHtCellIdx,
@@ -20,7 +20,7 @@ public static class GeometryModeActions
         Triangulation tri,
         bool applyFans = true)
     {
-        var pInit = htCell.VertexPositionsInPlane[vertexInHtCellIdx];
+        var pInit = vertexInHtCellIdx == -1 ? htCell.CenterPosition : htCell.VertexPositionsInPlane[vertexInHtCellIdx];
         var height = htCell.AverageHeight;
 
         editor.RegisterAction(new MovePointAlongYAxisAction(vertexInTriIdx, height), tri);
@@ -41,8 +41,8 @@ public static class GeometryModeActions
                                                                        (float)pInit.Y)));
                 //We find the other cell containing that point
                 List<HexTerrainCell> otherCells = neighborCells.Values.Where(oCell => oCell != htCell
-                                            && oCell.VertexPositionsInPlane.Any(v =>
-                                                v.Equals(new Vector2D(otherPos.X, otherPos.Z), 1e-5))).ToList();
+                    && oCell.VertexPositionsInPlane.Any(v =>
+                        v.Equals(new Vector2D(otherPos.X, otherPos.Z), 1e-5))).ToList();
                 if (otherCells.Count > 1)
                 {
                     throw new Exception("There should be no more another cell matching the predicate");
@@ -66,27 +66,46 @@ public static class GeometryModeActions
     }
 
     public static void ProcessVertexOperationsForFlatTriangles(
-        VertexConformalGeometryEdit editor,
-        HexTerrainCell htCell,
+        VertexGeometryEditor editor,
+        HexTerrainCell cell,
         int vertexInHtCellIdx,
         int vertexInTriIdx,
         Triangulation tri,
-        bool secondTriangulationFlag,
+        (Vector3I, Vector3I) edge,
         bool applyFans = true)
+
     {
         var pInit = vertexInTriIdx == 0
-            ? htCell.CenterPosition
+            ? cell.CenterPosition
             : //Cell center point, we cant rely on the cell
-            htCell.VertexPositionsInPlane[vertexInHtCellIdx]; //Usual vertex
+            cell.VertexPositionsInPlane[vertexInHtCellIdx]; //Usual vertex
 
-        if (htCell.GetEdgeAvgHeight == null)
+        if (cell.GetEdgeAvgHeight == null)
         {
             return;
         }
 
-        var height = secondTriangulationFlag
-            ? htCell.GetEdgeAvgHeight(EngineUtils.Mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
-            : htCell.GetEdgeAvgHeight(vertexInHtCellIdx);
+        float height;
+        if (vertexInHtCellIdx == -1)
+        {
+            if (edge.Item1.Z == -1)
+            {
+                height = cell.GetEdgeAvgHeight(EngineUtils.Mod(edge.Item2.Z - 1, HexTerrainCell.VertexCount));
+            }
+            else if (edge.Item2.Z == -1)
+            {
+                height = cell.GetEdgeAvgHeight(EngineUtils.Mod(edge.Item1.Z - 1, HexTerrainCell.VertexCount));
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
+        }
+        else
+        {
+            height = cell.GetEdgeAvgHeight(EngineUtils.Mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount));
+        }
+
 
         editor.RegisterAction(new MovePointAlongYAxisAction(vertexInTriIdx, height), tri);
         // If the action target edge is a cell border (e.g. targetEdge ==1)
@@ -98,8 +117,8 @@ public static class GeometryModeActions
                 //(0=> VertexInHtCellIdx-1; 2=>VertexInHtCellIdx-1), or  the cell
             {
                 height = vertexInTriIdx == 0
-                    ? htCell.GetEdgeAvgHeight(EngineUtils.Mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
-                    : htCell.GetEdgeAvgHeight(vertexInHtCellIdx);
+                    ? cell.GetEdgeAvgHeight(EngineUtils.Mod(vertexInHtCellIdx - 1, HexTerrainCell.VertexCount))
+                    : cell.GetEdgeAvgHeight(vertexInHtCellIdx);
                 editor.RegisterAction(
                     new AddTrianglesOnBorderEdge(vertexInTriIdx, new Vector3((float)pInit.X, height, (float)pInit.Y)),
                     tri);
@@ -107,14 +126,15 @@ public static class GeometryModeActions
         }
     }
 
-    public static void ProcessVertexOperationsForBendingEdge(
-        VertexConformalGeometryEdit editor,
-       (float, float) operationParameters,
+    public static void ProcessVertexOperationsForBendingEdge(VertexGeometryEditor editor,
+        (float, float) operationParameters,
         HexTerrainCell htCell,
         int vertexInHtCellIdx,
         int vertexInTriIdx,
         Triangulation tri,
-        bool secondTriangulationOfCell, bool applyOnEdgeStart, bool applyOnEdgeEnd)
+        (Vector3I start, Vector3I end) edge,
+        bool applyOnEdgeStart,
+        bool applyOnEdgeEnd)
     {
         if (operationParameters.Item1 is < 0 or > 1 ||
             operationParameters.Item2 is < 0 or > 1)
@@ -130,7 +150,7 @@ public static class GeometryModeActions
         var p1 = tri.Vertices[vertexInTriIdx];
         var p2 = tri.Vertices[EngineUtils.Mod(vertexInTriIdx + 1, 3)];
 
-        var invert = secondTriangulationOfCell;
+        var invert = vertexInHtCellIdx == edge.end.Z;
         var value = invert
             ? Mathf.Lerp(p2.Y, p1.Y, operationParameters.Item2)
             : Mathf.Lerp(p1.Y, p2.Y, operationParameters.Item2);
@@ -159,13 +179,14 @@ public static class GeometryModeActions
                                     EngineUtils.Mod(vertexInTriIdx + 1, 3),
                                     (1 - 2 * weight) / (1 - weight))
                                 .Apply(triangulation);
-                        }else
+                        }
+                        else
                         {
                             newPt = new SplitSubEdgeAction(
                                     vertexInTriIdx,
                                     vertexInTriIdx,
                                     newPt,
-                                    (1-weight) /weight)
+                                    (1 - weight) / weight)
                                 .Apply(triangulation);
                         }
 

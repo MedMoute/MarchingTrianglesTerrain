@@ -209,7 +209,7 @@ public class AddTrianglesOnBorderEdge : DelegatedTriangulationEditAction<int>
                     (tri.Value[2], tri.Value[0])
                 ]);
                 return triSubEdge;
-            }).Where(subEdge => !UnorderedTupleComparer.Instance.Equals(subEdge, edge)).ToList();
+            }).Where(subEdge => !UnorderedValueTupleComparer.Instance.Equals(subEdge, edge)).ToList();
             foreach (var subEdge in validEdges)
             {
                 collectedEdges.AddRange(FindBorderFromSubEdge(t, subEdge));

@@ -5,6 +5,7 @@ using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
+using MathNet.Numerics.LinearAlgebra;
 using MathNet.Spatial.Euclidean;
 using TerrainSettings = MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.TerrainSettings;
 
@@ -116,7 +117,7 @@ public class HexagonalTerrainChunk
     public int MergeMode { get; set; } = 1;
 
     public Dictionary<Vector3I, bool> NeedUpdate { get; }
-
+    
     /// <summary>
     /// Chunk constructor.
     /// </summary>
@@ -149,6 +150,20 @@ public class HexagonalTerrainChunk
             v => ExistingNeighbors.Contains(v));
         _colorHelper = new VertexColorHelper(neighboringChunkDataHandle);
         NeedUpdate = new();
+        
+    }
+
+    public HexagonalTerrainChunk? GetNeighborChunk(Vector2I chunk)
+    {
+        return _neighborChunksProvider.Invoke(chunk);
+    }
+
+    public Vector3I GetDataCellCoordinatesFromHexGridSummit(Vector3I hexCellCoords)
+    {
+        return DataGrid.OrientationSystem.GetVertexIndexInDualSpace(
+            new Vector3I(hexCellCoords.X, hexCellCoords.Y, 0),
+            TerrainDualGrid.Frame,
+            hexCellCoords.Z);
     }
 
     public void InitializeColorMaps()
@@ -415,11 +430,12 @@ public class HexagonalTerrainChunk
         data.Floor.Add(cell.FloorMode);
     }
 
-    public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> ProcessGeometry(bool forceRebuild = false)
+    public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> ProcessGeometry()
     {
         var editor = new ChunkConformalEditor(this);
         //Step 1 : Collect all the required operations
-        editor.CollectAllOperations(forceRebuild);
+        editor.CollectAllOperationsRequests();
+        editor.CollectBorderOperationRequests();
         //Step 2 : Apply all the operations on triangulations
         editor.ApplyGeometryOperations();
         //Step 3 : Extract the triangles

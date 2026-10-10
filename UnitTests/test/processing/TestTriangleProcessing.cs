@@ -131,6 +131,10 @@ public class TestTriangleProcessing
     [Test]
     public void TestProcessingOfFlatChunk([Values] GeometryMode geometryMode)
     {
+        _dimension = 2;
+        _src1 = new float[_dimension][];
+        _src2 = new float[_dimension][];
+        
         _chunk = new HexagonalTerrainChunk(
             Vector2I.Zero,
             _dimension * Vector2I.One,

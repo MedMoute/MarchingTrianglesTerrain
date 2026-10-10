@@ -47,7 +47,7 @@ public class Triangulation
     /// The index can be obtained via the IndexOf((int,int)) method
     /// The value is the amount of times the sub edge is used in the triangulation.
     /// </summary>
-    internal readonly OrderedDictionary<(int, int), int> SubEdges = new(UnorderedTupleComparer.Instance);
+    internal readonly OrderedDictionary<(int, int), int> SubEdges = new(UnorderedValueTupleComparer.Instance);
 
     /// <summary>
     /// Position of the initial triangle's vertices.
@@ -94,7 +94,7 @@ public class Triangulation
 
     public List<HexTerrainCell.TriangleInfo> ToTriangleInfoList()
     {
-        var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedTupleComparer.Instance);
+        var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedValueTupleComparer.Instance);
         foreach (var valueTuple in TrianglesByVertices.Index())
         {
             var j = valueTuple.Item.Key;
@@ -146,7 +146,7 @@ public class Triangulation
                               " | Implicitly defined Edges : " + String.Join(",", triEdges));
         }
 
-        var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedTupleComparer.Instance);
+        var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedValueTupleComparer.Instance);
         foreach (var valueTuple in TrianglesByVertices.Index())
         {
             var j = valueTuple.Item.Key;

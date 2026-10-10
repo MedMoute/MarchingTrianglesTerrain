@@ -91,7 +91,7 @@ public static class TestUtils
         var verticesEnumerable = borderVerticesEnumerable as Vector3[] ?? borderVerticesEnumerable.ToArray();
         var borderVertices = verticesEnumerable.Distinct().ToList();
 
-        var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedTupleComparer.Instance);
+        var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedValueTupleComparer.Instance);
         setOfBorders.ForEach(e =>
         {
             var v1 = borderVertices.Index()

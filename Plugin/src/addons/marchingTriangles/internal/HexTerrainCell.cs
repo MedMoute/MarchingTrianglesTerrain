@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -226,7 +227,9 @@ public class HexTerrainCell
 
             var dataGrid = dataProviderProvider(offset);
 
-            return dataGrid == null ? float.NaN : dataGrid.Data.GetValueOrDefault(vertexIdxInDual - scaledOffset, float.NaN);
+            return dataGrid == null
+                ? float.NaN
+                : dataGrid.Data.GetValueOrDefault(vertexIdxInDual - scaledOffset, float.NaN);
         };
 
         GetEdgeAvgHeight = i =>
@@ -452,9 +455,12 @@ internal class CellDataArrays(Vector2I cellCoord)
 
 public class V2Comp : IComparer<Vector2>
 {
-    private V2Comp(){}
+    private V2Comp()
+    {
+    }
 
     public static V2Comp Instance = new V2Comp();
+
     public int Compare(Vector2 x, Vector2 y)
     {
         var xComparison = x.X.CompareTo(y.X);
@@ -465,9 +471,12 @@ public class V2Comp : IComparer<Vector2>
 
 public class V3Comp : IComparer<Vector3>
 {
-    private V3Comp(){}
+    private V3Comp()
+    {
+    }
 
     public static V3Comp Instance = new V3Comp();
+
     public int Compare(Vector3 x, Vector3 y)
     {
         var xComparison = x.X.CompareTo(y.X);
@@ -478,18 +487,79 @@ public class V3Comp : IComparer<Vector3>
     }
 }
 
-public class UnorderedTupleComparer : IComparer<(int, int)>, IEqualityComparer<(int, int)>
+public class UnorderedV3TupleComparer : IComparer<(Vector3I, Vector3I)>, IEqualityComparer<(Vector3I, Vector3I)>
 {
-    private UnorderedTupleComparer()
+    private UnorderedV3TupleComparer()
     {
     }
 
-    public static readonly UnorderedTupleComparer Instance = new();
+    public static readonly UnorderedV3TupleComparer Instance = new();
+
+    public bool Equals((Vector3I, Vector3I) t1, (Vector3I, Vector3I) t2)
+    {
+        //Loose equality component per component
+        return Math.Min(t1.Item1.X, t1.Item2.X) == Math.Min(t2.Item1.X, t2.Item2.X) &&
+               Math.Max(t1.Item1.X, t1.Item2.X) == Math.Max(t2.Item1.X, t2.Item2.X)
+               &&
+               Math.Min(t1.Item1.Y, t1.Item2.Y) == Math.Min(t2.Item1.Y, t2.Item2.Y) &&
+               Math.Max(t1.Item1.Y, t1.Item2.Y) == Math.Max(t2.Item1.Y, t2.Item2.Y)
+               &&
+               Math.Min(t1.Item1.Z, t1.Item2.Z) == Math.Min(t2.Item1.Z, t2.Item2.Z) &&
+               Math.Max(t1.Item1.Z, t1.Item2.Z) == Math.Max(t2.Item1.Z, t2.Item2.Z)
+            ;
+    }
+
+    public int GetHashCode((Vector3I, Vector3I) t)
+    {
+        // Order-independent hash code (e.g., XOR or sum of elements)
+        return t.Item1.GetHashCode() ^ t.Item2.GetHashCode();
+    }
+
+    public int Compare((Vector3I, Vector3I) x, (Vector3I, Vector3I) y)
+    {
+        if (Equals(x,y))
+            return 0;
+        if (Math.Min(x.Item1.X, x.Item2.X) != Math.Min(y.Item1.X, y.Item2.X) )
+        {
+            return Math.Min(x.Item1.X, x.Item2.X).CompareTo(Math.Min(y.Item1.X, y.Item2.X));
+        }
+        if (Math.Max(x.Item1.X, x.Item2.X) != Math.Max(y.Item1.X, y.Item2.X))
+        {
+            return Math.Max(x.Item1.X, x.Item2.X).CompareTo(Math.Max(y.Item1.X, y.Item2.X));
+        } 
+        if (Math.Min(x.Item1.Y, x.Item2.Y) != Math.Min(y.Item1.Y, y.Item2.Y) )
+        {
+            return Math.Min(x.Item1.Y, x.Item2.Y).CompareTo(Math.Min(y.Item1.Y, y.Item2.Y));
+        }
+        if (Math.Max(x.Item1.Y, x.Item2.Y) != Math.Max(y.Item1.Y, y.Item2.Y))
+        {
+            return Math.Max(x.Item1.Y, x.Item2.Y).CompareTo(Math.Max(y.Item1.Y, y.Item2.Y));
+        } 
+        if (Math.Min(x.Item1.Z, x.Item2.Z) != Math.Min(y.Item1.Z, y.Item2.Z) )
+        {
+            return Math.Min(x.Item1.Z, x.Item2.Z).CompareTo(Math.Min(y.Item1.Z, y.Item2.Z));
+        }
+        if (Math.Max(x.Item1.Z, x.Item2.Z) != Math.Max(y.Item1.Z, y.Item2.Z))
+        {
+            return Math.Max(x.Item1.Z, x.Item2.Z).CompareTo(Math.Max(y.Item1.Z, y.Item2.Z));
+        }
+
+        throw new InvalidOperationException();
+    }
+}
+
+public class UnorderedValueTupleComparer : IComparer<(int, int)>, IEqualityComparer<(int, int)>
+{
+    private UnorderedValueTupleComparer()
+    {
+    }
+
+    public static readonly UnorderedValueTupleComparer Instance = new();
 
     public bool Equals((int, int) t1, (int, int) t2)
     {
-        return (Math.Min(t1.Item1, t1.Item2) == Math.Min(t2.Item1, t2.Item2)) &&
-               (Math.Max(t1.Item1, t1.Item2) == Math.Max(t2.Item1, t2.Item2));
+        return Math.Min(t1.Item1, t1.Item2) == Math.Min(t2.Item1, t2.Item2) &&
+               Math.Max(t1.Item1, t1.Item2) == Math.Max(t2.Item1, t2.Item2);
     }
 
     public int GetHashCode((int, int) t)
@@ -500,8 +570,9 @@ public class UnorderedTupleComparer : IComparer<(int, int)>, IEqualityComparer<(
 
     public int Compare((int, int) x, (int, int) y)
     {
-        if (x.Equals(y))
-            return 0;
-        return x.CompareTo(y);
+        var minCompare = Math.Min(x.Item1, x.Item2).CompareTo(Math.Min(y.Item1, y.Item2));
+        return Equals(x,y) ? 0 :
+             minCompare == 0 ? Math.Max(x.Item1, x.Item2).CompareTo(Math.Max(y.Item1, y.Item2)) : minCompare;
     }
+
 }

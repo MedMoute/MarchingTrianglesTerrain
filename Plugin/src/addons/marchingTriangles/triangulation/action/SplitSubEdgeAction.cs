@@ -74,7 +74,7 @@ public class SplitSubEdgeAction : DelegatedTriangulationEditAction<int>
         var subEdgeIdx = t.SubEdges.IndexOf((_startIdx, _endIdx));
         //Register a dictionary of the edited edges with their initial positions and their edited positions
         var editedSubEdges =
-            new Dictionary<(int, int), Tuple<int, int?>>(UnorderedTupleComparer.Instance);
+            new Dictionary<(int, int), Tuple<int, int?>>(UnorderedValueTupleComparer.Instance);
         var idx = t.Vertices.Count;
 
         
