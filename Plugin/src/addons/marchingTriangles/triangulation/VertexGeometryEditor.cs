@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
@@ -18,6 +19,36 @@ public class VertexGeometryEditor
         _actions.Add(action);
     }
 
+
+    public void ApplyTransformations()
+    {
+        foreach (var triangulationEditAction in _actions)
+        {
+            triangulationEditAction.Apply(_actionToTriangulationHandle[triangulationEditAction]);
+        }
+    }
+
+    public void RegisterLocalVertexAction(
+        HexTerrainCell cell,
+        int cellSummitIdx,
+        Triangulation triangulation,
+        int vertexTriIdx,
+        List<HexTerrainCell> neighbors,
+        (GeometryMode mode, (float, float) parameters) effectiveEdgeAction)
+    {
+        Console.WriteLine($"     T[#{triangulation.Id};V{vertexTriIdx}] :" +
+                          $" =>  <{effectiveEdgeAction.mode},{effectiveEdgeAction.parameters}>");
+
+        effectiveEdgeAction.mode.Processor().Vertex(
+            this,
+            cell,
+            cellSummitIdx,
+            triangulation,
+            vertexTriIdx,
+            [.. neighbors.Where(c => !c.Equals(cell))],
+            effectiveEdgeAction.parameters);
+    }
+
     /// <summary>
     /// Registers the contribution of a given triangle vertex index (indexing within the triangulation) 
     /// ,along a given edge and a given triangulation local vertex operations for a provided sub-cell triangulation,
@@ -29,121 +60,65 @@ public class VertexGeometryEditor
     /// <param name="triangulation">the triangulation being modified</param>
     /// <param name="edgeIndexInTri">the index of the triangulation edge on which the registered operations will occur</param>
     /// <param name="neighborCells"></param>
-    /// <param name="appliedGeometryOperation"></param>
+    /// <param name="effectiveAction"></param>
     /// <exception cref="NotImplementedException"></exception>
     public void RegisterLocalEdgeAction(HexTerrainCell cell,
         (int start, int end) edge,
         Triangulation triangulation,
         int edgeIndexInTri,
         List<HexTerrainCell> neighborCells,
-        (GeometryMode mode, (float, float) parameters) appliedGeometryOperation)
+        (GeometryMode mode, (float, float) parameters) effectiveAction)
     {
-        //Ensure the local operation is correct
-        PreconditionChecks();
-        
-        switch (appliedGeometryOperation.mode)
-        {
-            case GeometryMode.FlatHexagons:
-                GeometryModeActions.ProcessVertexOperationsForFlatHexes(
-                    this,
-                    cell,
-                    edge,
-                    triangulation,
-                    edgeIndexInTri,
-                    [.. neighborCells.Where(c => !c.Equals(cell))]);
-                break;
-            case GeometryMode.FlatTriangles:
-                GeometryModeActions.ProcessVertexOperationsForFlatTriangles(
-                    this,
-                    cell,
-                    edge,
-                    triangulation,
-                    edgeIndexInTri,
-                    [.. neighborCells.Where(c => !c.Equals(cell))]);
-                break;
-            case GeometryMode.SmoothLinear:
-                //NOOP
-                break;
-            case GeometryMode.Foothill:
-                GeometryModeActions.ProcessEdgeOperationsForBendingEdge(
-                    this,
-                    cell,
-                    edge,
-                    triangulation,
-                    edgeIndexInTri,
-                    appliedGeometryOperation.parameters,
-                    false,
-                    true);
-                break;
-            case GeometryMode.Plateau:
-                GeometryModeActions.ProcessEdgeOperationsForBendingEdge(
-                    this,
-                    cell,
-                    edge,
-                    triangulation,
-                    edgeIndexInTri,
-                    appliedGeometryOperation.parameters,
-                    true,
-                    false);
-                break;
-            case GeometryMode.BendingEdge:
-                GeometryModeActions.ProcessEdgeOperationsForBendingEdge(
-                    this,
-                    cell,
-                    edge,
-                    triangulation,
-                    edgeIndexInTri,
-                    appliedGeometryOperation.parameters,
-                    true,
-                    true);
-                break;
-            case GeometryMode.FlatHexagonsNoFans:
-                GeometryModeActions.ProcessVertexOperationsForFlatHexes(
-                    this,
-                    cell,
-                    edge,
-                    triangulation,
-                    edgeIndexInTri,
-                    [.. neighborCells.Where(c => !c.Equals(cell))],
-                    applyFans: false);
-                break;
-            case GeometryMode.FlatTrianglesNoFans:
-                GeometryModeActions.ProcessVertexOperationsForFlatTriangles(
-                    this,
-                    cell,
-                    edge,
-                    triangulation,
-                    edgeIndexInTri,
-                    [.. neighborCells.Where(c => !c.Equals(cell))],
-                    applyFans: false);
-                break;
-            default:
-                throw new NotImplementedException();
-        }
-        
-        void PreconditionChecks()
-        {
-            //Data sanity checks
-        
-            // 1. nullcheck Condition
-            if (triangulation == null)
-            {
-                throw new Exception();
-            }
-            // 2. Edge state
-            // 2.1 (2 different)
-            if (edge.start == edge.end)
-            {
-                throw new ArgumentException(nameof(edge));
-            }
-        }
+        Console.WriteLine($"     T[#{triangulation.Id};E{edgeIndexInTri}] :" +
+                          $" =>  <{effectiveAction.mode},{effectiveAction.parameters}>");
+        effectiveAction.mode.Processor().Edge(
+            this,
+            cell,
+            edge,
+            triangulation,
+            edgeIndexInTri,
+            neighborCells,
+            effectiveAction.parameters);
     }
 
-    public void ApplyTransformations()
+    public void RegisterLocalActions(
+        HexTerrainCell cell,
+        (int start, int end) edge,
+        Triangulation triangulation,
+        int edgeIdx,
+        List<HexTerrainCell> neighborCells,
+        (GeometryMode mode, (float, float) parameters) effectiveEdgeAction)
     {
-        foreach (var triangulationEditAction in _actions)
+        if (GeometryModeActions.IsEdgeOrdered(cell, edge, triangulation, edgeIdx))
         {
-            triangulationEditAction.Apply(_actionToTriangulationHandle[triangulationEditAction]);
+            int startVertexIdx = GetEdgeStartVertexIndex(cell, edge, triangulation, edgeIdx);
+            RegisterLocalVertexAction(cell, edge.start, triangulation, startVertexIdx, neighborCells,
+                effectiveEdgeAction);
         }
+        else
+        {
+            int endVertexIdx = GetEdgeEndVertexIndex(cell, edge, triangulation, edgeIdx);
+            RegisterLocalVertexAction(cell, edge.end, triangulation, endVertexIdx, neighborCells, effectiveEdgeAction);
+        }
+
+        RegisterLocalEdgeAction(cell, edge, triangulation, edgeIdx, neighborCells, effectiveEdgeAction);
+    }
+
+    private static int GetEdgeStartVertexIndex(
+        HexTerrainCell cell,
+        (int start, int end) edge,
+        Triangulation tri,
+        int edgeIdx)
+    {
+        return GeometryModeActions.IsEdgeOrdered(cell, edge, tri, edgeIdx) ? edgeIdx : EngineUtils.Mod(edgeIdx + 1, 3);
+    }
+
+    private static int GetEdgeEndVertexIndex(
+        HexTerrainCell cell,
+        (int start, int end) edge,
+        Triangulation tri,
+        int edgeIdx)
+    {
+        return GeometryModeActions.IsEdgeOrdered(cell, edge, tri, edgeIdx) ? EngineUtils.Mod(edgeIdx + 1, 3) : edgeIdx;
     }
 }

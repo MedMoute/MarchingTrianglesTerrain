@@ -42,7 +42,16 @@ public class MovePointAlongYAxisAction : DelegatedTriangulationEditAction<int>
         var newVertex = new Vector3(pos.X, _heightValue, pos.Z);
         if (t.ReverseVertices.TryAdd(newVertex, _editedVertexI))
         {
-            t.Vertices.TryAdd(_editedVertexI, newVertex);
+            if (!t.Vertices.TryAdd(_editedVertexI, newVertex))
+            {
+                throw new Exception("Could not add the point inside the triangulation.");
+            }
+        }
+        else
+        {
+            {
+                throw new Exception("Could not add the point inside the triangulation.");
+            }
         }
         return t.ReverseVertices[newVertex];
     }

@@ -529,6 +529,30 @@ public static class GeometryModeExtensions
         return supportsParameter;
     }
     
+    public static GeometryModeActions.ModeProcessor Processor(this GeometryMode gMode){
+        switch (gMode)
+        {
+            case GeometryMode.FlatHexagons:
+                return FlatHexagons.Processor;
+            case GeometryMode.FlatTriangles:
+                return FlatTriangles.Processor;
+            case GeometryMode.BendingEdge :
+                return BendingEdge.Processor;
+            case  GeometryMode.Foothill:
+                return Foothill.Processor;
+            case GeometryMode.Plateau:
+                return Plateau.Processor;
+            case GeometryMode.SmoothLinear:
+                return SmoothLinear.Processor;
+            case GeometryMode.FlatHexagonsNoFans:
+                return FlatHexagonNoFan.Processor;
+            case GeometryMode.FlatTrianglesNoFans:
+                return FlatTrianglesNoFan.Processor;
+            default:
+                throw new NotSupportedException();
+        } 
+    }
+    
     /// <summary>
     /// Returns the palette method (a double parameterized float function)
     /// for a given GeometryMode.

@@ -26,19 +26,24 @@ public class ChunkConformalEditor
     ///
     private readonly Dictionary<Vector3I, VertexGeometryEditor> _cellVertexEditors = new();
 
+    private readonly Dictionary<(Vector3I, Vector3I), VertexGeometryEditor> _cellEdgeEditors =
+        new();
+
+
     private readonly Dictionary<Vector3I, List<Vector3I>> _dataPointToCellSummitsMapping = new();
 
     private readonly Dictionary<Vector3I, List<Vector3I>> _dataPointNeighborsAsCellSummit = new();
 
-    private readonly OrderedDictionary<(Vector3I, Vector3I), List<(int, int)>> _stitchedEdges =
-        new(UnorderedV3TupleComparer.Instance);
-
-    private readonly Dictionary<(Vector3I edgeStart, Vector3I edgeEnd),
-        Dictionary<(int triId, int triIdx), (GeometryMode mode, (float, float) parameters)>> _collectedEdgeRequests =
+    private readonly Dictionary<(Vector3I, Vector3I), List<(int, int)>> _stitchedEdges =
         new();
 
+    private readonly OrderedDictionary<(Vector3I edgeStart, Vector3I edgeEnd),
+            Dictionary<(int triId, int edgeIdx), (GeometryMode mode, (float, float) parameters)>>
+        _collectedEdgeRequests =
+            new();
 
-    private readonly HashSet<(Vector3I start, Vector3I end)> _externalEdges = [];
+
+    private readonly HashSet<(Vector3I start, Vector3I end)> _externalEdges = new(UnorderedV3TupleComparer.Instance);
 
 
     private readonly Dictionary<Vector3I, List<Vector3I>> _cellSummitsToDataPointMapping = new();
@@ -218,7 +223,7 @@ public class ChunkConformalEditor
 
     public void ApplyGeometryOperations()
     {
-        foreach (var geometryEdit in _cellVertexEditors.Values)
+        foreach (var geometryEdit in _cellEdgeEditors.Values)
         {
             geometryEdit.ApplyTransformations();
         }
@@ -228,7 +233,7 @@ public class ChunkConformalEditor
     public void CollectAllOperationsRequests()
     {
         //Enumerate the external edges
-        var internalEdges = new HashSet<(Vector3I start, Vector3I end)>();
+        var internalEdges = new HashSet<(Vector3I start, Vector3I end)>(UnorderedV3TupleComparer.Instance);
 
         //We instantiate all the cell summit editors
         foreach (var vertex in _cellSummitsToDataPointMapping.Keys)
@@ -260,6 +265,12 @@ public class ChunkConformalEditor
         {
             var eStart = edge.start;
             var eEnd = edge.end;
+
+            if (!_cellEdgeEditors.TryGetValue(edge, out var editor))
+            {
+                editor = new VertexGeometryEditor();
+                _cellEdgeEditors.Add(edge, editor);
+            }
 
             HashSet<Triangulation?> edgeTris = new();
 
@@ -318,47 +329,52 @@ public class ChunkConformalEditor
                 }
             }
 
+            int IndexOfEdgeInTri(int a, int b)
+            {
+                switch (a, b)
+                {
+                    case (1, 0):
+                    case (0, 1):
+                        return 0;
+                    case (1, 2):
+                    case (2, 1):
+                        return 1;
+                    case (0, 2):
+                    case (2, 0):
+                        return 2;
+                    default:
+                        throw new NotSupportedException();
+                }
+            }
+
             foreach (var triangulation in edgeTris.Where(tri => tri != null))
             {
                 //Register the local edition of both points on the edge
-                var indexOfCellSummitInTri = GetCellSummitIndexInTriangulation(
+                var indexOfCellStartSummitInTri = GetCellSummitIndexInTriangulation(
                     eStart,
                     triangulation,
                     cellStart);
 
+                var indexOfCellEndSummitInTri = GetCellSummitIndexInTriangulation(
+                    eEnd,
+                    triangulation,
+                    cellStart);
+
+                var edgeIdx = IndexOfEdgeInTri(indexOfCellStartSummitInTri, indexOfCellEndSummitInTri);
+
                 var request = GetCellSummitGeometryRequest(
                     new Vector2I(eStart.X, eStart.Y),
                     triangulation,
-                    indexOfCellSummitInTri);
+                    edgeIdx);
 
                 var edgeData = new Dictionary<(int, int), (GeometryMode, (float, float))>();
-
-                Debug.Assert(triangulation != null, nameof(marchingTriangles.triangulation) + " != null");
-                var nextPointInTri = triangulation.SourceTriangle[(indexOfCellSummitInTri + 1) % 3];
-                bool sameOrdered = endPos.IsEqualApprox(new Vector2(nextPointInTri.X, nextPointInTri.Z));
-
                 var success = _collectedEdgeRequests.TryAdd(edge, edgeData);
                 if (!success)
                 {
                     edgeData = _collectedEdgeRequests[edge];
                 }
 
-                int RevertTriIndex(int idx)
-                {
-                    switch (idx)
-                    {
-                        case 0: return 2;
-                        case 1: return 1;
-                        case 2: return 0;
-                        default: throw new NotSupportedException();
-                    }
-                }
-
-                Debug.Assert(triangulation != null, nameof(triangulation) + " != null");
-                edgeData.Add((
-                        triangulation.Id,
-                        sameOrdered ? indexOfCellSummitInTri : RevertTriIndex(indexOfCellSummitInTri)),
-                    request);
+                edgeData.Add((triangulation!.Id, edgeIdx), request);
             }
         }
     }
@@ -456,7 +472,7 @@ public class ChunkConformalEditor
             var edge = edgeRequestDico.Key;
             var editionRequests = edgeRequestDico.Value;
 
-            //Console.WriteLine($"[Register] : {edge.edgeStart}=>{edge.edgeEnd}");
+            Console.WriteLine($"[Register] : {edge.edgeStart}=>{edge.edgeEnd}");
 
             //Fetch all the other cells that are on the same edge
             var neighborCells = new List<Vector2I>();
@@ -493,35 +509,29 @@ public class ChunkConformalEditor
             foreach (var editionRequest in editionRequests)
             {
                 var triangleData = editionRequest.Key;
-                var effectiveRequest = editionRequest.Value;
-                Console.WriteLine($"     T[#{triangleData.triId};{triangleData.triIdx}] :" +
-                                  $" =>  <{effectiveRequest.mode},{effectiveRequest.parameters}>" +
-                                  $" => <{effectiveEdgeAction.mode},{effectiveEdgeAction.parameters}>");
-
                 var startIdx = new Vector2I(edge.edgeStart.X, edge.edgeStart.Y);
                 if (startIdx != new Vector2I(edge.edgeEnd.X, edge.edgeEnd.Y))
                 {
                     throw new InvalidOperationException();
                 }
 
-                _cellVertexEditors[edge.edgeStart].RegisterLocalEdgeAction(
+                _cellEdgeEditors[(edge.edgeStart, edge.edgeEnd)].RegisterLocalActions(
                     _cells[startIdx],
                     (edge.edgeStart.Z, edge.edgeEnd.Z),
                     _triangulationsById[triangleData.triId],
-                    triangleData.triIdx,
-                    neighborCells.Select(c => _cells[c]).ToList(),
+                    triangleData.edgeIdx,
+                    neighborCells.Select(c => _cells[c]).Where(c => c != _cells[startIdx]).ToList(),
                     effectiveEdgeAction);
             }
         }
     }
 
-    private (GeometryMode, (float, float)) 
-        SelectEffectiveAction(
-        Dictionary<(int, int), (GeometryMode mode, (float, float) parameters)> requests,
-        (Vector3I start, Vector3I end) edge)
+    private (GeometryMode, (float, float)) SelectEffectiveAction(
+            Dictionary<(int, int), (GeometryMode mode, (float, float) parameters)> requests,
+            (Vector3I start, Vector3I end) edge)
     {
-        var cellStart = _cells[new Vector2I(edge.start.X,edge.start.Y)];
-        var cellEnd = _cells[new Vector2I(edge.end.X,edge.end.Y)];
+        var cellStart = _cells[new Vector2I(edge.start.X, edge.start.Y)];
+        var cellEnd = _cells[new Vector2I(edge.end.X, edge.end.Y)];
 
         if (cellStart != cellEnd)
         {
@@ -535,8 +545,8 @@ public class ChunkConformalEditor
         var posEnd = edge.end.Z == -1
             ? new Vector2((float)cellStart.CenterPosition.X, (float)cellStart.CenterPosition.Y)
             : new Vector2((float)cellStart.VertexPositionsInPlane[edge.end.Z].X,
-                (float)cellStart.VertexPositionsInPlane[edge.end.Z].Y);      
-        
+                (float)cellStart.VertexPositionsInPlane[edge.end.Z].Y);
+
         //Pre -checks (Debug only)
         (Vector2, Vector2) GetEdgeExtremitiesInTriangulation((int, int) valueTuple)
         {
@@ -550,7 +560,7 @@ public class ChunkConformalEditor
             var endEdgeIdx = lastNode.Value;
             var startPos = tri.Vertices[tri.SubEdges.ElementAt(startEdgeIdx).Key.Item1];
             var endPos = tri.Vertices[tri.SubEdges.ElementAt(endEdgeIdx).Key.Item2];
-            return (new Vector2(startPos.X,startPos.Z), new Vector2(endPos.X,endPos.Z));
+            return (new Vector2(startPos.X, startPos.Z), new Vector2(endPos.X, endPos.Z));
         }
 
         foreach (var valueTuple in requests.Keys)
@@ -563,13 +573,11 @@ public class ChunkConformalEditor
                 throw new InvalidOperationException();
             }
         }
-        
-        
-        
+
+
         var mode = requests.Values.Select(r => r.mode).Min();
         var param1 = requests.Values.Select(r => r.parameters.Item1).Min();
         var param2 = requests.Values.Select(r => r.parameters.Item2).Min();
-
 
         var success = _stitchedEdges.TryGetValue((edge.start, edge.end), out var listOfStitchedEdges);
         if (!success || listOfStitchedEdges == null)
