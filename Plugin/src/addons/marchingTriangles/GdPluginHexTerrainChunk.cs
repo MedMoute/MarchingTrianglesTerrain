@@ -116,11 +116,11 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
             {
                 var customShaderMat = new ShaderMaterial();
                 customShaderMat.SetShader(FileUtils.Load<Shader>(customShaderPath));
-                GenerateSurfaces(customShaderMat, forceFullRebuild);
+                GenerateSurfaces(customShaderMat);
             }
             else
             {
-                GenerateSurfaces(terrain.TerrainSettings.ShaderMaterial, forceFullRebuild);
+                GenerateSurfaces(terrain.TerrainSettings.ShaderMaterial);
             }
         }
         else
@@ -224,8 +224,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         }
     }
 
-    private void GenerateSurfaces(ShaderMaterial? material,
-        bool forceRegeneration = false)
+    private void GenerateSurfaces(ShaderMaterial? material)
     {
         lock (_st)
         {
@@ -238,7 +237,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         }
 
         //Free the lock so the thread workers can take it
-        ProcessGeometry(forceRegeneration);
+        ProcessGeometry();
         lock (_st)
         {
             _st.GenerateNormals();
@@ -249,7 +248,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         }
     }
 
-    private void ProcessGeometry(bool forceRebuild = false)
+    private void ProcessGeometry()
     {
         var editor = new ChunkConformalEditor(Underlying);
 

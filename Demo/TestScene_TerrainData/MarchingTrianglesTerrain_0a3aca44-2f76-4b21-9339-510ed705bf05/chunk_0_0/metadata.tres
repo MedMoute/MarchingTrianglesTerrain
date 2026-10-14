@@ -1,22 +1,70 @@
 [gd_resource type="Resource" format=4 uid="uid://bd1fchy40q0c7"]
 
-[ext_resource type="Shader" uid="uid://duifxvbxuw465" path="res://addons/marchingTriangles/editor/resources/shaders/geometryBehaviour.gdshader" id="1_qqh0c"]
+[ext_resource type="Shader" uid="uid://ltkimbmrvpyo" path="res://addons/marchingTriangles/editor/resources/shaders/mst_terrain.gdshader" id="1_s5jv5"]
+[ext_resource type="Texture2D" uid="uid://85iqlmnoua0e" path="res://addons/marchingTriangles/editor/resources/plugin_materials/rl_noise_texture.tres" id="2_xps5c"]
+[ext_resource type="Texture2D" uid="uid://csvthlqhb8g5j" path="res://addons/marchingTriangles/editor/resources/plugin_materials/void_texture.tres" id="3_f1x1d"]
+[ext_resource type="Texture2D" uid="uid://cv87twjgbqq0s" path="res://addons/marchingTriangles/editor/resources/plugin_materials/wall_noise_texture.res" id="4_amjr2"]
+[ext_resource type="Texture2D" uid="uid://dbnc04k3n0sro" path="res://addons/marchingTriangles/editor/resources/plugin_materials/grass_terrain_noise.res" id="5_6lpoc"]
 [ext_resource type="Script" uid="uid://bo7u10t6c3owm" path="res://addons/marchingTriangles/editor/data/MttChunkData.cs" id="6_u0joj"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_5kgcx"]
-render_priority = 0
-shader = ExtResource("1_qqh0c")
-shader_parameter/WHITE = Vector3(1, 1, 1)
-shader_parameter/BLACK = Vector3(0, 0, 0)
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_u0joj"]
+render_priority = -1
+shader = ExtResource("1_s5jv5")
+shader_parameter/chunk_size = Vector3i(33, 32, 33)
+shader_parameter/cell_size = Vector2(2, 2)
+shader_parameter/wall_threshold = 0.0
+shader_parameter/tex_albedo_1 = Color(0.392, 0.471, 0.318, 1)
+shader_parameter/tex_albedo_2 = Color(0.322, 0.482, 0.384, 1)
+shader_parameter/tex_albedo_3 = Color(0.373, 0.424, 0.294, 1)
+shader_parameter/tex_albedo_4 = Color(0.392, 0.475, 0.255, 1)
+shader_parameter/tex_albedo_5 = Color(0.29, 0.494, 0.365, 1)
+shader_parameter/tex_albedo_6 = Color(0.443, 0.447, 0.365, 1)
+shader_parameter/vc_tex_rr = ExtResource("5_6lpoc")
+shader_parameter/vc_tex_rg = ExtResource("5_6lpoc")
+shader_parameter/vc_tex_rb = ExtResource("5_6lpoc")
+shader_parameter/vc_tex_ra = ExtResource("5_6lpoc")
+shader_parameter/vc_tex_gr = ExtResource("5_6lpoc")
+shader_parameter/vc_tex_gg = ExtResource("4_amjr2")
+shader_parameter/vc_tex_aa = ExtResource("3_f1x1d")
+shader_parameter/tex_scale_1 = 1.0
+shader_parameter/tex_scale_2 = 1.0
+shader_parameter/tex_scale_3 = 1.0
+shader_parameter/tex_scale_4 = 1.0
+shader_parameter/tex_scale_5 = 1.0
+shader_parameter/tex_scale_6 = 1.0
+shader_parameter/tex_scale_7 = 1.0
+shader_parameter/tex_scale_8 = 1.0
+shader_parameter/tex_scale_9 = 1.0
+shader_parameter/tex_scale_10 = 1.0
+shader_parameter/tex_scale_11 = 1.0
+shader_parameter/tex_scale_12 = 1.0
+shader_parameter/tex_scale_13 = 1.0
+shader_parameter/tex_scale_14 = 1.0
+shader_parameter/tex_scale_15 = 1.0
+shader_parameter/use_hard_textures = false
+shader_parameter/blend_mode = 0
+shader_parameter/blend_sharpness = 5.0
+shader_parameter/blend_noise_scale = 10.0
+shader_parameter/blend_noise_strength = 0.0
+shader_parameter/use_ridge_texture = true
+shader_parameter/use_ledge_texture = true
+shader_parameter/ridge_threshold = 1.0
+shader_parameter/ledge_threshold = 0.25
+shader_parameter/rl_noise_texture = ExtResource("2_xps5c")
+shader_parameter/rl_noise_tile_size = 0.075
+shader_parameter/rl_noise_strength = 10.0
+shader_parameter/shadow_color = Color(0, 0, 0, 1)
+shader_parameter/bands = 5
+shader_parameter/shadow_intensity = 0.0
 
-[sub_resource type="ArrayMesh" id="ArrayMesh_nyreq"]
+[sub_resource type="ArrayMesh" id="ArrayMesh_xvf1i"]
 _surfaces = [{
 "aabb": AABB(1, 0, 0.28867513, 1, 1e-05, 1.1547005),
-"attribute_data": PackedByteArray("AAAAAAAAAAAAAAAA2LNdPwAAAD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAAOs2TP6uqKj8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAA2LNdP1ZVVT8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAAOs0TP6uqKj8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAAOs0TP6uqqj4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAA2LNdP6uqKj4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8AAAAAAAAAAAAAAAAOs2TP6uqqj4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAECNOo060zHTMUg7SDsAPAA8"),
+"attribute_data": PackedByteArray("AAAAAAAAAAAAAAAA2LNdPwAAAD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAEBIO0g7SDdIN9Mx0zEAPAA8AAAAAAAAAAAAAAAAOs2TP6uqKj8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAEBIO0g7SDdIN9Mx0zEAPAA8AAAAAAAAAAAAAAAA2LNdP1ZVVT8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAEBIO0g7SDdIN9Mx0zEAPAA8AAAAAAAAAAAAAAAAOs0TP6uqKj8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAEBIO0g7SDdIN9Mx0zEAPAA8AAAAAAAAAAAAAAAAOs0TP6uqqj4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAEBIO0g7SDdIN9Mx0zEAPAA8AAAAAAAAAAAAAAAA2LNdP6uqKj4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAEBIO0g7SDdIN9Mx0zEAPAA8AAAAAAAAAAAAAAAAOs2TP6uqqj4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAEBIO0g7SDdIN9Mx0zEAPAA8"),
 "format": 34393289727,
 "index_count": 18,
 "index_data": PackedByteArray("AAABAAIAAAACAAMAAAADAAQAAAAEAAUAAAAFAAYAAAAGAAEA"),
-"material": SubResource("ShaderMaterial_5kgcx"),
+"material": SubResource("ShaderMaterial_u0joj"),
 "primitive": 3,
 "uv_scale": Vector4(0, 0, 0, 0),
 "vertex_count": 7,
@@ -28,5 +76,5 @@ script = ExtResource("6_u0joj")
 MergeMode = 1
 GroundTexturesIdx = null
 WallTexturesIdx = null
-Mesh = SubResource("ArrayMesh_nyreq")
+Mesh = SubResource("ArrayMesh_xvf1i")
 CollisionFaces = PackedVector3Array(1.5, 0, 0.866, 2, 0, 1.1546999, 1.5, 0, 1.4433999, 1.5, 0, 0.866, 1.5, 0, 1.4433999, 1, 0, 1.1546999, 1.5, 0, 0.866, 1, 0, 1.1546999, 1, 0, 0.57739997, 1.5, 0, 0.866, 1, 0, 0.57739997, 1.5, 0, 0.28869998, 1.5, 0, 0.866, 1.5, 0, 0.28869998, 2, 0, 0.57739997, 1.5, 0, 0.866, 2, 0, 0.57739997, 2, 0, 1.1546999)

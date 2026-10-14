@@ -34,14 +34,9 @@ public abstract class DelegatedTriangulationEditAction<T> : ITriangulationEditAc
     public T Apply(Triangulation triangulation)
     {
         T output;
-        try
+        
         {
             ValidateBefore(triangulation);
-        }
-        catch (Exception e)
-        {
-            triangulation.Debug("Exception Caught during pre Action Validation: " + e.Message, true);
-            throw;
         }
 
         try

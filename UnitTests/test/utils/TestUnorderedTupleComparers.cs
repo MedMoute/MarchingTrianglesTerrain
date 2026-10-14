@@ -1,41 +1,40 @@
-using System.Collections;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
+// ReSharper disable InconsistentNaming
 
 namespace UnitTests.test.utils;
 
 public class TestUnorderedTupleComparers
 {
+    private static readonly (Vector3I,Vector3I) v3Zero = (Vector3I.Zero, Vector3I.Zero) ;
+    private static readonly (Vector3I,Vector3I) v3ZeroOne = (Vector3I.Zero, Vector3I.One) ;
+    private static readonly (Vector3I,Vector3I) v3OneZero = (Vector3I.Zero, Vector3I.One) ;
+    private static readonly (Vector3I,Vector3I) v3One = (Vector3I.One, Vector3I.One) ;
+        
+    private static readonly (Vector3I,Vector3I) v3UZero = (Vector3I.Up, Vector3I.Zero) ;
+    private static readonly (Vector3I,Vector3I) v3RZero = (Vector3I.Right, Vector3I.Zero) ;
+    private static readonly (Vector3I,Vector3I) v3FZero = (Vector3I.Forward, Vector3I.Zero) ;
+        
+    private static readonly (Vector3I,Vector3I) v3UOne = (Vector3I.Up, Vector3I.One) ;
+    private static readonly (Vector3I,Vector3I) v3ROne = (Vector3I.Right, Vector3I.One) ;
+    private static readonly (Vector3I,Vector3I) v3FOne = (Vector3I.Forward, Vector3I.One) ;
+        
+    private static readonly (Vector3I,Vector3I) v3ZeroU = (Vector3I.Zero, Vector3I.Up) ;
+    private static readonly (Vector3I,Vector3I) v3ZeroR = (Vector3I.Zero, Vector3I.Right) ;
+    private static readonly (Vector3I,Vector3I) v3ZeroF = (Vector3I.Zero, Vector3I.Forward) ;
+        
+    private static readonly (Vector3I,Vector3I) v3OneU = (Vector3I.One, Vector3I.Up) ;
+    private static readonly (Vector3I,Vector3I) v3OneR = (Vector3I.One, Vector3I.Right) ;
+    private static readonly (Vector3I,Vector3I) v3OneF = (Vector3I.One, Vector3I.Forward) ;
     
-    public static (Vector3I,Vector3I) v3Zero = (Vector3I.Zero, Vector3I.Zero) ;
-    public static (Vector3I,Vector3I) v3ZeroOne = (Vector3I.Zero, Vector3I.One) ;
-    public static (Vector3I,Vector3I) v3OneZero = (Vector3I.Zero, Vector3I.One) ;
-    public static (Vector3I,Vector3I) v3One = (Vector3I.One, Vector3I.One) ;
-        
-    public static (Vector3I,Vector3I) v3UZero = (Vector3I.Up, Vector3I.Zero) ;
-    public static (Vector3I,Vector3I) v3RZero = (Vector3I.Right, Vector3I.Zero) ;
-    public static (Vector3I,Vector3I) v3FZero = (Vector3I.Forward, Vector3I.Zero) ;
-        
-    public static (Vector3I,Vector3I) v3UOne = (Vector3I.Up, Vector3I.One) ;
-    public static (Vector3I,Vector3I) v3ROne = (Vector3I.Right, Vector3I.One) ;
-    public static (Vector3I,Vector3I) v3FOne = (Vector3I.Forward, Vector3I.One) ;
-        
-    public static (Vector3I,Vector3I) v3ZeroU = (Vector3I.Zero, Vector3I.Up) ;
-    public static (Vector3I,Vector3I) v3ZeroR = (Vector3I.Zero, Vector3I.Right) ;
-    public static (Vector3I,Vector3I) v3ZeroF = (Vector3I.Zero, Vector3I.Forward) ;
-        
-    public static (Vector3I,Vector3I) v3OneU = (Vector3I.One, Vector3I.Up) ;
-    public static (Vector3I,Vector3I) v3OneR = (Vector3I.One, Vector3I.Right) ;
-    public static (Vector3I,Vector3I) v3OneF = (Vector3I.One, Vector3I.Forward) ;
-    
-    public static (int,int) vZero = (0, 0) ;
-    public static (int,int) vOne = (1, 1) ;
-    public static (int,int) vZeroOne = (0, 1) ;
-    public static (int,int) vOneZero = (1, 0) ;
-    public static (int,int) vMOneZero = (-1, 0) ;
-    public static (int,int) vZeroMOne = (0, -1) ;
-    public static (int,int) vMOneOne = (-1, 1) ;
-    public static (int,int) vOneMOne = (1, -1) ;
+    private static readonly (int,int) vZero = (0, 0) ;
+    private static readonly (int,int) vOne = (1, 1) ;
+    private static readonly (int,int) vZeroOne = (0, 1) ;
+    private static readonly (int,int) vOneZero = (1, 0) ;
+    private static readonly (int,int) vMOneZero = (-1, 0) ;
+    private static readonly (int,int) vZeroMOne = (0, -1) ;
+    private static readonly (int,int) vMOneOne = (-1, 1) ;
+    private static readonly (int,int) vOneMOne = (1, -1) ;
     
     [TestCase]
     public void TestUnorderedIntTupleComparerEquals()

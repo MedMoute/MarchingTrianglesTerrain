@@ -57,12 +57,24 @@ public class Triangulation
     private readonly bool _verbose;
     private readonly bool _extensiveVerification;
 
+    public readonly int Id = IdSupplier();
+    
+    private static int _classCounter;
+
+    private static readonly Func<int> IdSupplier = () =>
+    {
+        int value = _classCounter;
+        _classCounter++;
+        return value;
+    };
+
 
     public Triangulation(
         Vector3[] triangle,
         bool verbose = false,
         bool extensiveVerification = false)
     {
+        
         if (triangle.Length != 3)
         {
             throw new ArgumentException("Wrong array size, expected 3, got " + triangle.Length, nameof(triangle));
@@ -113,9 +125,10 @@ public class Triangulation
         foreach (var valueTuple in TrianglesByVertices.Index())
         {
             var i = valueTuple.Item.Key;
+            Vector3[] pts = [.. TrianglesByVertices[i].Select(key => Vertices[key])];
             var x = new HexTerrainCell.TriangleInfo
             {
-                Points = [.. TrianglesByVertices[i].Select(key => Vertices[key])],
+                Points = pts,
                 EdgeBorderFlags = TrianglesByVertices[i].Select(key => (
                         key,
                         TrianglesByVertices[i][(TrianglesByVertices[i].IndexOf(key) + 1) % 3]))
@@ -142,8 +155,8 @@ public class Triangulation
             var triEdges = triAsVertList.Value.Select(key => SubEdges.IndexOf((
                 key,
                 triAsVertList.Value[(triAsVertList.Value.IndexOf(key) + 1) % 3]))).ToList();
-            Console.WriteLine("T[" + triAsVertList.Key + "] " + "Points : " + String.Join(",", triAsVertList.Value) +
-                              " | Implicitly defined Edges : " + String.Join(",", triEdges));
+            // Console.WriteLine("T[" + triAsVertList.Key + "] " + "Points : " + String.Join(",", triAsVertList.Value) +
+            //                   " | Implicitly defined Edges : " + String.Join(",", triEdges));
         }
 
         var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedValueTupleComparer.Instance);
@@ -169,7 +182,7 @@ public class Triangulation
                     TrianglesByVertices[i][(TrianglesByVertices[i].IndexOf(key) + 1) % 3]))
                 .Select(e => edgeDico[e] != 2)
                 .ToArray();
-            Console.WriteLine("T[" + i + "] " + "IsEdgeBorder : " + string.Join(",", edgeBorderFlags));
+            //Console.WriteLine("T[" + i + "] " + "IsEdgeBorder : " + string.Join(",", edgeBorderFlags));
         }
 
         Console.WriteLine("SubEdges : " + SubEdges.Count);

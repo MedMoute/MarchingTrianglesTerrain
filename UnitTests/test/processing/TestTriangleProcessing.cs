@@ -87,11 +87,12 @@ public class TestTriangleProcessing
                         Is.True);
                     break;
                 case GeometryMode.FlatHexagonsNoFans:
-                    TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
                     Assert.That(
                         keyValuePair.Value.All(t => t.Points.All(p => p.Y.Equals(keyValuePair.Key.AverageHeight))),
                         Is.True);
+                    TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
+
                     break;
                 case GeometryMode.FlatTrianglesNoFans:
                     Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
@@ -222,7 +223,6 @@ public class TestTriangleProcessing
         //Per cell manifold and value checks
         foreach (var keyValuePair in output)
         {
-            TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
 
             var curCell = keyValuePair.Key;
             var triangulation = keyValuePair.Value;
@@ -263,6 +263,8 @@ public class TestTriangleProcessing
                         .All(p => p.Y.AlmostEqual(tri.Points[0].Y))), Is.EqualTo(6));
                     break;
             }
+            TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
+
         }
 
         //Global checks

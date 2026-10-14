@@ -5,7 +5,6 @@ using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
-using MathNet.Numerics.LinearAlgebra;
 using MathNet.Spatial.Euclidean;
 using TerrainSettings = MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.TerrainSettings;
 
@@ -436,10 +435,15 @@ public class HexagonalTerrainChunk
         //Step 1 : Collect all the required operations
         editor.CollectAllOperationsRequests();
         editor.CollectBorderOperationRequests();
-        //Step 2 : Apply all the operations on triangulations
+        //Step 2 : Register the edge Edition operations;
+        editor.RegisterOperations();
+        //Step 3 : Apply all the operations on triangulations
         editor.ApplyGeometryOperations();
-        //Step 3 : Extract the triangles
-        return editor.GetTriangleInfos();
+        // Step 3.5 : Stitch edges that need to be fixed
+        editor.StitchEdges();
+        //Step 4 : Extract the triangles
+        var x =  editor.GetTriangleInfos();
+        return x;
     }
 }
 
@@ -474,7 +478,8 @@ public enum GeometryMode
     Foothill = 4,
     Plateau = 5,
     FlatHexagonsNoFans = 6,
-    FlatTrianglesNoFans = 7
+    FlatTrianglesNoFans = 7,
+    PostStitch=-1
 }
 
 /// <summary>

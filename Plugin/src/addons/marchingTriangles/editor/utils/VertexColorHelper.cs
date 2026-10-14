@@ -195,7 +195,7 @@ public class VertexColorHelper
         //  Position weights for linear interpolation
         List<float> vertexWeights = new();
 
-        Vector2D qr = cell.GetHexCoordsOfPoint(new Vector2D(vertex.X, vertex.Z));
+        Vector2D qr = new Vector2D(); 
         float s = (float)(-qr.X - qr.Y);
         float sS = -cell.CellCoordsImplicit.X - cell.CellCoordsImplicit.Y;
         vertexWeights.Add((float)(qr.X - cell.CellCoordsImplicit.X));
