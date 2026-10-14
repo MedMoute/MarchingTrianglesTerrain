@@ -4,8 +4,8 @@
 
 [node name="TestScene" type="Node3D" unique_id=1319442563]
 
-[node name="MarchingTrianglesTerrain" type="Node3D" parent="." unique_id=1493852928]
+[node name="MarchingTrianglesTerrain" type="Node3D" parent="." unique_id=1645420257]
 script = ExtResource("1_12c36")
-DataDirectory = "res://TestScene_TerrainData/MarchingTrianglesTerrain_0a3aca44-2f76-4b21-9339-510ed705bf05"
+DataDirectory = "res://TestScene_TerrainData/MarchingTrianglesTerrain_21a99cf7-c428-440e-943a-3f74a9576612"
 StorageInitialized = true
 metadata/_custom_type_script = "uid://cgso4gk7o0ek3"

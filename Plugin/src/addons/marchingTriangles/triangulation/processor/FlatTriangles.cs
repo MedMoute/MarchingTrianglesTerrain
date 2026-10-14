@@ -46,7 +46,7 @@ public class FlatTriangles : GeometryModeActions.ModeProcessor
 
         Debug.Assert(cell.GetEdgeAvgHeight != null);
         var height = cell.GetEdgeAvgHeight(heightIndex);
-        Console.WriteLine($"Move T[#{tri.Id};{edgeIdx}]=>{height}");
+        Console.WriteLine($"[Triangles] Move T[#{tri.Id};{edgeIdx}]=>{height}");
 
         var action = new MovePointAlongYAxisAction(edgeIdx, height);
         editor.RegisterAction(action, tri);
@@ -63,7 +63,7 @@ public class FlatTriangles : GeometryModeActions.ModeProcessor
             editor.RegisterAction(
                 new AddTrianglesOnBorderEdge(edgeIdx, newPointPos),
                 tri);
-            Console.WriteLine($"Add Tri [#{tri.Id};{edgeIdx}]=>@{newPointPos}");
+            //Console.WriteLine($"[Triangles] Add Tri [#{tri.Id};{edgeIdx}]=>@{newPointPos}");
         }
         else // External edge : same behavior as FlatHexagons 
         {
@@ -72,8 +72,13 @@ public class FlatTriangles : GeometryModeActions.ModeProcessor
                 var otherCell = neighborCells.First();
                 var hOtherCell =
                     otherCell.GetEdgeAvgHeight!(EngineUtils.Mod(heightIndex + 3, HexTerrainCell.VertexCount));
+                
+                var newPointPos = new Vector3(pInit.X, hOtherCell, pInit.Z);
+
+                //Console.WriteLine($"[Triangles] Add Tri [#{tri.Id};{edgeIdx}]=>@{newPointPos}");
+
                 editor.RegisterAction(
-                    new AddTrianglesOnBorderEdge(edgeIdx, new Vector3(pInit.X, hOtherCell, pInit.Z)),
+                    new AddTrianglesOnBorderEdge(edgeIdx, newPointPos),
                     tri);
             }
         }

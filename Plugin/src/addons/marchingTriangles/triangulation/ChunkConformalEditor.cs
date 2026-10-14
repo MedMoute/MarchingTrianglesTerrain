@@ -37,11 +37,9 @@ public class ChunkConformalEditor
     private readonly Dictionary<(Vector3I, Vector3I), List<(int, int)>> _stitchedEdges =
         new();
 
-    private readonly OrderedDictionary<(Vector3I edgeStart, Vector3I edgeEnd),
-            Dictionary<(int triId, int edgeIdx), (GeometryMode mode, (float, float) parameters)>>
-        _collectedEdgeRequests =
-            new();
-
+    private readonly OrderedDictionary<(Vector3I start, Vector3I end),
+        Dictionary<(int triId, int edgeIdx), (GeometryMode mode, (float, float) parameters)>> _collectedEdgeRequests =
+        new(UnorderedV3TupleComparer.Instance);
 
     private readonly HashSet<(Vector3I start, Vector3I end)> _externalEdges = new(UnorderedV3TupleComparer.Instance);
 
@@ -472,21 +470,21 @@ public class ChunkConformalEditor
             var edge = edgeRequestDico.Key;
             var editionRequests = edgeRequestDico.Value;
 
-            Console.WriteLine($"[Register] : {edge.edgeStart}=>{edge.edgeEnd}");
+            //Console.WriteLine($"[Register] : {edge.start}=>{edge.end}");
 
             //Fetch all the other cells that are on the same edge
             var neighborCells = new List<Vector2I>();
             var startNeighborCells = new List<Vector2I>();
             var endNeighborCells = new List<Vector2I>();
-            if (!(edge.edgeStart.Z == -1 || edge.edgeEnd.Z == -1)) //if Z=-1 => cell interior, no neighbor
+            if (!(edge.start.Z == -1 || edge.end.Z == -1)) //if Z=-1 => cell interior, no neighbor
             {
-                _cellSummitsToDataPointMapping.TryGetValue(edge.edgeStart, out var pointsOfStart);
+                _cellSummitsToDataPointMapping.TryGetValue(edge.start, out var pointsOfStart);
                 _dataPointNeighborsAsCellSummit.TryGetValue(
                     (pointsOfStart ?? throw new InvalidOperationException()).First(), out var startNeighborSubCells);
                 startNeighborCells.AddRange((startNeighborSubCells ?? throw new InvalidOperationException())
                     .Select(v => new Vector2I(v.X, v.Y)).Distinct());
 
-                _cellSummitsToDataPointMapping.TryGetValue(edge.edgeEnd, out var pointsOfEnd);
+                _cellSummitsToDataPointMapping.TryGetValue(edge.end, out var pointsOfEnd);
                 _dataPointNeighborsAsCellSummit.TryGetValue(
                     (pointsOfEnd ?? throw new InvalidOperationException()).First(), out var endNeighborSubCells);
                 endNeighborCells.AddRange((endNeighborSubCells ?? throw new InvalidOperationException())
@@ -496,7 +494,7 @@ public class ChunkConformalEditor
             }
             else
             {
-                neighborCells.Add(new Vector2I(edge.edgeStart.X, edge.edgeStart.Y));
+                neighborCells.Add(new Vector2I(edge.start.X, edge.start.Y));
             }
 
 
@@ -509,15 +507,15 @@ public class ChunkConformalEditor
             foreach (var editionRequest in editionRequests)
             {
                 var triangleData = editionRequest.Key;
-                var startIdx = new Vector2I(edge.edgeStart.X, edge.edgeStart.Y);
-                if (startIdx != new Vector2I(edge.edgeEnd.X, edge.edgeEnd.Y))
+                var startIdx = new Vector2I(edge.start.X, edge.start.Y);
+                if (startIdx != new Vector2I(edge.end.X, edge.end.Y))
                 {
                     throw new InvalidOperationException();
                 }
 
-                _cellEdgeEditors[(edge.edgeStart, edge.edgeEnd)].RegisterLocalActions(
+                _cellEdgeEditors[(edge.start, edge.end)].RegisterLocalActions(
                     _cells[startIdx],
-                    (edge.edgeStart.Z, edge.edgeEnd.Z),
+                    (edge.start.Z, edge.end.Z),
                     _triangulationsById[triangleData.triId],
                     triangleData.edgeIdx,
                     neighborCells.Select(c => _cells[c]).Where(c => c != _cells[startIdx]).ToList(),
@@ -525,10 +523,10 @@ public class ChunkConformalEditor
             }
         }
     }
-    
+
     private (GeometryMode, (float, float)) SelectEffectiveAction(
-            Dictionary<(int, int), (GeometryMode mode, (float, float) parameters)> requests,
-            (Vector3I start, Vector3I end) edge)
+        Dictionary<(int, int), (GeometryMode mode, (float, float) parameters)> requests,
+        (Vector3I start, Vector3I end) edge)
     {
         var cellStart = _cells[new Vector2I(edge.start.X, edge.start.Y)];
         var cellEnd = _cells[new Vector2I(edge.end.X, edge.end.Y)];
@@ -546,22 +544,6 @@ public class ChunkConformalEditor
             ? new Vector2((float)cellStart.CenterPosition.X, (float)cellStart.CenterPosition.Y)
             : new Vector2((float)cellStart.VertexPositionsInPlane[edge.end.Z].X,
                 (float)cellStart.VertexPositionsInPlane[edge.end.Z].Y);
-
-        //Pre -checks (Debug only)
-        (Vector2, Vector2) GetEdgeExtremitiesInTriangulation((int, int) valueTuple)
-        {
-            var tri = _triangulationsById[valueTuple.Item1];
-
-            var firstNode = tri.Edges[valueTuple.Item2].First;
-            var lastNode = tri.Edges[valueTuple.Item2].Last;
-
-            if (firstNode == null || lastNode == null) throw new InvalidOperationException();
-            var startEdgeIdx = firstNode.Value;
-            var endEdgeIdx = lastNode.Value;
-            var startPos = tri.Vertices[tri.SubEdges.ElementAt(startEdgeIdx).Key.Item1];
-            var endPos = tri.Vertices[tri.SubEdges.ElementAt(endEdgeIdx).Key.Item2];
-            return (new Vector2(startPos.X, startPos.Z), new Vector2(endPos.X, endPos.Z));
-        }
 
         foreach (var valueTuple in requests.Keys)
         {
@@ -589,10 +571,31 @@ public class ChunkConformalEditor
         listOfStitchedEdges.AddRange(requests.Keys);
 
         return (mode, (param1, param2));
+
+        (Vector2, Vector2) GetEdgeExtremitiesInTriangulation((int, int) valueTuple)
+        {
+            var tri = _triangulationsById[valueTuple.Item1];
+
+            var firstNode = tri.Edges[valueTuple.Item2].First;
+            var lastNode = tri.Edges[valueTuple.Item2].Last;
+
+            if (firstNode == null || lastNode == null) throw new InvalidOperationException();
+            var startEdgeIdx = firstNode.Value;
+            var endEdgeIdx = lastNode.Value;
+            var startPos = tri.Vertices[tri.SubEdges.ElementAt(startEdgeIdx).Key.Item1];
+            var endPos = tri.Vertices[tri.SubEdges.ElementAt(endEdgeIdx).Key.Item2];
+            return (new Vector2(startPos.X, startPos.Z), new Vector2(endPos.X, endPos.Z));
+        }
     }
 
+
+    /// <summary>
+    /// Adds the missing triangles to make the chunk triangulation conformal if needed. 
+    /// </summary>
+    /// <exception cref="InvalidOperationException"></exception>
     public void StitchEdges()
     {
+        //Edge-based requests were already processed into _stitchedEdges
         foreach (var stitchRequest in _stitchedEdges.Values)
         {
             (Vector3, Vector3) GetEdgeExtremitiesInTriangulation((int, int) valueTuple)
@@ -625,7 +628,135 @@ public class ChunkConformalEditor
             {
                 throw new InvalidOperationException();
             }
+
+            throw new NotImplementedException();
         }
-        //  throw new NotImplementedException();
+
+        //We process the edge requests to find which VERTICES have different requests
+        OrderedDictionary<Vector3I,
+                Dictionary<(int triId, int vertex), List<(GeometryMode mode, (float, float) parameters)>>>
+            _collectedVertexRequests = new();
+
+        foreach (var kvp in _collectedEdgeRequests)
+        {
+            var edge = kvp.Key;
+            var cellIdx = new Vector2I(edge.start.X, edge.start.Y);
+            Debug.Assert(cellIdx == new Vector2I(edge.end.X, edge.end.Y));
+
+            var cell = _cells[cellIdx];
+
+            foreach (var request in kvp.Value)
+            {
+                int vertexInTri;
+                var _edge = (edge.start.Z, edge.end.Z);
+                var tri = _triangulationsById[request.Key.triId];
+                var edgeIdx = request.Key.edgeIdx;
+
+
+                //if (GeometryModeActions.IsEdgeOrdered(cell, _edge, tri, edgeIdx))
+                {
+                    vertexInTri = VertexGeometryEditor.GetEdgeStartVertexIndex(cell, _edge, tri, edgeIdx);
+
+                    if (!_collectedVertexRequests.TryGetValue(edge.start, out var requests))
+                    {
+                        requests = new();
+                        _collectedVertexRequests.Add(edge.start, requests);
+                    }
+
+                    foreach (var keyValuePair in kvp.Value)
+                    {
+                        if (!requests.TryGetValue((keyValuePair.Key.triId, vertexInTri), out var requestList))
+                        {
+                            requestList = new List<(GeometryMode mode, (float, float) parameters)>();
+                            requests.Add((keyValuePair.Key.triId, vertexInTri), requestList);
+                        }
+
+                        requestList.Add(keyValuePair.Value);
+                    }
+                }
+                //else
+                {
+                    vertexInTri = VertexGeometryEditor.GetEdgeStartVertexIndex(cell, _edge, tri, edgeIdx);
+
+                    if (!_collectedVertexRequests.TryGetValue(edge.end, out var requests))
+                    {
+                        requests = new();
+                        _collectedVertexRequests.Add(edge.end, requests);
+                    }
+
+                    foreach (var entry in kvp.Value)
+                    {
+                        if (!requests.TryGetValue((entry.Key.triId, vertexInTri), out var requestList))
+                        {
+                            requestList = new List<(GeometryMode mode, (float, float) parameters)>();
+                            requests.Add((entry.Key.triId, vertexInTri), requestList);
+                        }
+
+                        requestList.Add(entry.Value);
+                    }
+                }
+            }
+        }
+
+        var perTriangulationVertex = _collectedVertexRequests
+            .SelectMany(vertexEntry => vertexEntry.Value
+                .SelectMany(triEntry => triEntry.Value
+                    .Select(mode => (vertex: vertexEntry.Key, triEntry: triEntry.Key, mode))))
+            .GroupBy(t => t.triEntry.triId);
+
+        var perTriangulationEdge = _collectedEdgeRequests
+            .SelectMany(kvp =>
+                kvp.Value.Select(v => (kvp.Key, v).v)
+                    .GroupBy(x => x.Key.triId));
+
+        Dictionary<Vector3I, ((int triId, int vIdx) triData, GeometryMode mode, (float, float) param)>
+            vertexReprocessedEditions = new();
+
+        foreach (var trianglesWithVertexToReprocess in perTriangulationVertex
+                     .Where(g => g.Select(tuple => tuple.mode).Distinct().Count() > 1))
+        {
+            var triId = trianglesWithVertexToReprocess.Key;
+            var tri = _triangulationsById[triId];
+            //Console.WriteLine($"[V]Tri [{triId}] has conflicting Modes on vertices");
+
+            foreach (var vertexToReprocess in trianglesWithVertexToReprocess.GroupBy(edge => edge.triEntry.vertex)
+                         .Where(g => g.Select(v => v.mode).Distinct().Count() > 1))
+            {
+                var pos = tri.SourceTriangle[vertexToReprocess.Key];
+                // Console.WriteLine(
+                //     $"[V]Tri [{triId},{vertexToReprocess.Key}] => [{new Vector2(pos.X, pos.Z)}]  has conflicting Modes");
+                var selection = GeometryMode.SmoothLinear;
+                var parameter1 = 0.5f;
+                var parameter2 = 0.5f;
+
+                foreach (var valueTuple in vertexToReprocess)
+                {
+                    var added = vertexReprocessedEditions.TryAdd(valueTuple.vertex,
+                        ((triId, vertexToReprocess.Key), selection, (parameter1, parameter2)));
+                    if (!added)
+                    {
+                        var current = vertexReprocessedEditions[valueTuple.vertex];
+                        if (current.mode != selection || current.param != (parameter1, parameter2))
+                        {
+                            throw new Exception();
+                        }
+                    }
+                }
+            }
+        }
+        
+        foreach (var vertexReprocessedEdition in vertexReprocessedEditions)
+        {
+            var vertex = vertexReprocessedEdition.Key;
+            var replacement = vertexReprocessedEdition.Value;
+            foreach (var edgeRequestsDico in _collectedEdgeRequests.Where(kvp=> kvp.Key.start == vertex || kvp.Key.end == vertex))
+            {
+                foreach (var request in edgeRequestsDico.Value.Where(request=>
+                             request.Key == replacement.triData))
+                {
+                    _collectedEdgeRequests[edgeRequestsDico.Key][request.Key] = (replacement.mode, replacement.param);
+                }
+            }
+        }
     }
 }

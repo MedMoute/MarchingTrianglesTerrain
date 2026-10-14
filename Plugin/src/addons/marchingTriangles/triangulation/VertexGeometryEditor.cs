@@ -36,8 +36,8 @@ public class VertexGeometryEditor
         List<HexTerrainCell> neighbors,
         (GeometryMode mode, (float, float) parameters) effectiveEdgeAction)
     {
-        Console.WriteLine($"     T[#{triangulation.Id};V{vertexTriIdx}] :" +
-                          $" =>  <{effectiveEdgeAction.mode},{effectiveEdgeAction.parameters}>");
+        // Console.WriteLine($"     T[#{triangulation.Id};V{vertexTriIdx}] :" +
+        //                   $" =>  <{effectiveEdgeAction.mode},{effectiveEdgeAction.parameters}>");
 
         effectiveEdgeAction.mode.Processor().Vertex(
             this,
@@ -69,8 +69,8 @@ public class VertexGeometryEditor
         List<HexTerrainCell> neighborCells,
         (GeometryMode mode, (float, float) parameters) effectiveAction)
     {
-        Console.WriteLine($"     T[#{triangulation.Id};E{edgeIndexInTri}] :" +
-                          $" =>  <{effectiveAction.mode},{effectiveAction.parameters}>");
+        // Console.WriteLine($"     T[#{triangulation.Id};E{edgeIndexInTri}] :" +
+        //                   $" =>  <{effectiveAction.mode},{effectiveAction.parameters}>");
         effectiveAction.mode.Processor().Edge(
             this,
             cell,
@@ -104,7 +104,7 @@ public class VertexGeometryEditor
         RegisterLocalEdgeAction(cell, edge, triangulation, edgeIdx, neighborCells, effectiveEdgeAction);
     }
 
-    private static int GetEdgeStartVertexIndex(
+    public static int GetEdgeStartVertexIndex(
         HexTerrainCell cell,
         (int start, int end) edge,
         Triangulation tri,
@@ -113,7 +113,7 @@ public class VertexGeometryEditor
         return GeometryModeActions.IsEdgeOrdered(cell, edge, tri, edgeIdx) ? edgeIdx : EngineUtils.Mod(edgeIdx + 1, 3);
     }
 
-    private static int GetEdgeEndVertexIndex(
+    public static int GetEdgeEndVertexIndex(
         HexTerrainCell cell,
         (int start, int end) edge,
         Triangulation tri,

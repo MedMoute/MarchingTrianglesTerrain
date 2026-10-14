@@ -7,7 +7,7 @@ public class TestProcessingWithDifferentGeometries
 {
     private HexagonalTerrainChunk? _chunk;
 
-    private static int _dimension = 3;
+    private static int _dimension = 10;
 
     private float[][] _src1 = new float[_dimension][];
     private float[][] _src2 = new float[_dimension][];
@@ -18,7 +18,7 @@ public class TestProcessingWithDifferentGeometries
         //Reset source & dimension
         _src1 = new float[_dimension][];
         _src2 = new float[_dimension][];
-        _dimension = 5;
+        _dimension = 10;
         _chunk = null;
     }
 

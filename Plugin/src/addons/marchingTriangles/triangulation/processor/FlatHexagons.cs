@@ -28,6 +28,8 @@ public class FlatHexagons : GeometryModeActions.ModeProcessor
 
         var height = cell.AverageHeight;
         var action = new MovePointAlongYAxisAction(vertexIdx, height);
+        //Console.WriteLine($"[Hexagons] Move T[#{tri.Id};{vertexIdx}]=>{height}");
+
         editor.RegisterAction(action, tri);
     }
 
@@ -53,8 +55,12 @@ public class FlatHexagons : GeometryModeActions.ModeProcessor
 
         var otherCell = neighborCells.First();
         var hOtherCell = otherCell.AverageHeight;
+        var newPointPos = new Vector3(pInit.X, hOtherCell, pInit.Z);
+
+        //Console.WriteLine($"[Hexagons] Add Tri [#{tri.Id};{edgeIdx}]=>@{newPointPos}");
+
         editor.RegisterAction(
-            new AddTrianglesOnBorderEdge(edgeIdx, new Vector3(pInit.X, hOtherCell, pInit.Z)),
+            new AddTrianglesOnBorderEdge(edgeIdx, newPointPos),
             tri);
     }
 }

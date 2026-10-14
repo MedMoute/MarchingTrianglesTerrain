@@ -46,7 +46,7 @@ public class FlatTrianglesNoFan : GeometryModeActions.ModeProcessor
 
         Debug.Assert(cell.GetEdgeAvgHeight != null);
         var height = cell.GetEdgeAvgHeight(heightIndex);
-        Console.WriteLine($"Move T[#{tri.Id};{edgeIdx}]=>{height}");
+        //Console.WriteLine($"Move T[#{tri.Id};{edgeIdx}]=>{height}");
 
         var action = new MovePointAlongYAxisAction(edgeIdx, height);
         editor.RegisterAction(action, tri);    }

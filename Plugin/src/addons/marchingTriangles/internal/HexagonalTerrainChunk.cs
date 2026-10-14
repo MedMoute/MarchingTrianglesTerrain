@@ -435,11 +435,12 @@ public class HexagonalTerrainChunk
         //Step 1 : Collect all the required operations
         editor.CollectAllOperationsRequests();
         editor.CollectBorderOperationRequests();
+
         //Step 2 : Register the edge Edition operations;
         editor.RegisterOperations();
         //Step 3 : Apply all the operations on triangulations
         editor.ApplyGeometryOperations();
-        // Step 3.5 : Stitch edges that need to be fixed
+        // Step 1.5 : Stitch edges that need to be fixed
         editor.StitchEdges();
         //Step 4 : Extract the triangles
         var x =  editor.GetTriangleInfos();
@@ -471,12 +472,12 @@ public static class ThresholdComputationModeExtensions
 
 public enum GeometryMode
 {
-    FlatHexagons = 0,
-    FlatTriangles = 1,
-    SmoothLinear = 2,
-    BendingEdge = 3,
-    Foothill = 4,
-    Plateau = 5,
+    FlatHexagons = 4,
+    FlatTriangles = 5,
+    SmoothLinear = 0,
+    BendingEdge = 1,
+    Foothill = 2,
+    Plateau = 3,
     FlatHexagonsNoFans = 6,
     FlatTrianglesNoFans = 7
 }
