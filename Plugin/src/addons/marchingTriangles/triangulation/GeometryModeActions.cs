@@ -28,22 +28,6 @@ public static partial class GeometryModeActions
             (float,float) parameters);
 
     }
-    
-    private static bool IsStartPrimaryVertex(
-        HexTerrainCell cell,
-        (int start, int end) edge,
-        Triangulation tri,
-        int edgeIdx)
-    {
-        Debug.Assert(cell.GetVertexData != null);
-        var isStartPrimaryVertex = tri.SourceTriangle[edgeIdx].IsEqualApprox(edge.start == -1
-            ? new Vector3((float)cell.CenterPosition.X, cell.AverageHeight, (float)cell.CenterPosition.Y)
-            : new Vector3(
-                (float)cell.VertexPositionsInPlane[edge.start].X,
-                cell.GetVertexData(edge.start),
-                (float)cell.VertexPositionsInPlane[edge.start].Y));
-        return isStartPrimaryVertex;
-    }
 
     internal static bool IsEdgeOrdered(
         HexTerrainCell cell,

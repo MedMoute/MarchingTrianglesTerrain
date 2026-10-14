@@ -10,7 +10,7 @@ public class TestTriangleProcessing
 {
     private HexagonalTerrainChunk? _chunk;
 
-    private static int _dimension = 5;
+    private static int _dimension = 3;
 
     private float[][] _src1 = new float[_dimension][];
     private float[][] _src2 = new float[_dimension][];

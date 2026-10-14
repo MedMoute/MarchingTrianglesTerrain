@@ -525,7 +525,7 @@ public class ChunkConformalEditor
             }
         }
     }
-
+    
     private (GeometryMode, (float, float)) SelectEffectiveAction(
             Dictionary<(int, int), (GeometryMode mode, (float, float) parameters)> requests,
             (Vector3I start, Vector3I end) edge)

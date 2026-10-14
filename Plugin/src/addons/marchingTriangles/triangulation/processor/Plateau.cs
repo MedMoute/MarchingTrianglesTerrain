@@ -65,30 +65,6 @@ public class Plateau : GeometryModeActions.ModeProcessor
 
                 new MovePointAlongYAxisAction(newPt, value).Apply(triangulation);
 
-                if (true)
-                {
-                    if (weight < 0.5)
-                    {
-                        newPt = new SplitSubEdgeAction(
-                                edgeIdx,
-                                newPt,
-                                EngineUtils.Mod(edgeIdx + 1, 3),
-                                (1 - 2 * weight) / (1 - weight))
-                            .Apply(triangulation);
-                    }
-                    else
-                    {
-                        newPt = new SplitSubEdgeAction(
-                                edgeIdx,
-                                edgeIdx,
-                                newPt,
-                                (1 - weight) / weight)
-                            .Apply(triangulation);
-                    }
-
-                    new MovePointAlongYAxisAction(newPt, value).Apply(triangulation);
-                }
-
                 return newPt;
             }
         ), tri);
