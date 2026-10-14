@@ -478,8 +478,7 @@ public enum GeometryMode
     Foothill = 4,
     Plateau = 5,
     FlatHexagonsNoFans = 6,
-    FlatTrianglesNoFans = 7,
-    PostStitch=-1
+    FlatTrianglesNoFans = 7
 }
 
 /// <summary>

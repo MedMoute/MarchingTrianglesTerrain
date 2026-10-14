@@ -106,7 +106,7 @@ public class AddTrianglesOnBorderEdge : DelegatedTriangulationEditAction<int>
             throw new InvalidOperationException("The action created multiple vertices which is not expected");
         }
 
-        if (pointCreations.DistinctBy(v => v.v).Count() == 0)
+        if (!pointCreations.DistinctBy(v => v.v).Any())
         {
             return t.ReverseVertices.GetValueOrDefault(_p, int.MaxValue) ;
         }

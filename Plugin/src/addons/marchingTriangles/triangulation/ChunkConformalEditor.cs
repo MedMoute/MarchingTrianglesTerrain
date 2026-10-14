@@ -343,10 +343,21 @@ public class ChunkConformalEditor
                     edgeData = _collectedEdgeRequests[edge];
                 }
 
+                int RevertTriIndex(int idx)
+                {
+                    switch (idx)
+                    {
+                        case 0: return 2;
+                        case 1: return 1;
+                        case 2: return 0;
+                        default: throw new NotSupportedException();
+                    }
+                }
+
                 Debug.Assert(triangulation != null, nameof(triangulation) + " != null");
                 edgeData.Add((
                         triangulation.Id,
-                        EngineUtils.Mod(sameOrdered ? indexOfCellSummitInTri : -indexOfCellSummitInTri + 1, 3)),
+                        sameOrdered ? indexOfCellSummitInTri : RevertTriIndex(indexOfCellSummitInTri)),
                     request);
             }
         }
@@ -483,9 +494,9 @@ public class ChunkConformalEditor
             {
                 var triangleData = editionRequest.Key;
                 var effectiveRequest = editionRequest.Value;
-                // Console.WriteLine($"     T[#{triangleData.triId};{triangleData.triIdx}] :" +
-                //                   $" =>  <{effectiveRequest.mode},{effectiveRequest.parameters}>" +
-                //                   $" => <{effectiveEdgeAction.mode},{effectiveEdgeAction.parameters}>");
+                Console.WriteLine($"     T[#{triangleData.triId};{triangleData.triIdx}] :" +
+                                  $" =>  <{effectiveRequest.mode},{effectiveRequest.parameters}>" +
+                                  $" => <{effectiveEdgeAction.mode},{effectiveEdgeAction.parameters}>");
 
                 var startIdx = new Vector2I(edge.edgeStart.X, edge.edgeStart.Y);
                 if (startIdx != new Vector2I(edge.edgeEnd.X, edge.edgeEnd.Y))

@@ -32,17 +32,17 @@ public static class GeometryModeActions
     {
         Debug.Assert(cell.GetVertexData is not null);
         //Check whether the start or the end of the edge matches the edited point in the triangulation
-        var isStartPrimaryVertex = IsStartPrimaryVertex(cell, edge, tri, vertexIdx);
-
-        if (!isStartPrimaryVertex) // If that is not the case, nothing to do here
-        {
-            return;
-        }
+        // var isStartPrimaryVertex = IsStartPrimaryVertex(cell, edge, tri, vertexIdx);
+        // //
+        // // if (!isStartPrimaryVertex) // If that is not the case, nothing to do here
+        // // {
+        // //     return;
+        // // }
 
         var height = cell.AverageHeight;
         var pInit = tri.SourceTriangle[vertexIdx];
 
-        //Console.WriteLine($"Move T[#{tri.Id};{vertexIdx}]=>{height}");
+        Console.WriteLine($"Move T[#{tri.Id};{vertexIdx}]=>{height}");
 
         var action = new MovePointAlongYAxisAction(vertexIdx, height);
         editor.RegisterAction(action, tri);
@@ -89,13 +89,13 @@ public static class GeometryModeActions
     {
         Debug.Assert(cell.GetVertexData is not null);
         //Check whether the start or the end of the edge matches the edited point in the triangulation
-        var isStartPrimaryVertex = IsStartPrimaryVertex(cell, edge, tri, edgeIdx);
-
-        if (!isStartPrimaryVertex)
-        {
-            // If that is not the case, nothing to do here
-            return;
-        }
+        // var isStartPrimaryVertex = IsStartPrimaryVertex(cell, edge, tri, edgeIdx);
+        //
+        // if (!isStartPrimaryVertex)
+        // {
+        //     // If that is not the case, nothing to do here
+        //     return;
+        // }
 
         var posIndex = edge.start == -1 ? edge.end : edge.start;
         //The subcell can be generally computed this way :
@@ -158,13 +158,13 @@ public static class GeometryModeActions
         
         Debug.Assert(cell.GetVertexData is not null);
         //Check whether the start or the end of the edge matches the edited point in the triangulation
-        var isStartPrimaryVertex = IsStartPrimaryVertex(cell, edge, tri, edgeIdx);
-
-        if (!isStartPrimaryVertex)
-        {
-            // If that is not the case, nothing to do here
-            return;
-        }
+        // var isStartPrimaryVertex = IsStartPrimaryVertex(cell, edge, tri, edgeIdx);
+        //
+        // if (!isStartPrimaryVertex)
+        // {
+        //     // If that is not the case, nothing to do here
+        //     return;
+        // }
         if (parameters.Item1 is < 0 or > 1 ||
             parameters.Item2 is < 0 or > 1)
         {
