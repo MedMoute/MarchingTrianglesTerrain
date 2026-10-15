@@ -1,6 +1,7 @@
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
+
 // ReSharper disable UnusedVariable
 
 namespace UnitTests.test.triangulation;
@@ -90,17 +91,16 @@ public class TestAddTriangleFanAction
             action.Apply(_t);
         });
         edit += Vector3.Up;
-        var e = Assert.Throws<NotSupportedException>(() =>
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(2));
+
+        Assert.DoesNotThrow(() =>
         {
             var action = new AddTriangleFan((0, 1), edit);
             action.Apply(_t);
         });
-
-        Assert.That(e,
-            Has.Message.EqualTo(
-                "Adding a triangle fan to an edge that is not on the manifold border is not supported."));
+        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(3));
     }
-    
+
     [Test]
     public void TestApplyAddTriangleFanActionOnAddedTriangle()
     {
@@ -123,27 +123,26 @@ public class TestAddTriangleFanAction
 
         Assert.DoesNotThrow(() =>
         {
-            var action = new AddTriangleFan((0, 3), edit+Vector3.Up);
+            var action = new AddTriangleFan((0, 3), edit + Vector3.Up);
             action.Apply(_t);
         });
         Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(3));
         Assert.That(_t.ToTriangleInfoList()[0].Points, Has.No.EqualTo(edit));
         Assert.That(_t.ToTriangleInfoList()[1].Points, Has.Exactly(1).EqualTo(edit));
-        
+
         Assert.That(_t.ToTriangleInfoList()[2].Points, Has.Exactly(1).EqualTo(edit));
-        Assert.That(_t.ToTriangleInfoList()[2].Points, Has.Exactly(1).EqualTo(edit+Vector3.Up));
+        Assert.That(_t.ToTriangleInfoList()[2].Points, Has.Exactly(1).EqualTo(edit + Vector3.Up));
 
         Assert.That(_t.ToTriangleInfoList()[0].EdgeBorderFlags, Has.Exactly(2).EqualTo(true));
         Assert.That(_t.ToTriangleInfoList()[1].EdgeBorderFlags, Has.Exactly(1).EqualTo(true));
         Assert.That(_t.ToTriangleInfoList()[2].EdgeBorderFlags, Has.Exactly(2).EqualTo(true));
-        
     }
-    
+
     [Test]
     public void TestCanApplyAddTriangleFanActionOnExistingPointAsNoop()
     {
-        var edit = B;  
-        
+        var edit = B;
+
         Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(1));
         Assert.DoesNotThrow(() =>
         {

@@ -468,6 +468,21 @@ public class V2Comp : IComparer<Vector2>
     }
 }
 
+public class V3CloseComp : IEqualityComparer<Vector3>
+{
+    public static V3CloseComp Instance = new ();
+    private V3CloseComp(){}
+    public bool Equals(Vector3 x, Vector3 y)
+    {
+        return x.IsEqualApprox(y);
+    }
+
+    public int GetHashCode(Vector3 obj)
+    {
+        return 0;
+    }
+}
+
 public class V3Comp : IComparer<Vector3>
 {
     private V3Comp()

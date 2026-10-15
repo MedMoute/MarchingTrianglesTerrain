@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GeometRi;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
 using MathNet.Spatial.Euclidean;
 
@@ -177,7 +178,8 @@ public static class TriangleUtils
 
             //We recompute the edges after the required splits have occured
             curEdge = ChunkConformalEditor.ExplicitEdge(triangulation.Edges[edgeIndex], triangulation);
-            neighborEdge = ChunkConformalEditor.ExplicitEdge(otherTriangulation.Edges[neighborEdgeIndex], otherTriangulation);
+            neighborEdge =
+                ChunkConformalEditor.ExplicitEdge(otherTriangulation.Edges[neighborEdgeIndex], otherTriangulation);
 
             var fillAction = new DegeneratePolygonFillerAction(curEdge, edgeIndex, neighborEdge, curEdgeCrossingPoints);
             cellVertexEditor.RegisterAction(fillAction, triangulation);
@@ -250,10 +252,10 @@ public static class TriangleUtils
 
                         //The lines have an intersection check if the intersection is withing the segment
                         var iLerpCur = InverseLerpProjected(curSegment.Item1, curSegment.Item2, v3Intersection);
-                        if (iLerpCur is >= 0 and <= 1)
+                        var iLerpNeigh =
+                            InverseLerpProjected(neighSegment.Item1, neighSegment.Item2, v3Intersection);
+                        if (iLerpCur is >= 0 and <= 1 && iLerpNeigh is >= 0 and <= 1)
                         {
-                            var iLerpNeigh =
-                                InverseLerpProjected(neighSegment.Item1, neighSegment.Item2, v3Intersection);
                             curOut.Add((v3Intersection, (j, iLerpCur)));
                             neighOut.Add((v3Intersection, (i, iLerpNeigh)));
                         }
@@ -261,6 +263,9 @@ public static class TriangleUtils
                 }
             }
         }
+
+        curOut = [.. curOut.DistinctBy(v => v.point, V3CloseComp.Instance)];
+        neighOut = [.. neighOut.DistinctBy(v => v.point, V3CloseComp.Instance)];
     }
 
     private static float InverseLerpProjected(Vector3 a, Vector3 b, Vector3 projection)

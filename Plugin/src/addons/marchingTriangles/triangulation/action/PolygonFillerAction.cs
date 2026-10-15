@@ -29,8 +29,6 @@ public class PolygonFillerAction : DelegatedTriangulationEditAction<int>
     protected override int DoApply(Triangulation triangulation)
     {
         //We use a front advancing algorithm to fill the polygon
-        var c1 = 0;
-        var c2 = 0;
         return DoFrontPropagation(triangulation, _e1,_e2,_edgeIndex,(0,_e1.Count), (0,_e2.Count));
     }
 
@@ -58,7 +56,7 @@ public class PolygonFillerAction : DelegatedTriangulationEditAction<int>
             var p1 = triangulation.ReverseVertices[front.Item1];
             var p2 = triangulation.ReverseVertices[front.Item2];
 
-            subEdgeIdx = triangulation.SubEdges[(p1, p2)];
+            subEdgeIdx = triangulation.SubEdges.IndexOf((p1, p2));
             var frontVector = front.Item2 - front.Item1;
             int edgeToAdvance;
             if (c1 == _e1.Count-1)
@@ -89,7 +87,7 @@ public class PolygonFillerAction : DelegatedTriangulationEditAction<int>
             //
             newPoint = edgeToAdvance == 1 ? _e1[c1 + 1] : _e2[c2 + 1];
             action = new AddTrianglesOnBorderSubEdge(_edgeIndex,subEdgeIdx, newPoint);
-            action.Apply(triangulation);
+            var res   =action.Apply(triangulation);
             //
             if (edgeToAdvance == 1)
             {

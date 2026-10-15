@@ -75,7 +75,7 @@ public class AddTrianglesOnBorderSubEdge : DelegatedTriangulationEditAction<int>
         var edge = t.SubEdges.Index().ElementAt(_subEdgeIdx).Item2.Key;
         //build a triangle fan from the sub edge
         // Walk along the implicit fan to obtain all the triangle fans to create
-        List<(int, int)> borderSubEdges = FindBorderFromSubEdge(t, edge);
+        List<(int, int)> borderSubEdges = FindBorderFromSubEdge(t, edge,new List<(int, int)>());
         createdIndexes.TryAdd(affectedSubEdge, new List<int>());
         foreach (var borderEdge in borderSubEdges)
         {
@@ -176,8 +176,9 @@ public class AddTrianglesOnBorderSubEdge : DelegatedTriangulationEditAction<int>
         return pointCreations.First().v;
     }
 
-    private List<(int, int)> FindBorderFromSubEdge(Triangulation t, (int, int) edge)
+    private List<(int, int)> FindBorderFromSubEdge(Triangulation t, (int, int) edge, List<(int,int)>callers)
     {
+        callers.Add(edge);
         List<(int, int)> collectedEdges = [];
         if (t.SubEdges[edge] == 1) //The provided sub edge is already on the border, return it.
         {
@@ -203,11 +204,13 @@ public class AddTrianglesOnBorderSubEdge : DelegatedTriangulationEditAction<int>
                     (tri.Value[1], tri.Value[2]),
                     (tri.Value[2], tri.Value[0])
                 ]);
+                //Remove self to avoid StackOverflow
+                triSubEdge.RemoveAll(callers.Contains);
                 return triSubEdge;
             }).Where(subEdge => !UnorderedValueTupleComparer.Instance.Equals(subEdge, edge)).ToList();
             foreach (var subEdge in validEdges)
             {
-                collectedEdges.AddRange(FindBorderFromSubEdge(t, subEdge));
+                collectedEdges.AddRange(FindBorderFromSubEdge(t, subEdge,new List<(int, int)>(callers)));
             }
         }
 
