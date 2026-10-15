@@ -223,7 +223,7 @@ public class ChunkConformalEditor
     {
         foreach (var geometryEdit in _cellEdgeEditors.Values)
         {
-            geometryEdit.ApplyTransformations();
+            geometryEdit.ApplyAllTransformations();
         }
     }
 
@@ -722,15 +722,38 @@ public class ChunkConformalEditor
 
         var neighborEdge = ExplicitEdge(neighborTri.Edges[neighborEdgeIdx], neighborTri);
         var curEdge = ExplicitEdge(triangulation.Edges[triIdxEdge], triangulation);
+
         //Ensure start point and end point are similar in the XoZ plane
         // If that is the case, the polygon to cover will be easier to obtain
         var invert = CheckExtremitiesInXoZPlane(neighborEdge, curEdge);
         if (!invert) throw new NotImplementedException(); //the edges go in the "same" order,
         //triangulating might create a flipped triangle
+        //Check if the edges are identical.
+        if (neighborEdge.Count == curEdge.Count)
+        {
+            bool equivalentEdges = true;
+            for (int i = 0; i < neighborEdge.Count; i++)
+            {
+                if (!neighborEdge[^(i+1)].Item1.IsEqualApprox(curEdge[i].Item1))
+                {
+                    equivalentEdges = false;
+                    break;
+                }
+            }
+            if (equivalentEdges) //The neighboring edges are equivalent
+            {
+                return;
+            }
+        }
 
         //We now reconstruct a mesh between the edges using the provided triangulation
-        TriangleUtils.BuildPolygonTriangulation(triangulation, curEdge, neighborEdge);
-        
+        TriangleUtils.BuildPolygonTriangulation(
+            _cellVertexEditors[new Vector3I(cell.CellCoordsImplicit.X, cell.CellCoordsImplicit.Y, summitIdx)],
+            triangulation,
+            curEdge,
+            neighborEdge,
+            triIdxEdge);
+
 
         return;
 

@@ -20,9 +20,17 @@ public class VertexGeometryEditor
     }
 
 
-    public void ApplyTransformations()
+    public void ApplyAllTransformations()
     {
         foreach (var triangulationEditAction in _actions)
+        {
+            triangulationEditAction.Apply(_actionToTriangulationHandle[triangulationEditAction]);
+        }
+    }
+
+    public void ApplyTransformations(Type type)
+    {
+        foreach (var triangulationEditAction in _actions.Where(a => a.GetType() == type))
         {
             triangulationEditAction.Apply(_actionToTriangulationHandle[triangulationEditAction]);
         }

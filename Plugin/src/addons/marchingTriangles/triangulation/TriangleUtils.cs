@@ -105,18 +105,24 @@ public static class TriangleUtils
     /// <summary>
     /// Edits a triangulation to triangulate a surface implicitly created by the polygon made of two edges.   
     /// </summary>
+    /// We rely on a vertex geometry editor for the sake of handling checks.
+    /// <param name="cellVertexEditor"></param>
     /// <param name="triangulation">the edited triangulation</param>
     /// <param name="curEdge">first edge</param>
     /// <param name="neighborEdge">second edge</param>
+    /// <param name="edgeIndex"></param>
     public static void BuildPolygonTriangulation(
+        VertexGeometryEditor cellVertexEditor,
         Triangulation triangulation,
         List<(Vector3, int Value)> curEdge,
-        List<(Vector3, int Value)> neighborEdge)
+        List<(Vector3, int Value)> neighborEdge,
+        int edgeIndex)
     {
-        //throw new NotImplementedException();
+        var action = new PolygonFillerAction(curEdge, neighborEdge,edgeIndex);
+        cellVertexEditor.RegisterAction(action,triangulation);
+        cellVertexEditor.ApplyTransformations(typeof(PolygonFillerAction));
     }
 }
-
 
 public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
 {
