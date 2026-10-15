@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using GeometRi;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
+using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
@@ -9,18 +13,19 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 /// </summary>
 public static class TriangleUtils
 {
-
     public static Vector3 GetNormal(Vector3[] tri)
     {
         return (tri[1] - tri[0]).Cross(tri[2] - tri[0]).Normalized();
     }
+
     public static bool CoplanarTrianglesIntersect(Vector3[] tri1, Vector3[] tri2)
     {
         return CoplanarTrianglesIntersect(
-            tri1[0],tri1[1],tri1[2],
-            tri2[0],tri2[1],tri2[2],
-            (tri1[1]-tri1[0]).Cross(tri1[2]-tri1[0]));
+            tri1[0], tri1[1], tri1[2],
+            tri2[0], tri2[1], tri2[2],
+            (tri1[1] - tri1[0]).Cross(tri1[2] - tri1[0]));
     }
+
     private static bool CoplanarTrianglesIntersect(
         Vector3 t1V0, Vector3 t1V1, Vector3 t1V2,
         Vector3 t2V0, Vector3 t2V1, Vector3 t2V2, Vector3 normal)
@@ -102,25 +107,167 @@ public static class TriangleUtils
         }
     }
 
+    public record PolygonTriangulationBuilderData(
+        VertexGeometryEditor editor,
+        Triangulation triangulation,
+        List<(Vector3, int)> edge,
+        int edgeindex);
+
     /// <summary>
     /// Edits a triangulation to triangulate a surface implicitly created by the polygon made of two edges.   
     /// </summary>
     /// We rely on a vertex geometry editor for the sake of handling checks.
-    /// <param name="cellVertexEditor"></param>
-    /// <param name="triangulation">the edited triangulation</param>
-    /// <param name="curEdge">first edge</param>
-    /// <param name="neighborEdge">second edge</param>
-    /// <param name="edgeIndex"></param>
     public static void BuildPolygonTriangulation(
-        VertexGeometryEditor cellVertexEditor,
-        Triangulation triangulation,
-        List<(Vector3, int Value)> curEdge,
-        List<(Vector3, int Value)> neighborEdge,
-        int edgeIndex)
+        PolygonTriangulationBuilderData receivingEdgeData,
+        PolygonTriangulationBuilderData neighborEdgeData)
     {
-        var action = new PolygonFillerAction(curEdge, neighborEdge,edgeIndex);
-        cellVertexEditor.RegisterAction(action,triangulation);
-        cellVertexEditor.ApplyTransformations(typeof(PolygonFillerAction));
+        VertexGeometryEditor cellVertexEditor = receivingEdgeData.editor;
+        Triangulation triangulation = receivingEdgeData.triangulation;
+        List<(Vector3, int Value)> curEdge = receivingEdgeData.edge;
+        int edgeIndex = receivingEdgeData.edgeindex;
+
+        VertexGeometryEditor neighborCellVertexEditor = receivingEdgeData.editor;
+        Triangulation otherTriangulation = neighborEdgeData.triangulation;
+        List<(Vector3, int Value)> neighborEdge = neighborEdgeData.edge;
+        int neighborEdgeIndex = neighborEdgeData.edgeindex;
+
+        GetEdgeCrossingPoints(
+            curEdge.Select(t => t.Item1).ToList(),
+            neighborEdge.Select(t => t.Item1).ToList(),
+            out List<(Vector3, (int Value, float weight) intersectionRepresentation)> curEdgeCrossingPoints,
+            out List<(Vector3, (int Value, float weight) intersectionRepresentation)> neighborEdgeCrossingPoints);
+
+        if (curEdgeCrossingPoints.Count == 0 && neighborEdgeCrossingPoints.Count == 0) //No crossing point
+        {
+            var action = new PolygonFillerAction(curEdge, neighborEdge, edgeIndex);
+            cellVertexEditor.RegisterAction(action, triangulation);
+            cellVertexEditor.ApplyTransformations(typeof(PolygonFillerAction)); //TODO move to later
+        }
+        else if (curEdgeCrossingPoints.Count <= 2 && neighborEdgeCrossingPoints.Count <= 2)
+        {
+            //First split the edge of the current triangulation so that the crossing points can be used by conformal triangles
+            foreach (var crossingPoint in curEdgeCrossingPoints)
+            {
+                var subEdgeIdx = triangulation.Edges[edgeIndex]
+                    .ElementAt(crossingPoint.intersectionRepresentation.Value);
+                var subEdge = triangulation.SubEdges.ElementAt(subEdgeIdx).Key;
+                var weight = crossingPoint.intersectionRepresentation.weight;
+                if (weight is > 0 and < 1)
+                {
+                    var action = new SplitSubEdgeAction(edgeIndex, subEdge.Item1, subEdge.Item2, weight);
+                    //cellVertexEditor.RegisterAction(action, triangulation);
+                    action.Apply(triangulation);
+                }
+            }
+
+            //We also need to split the neighbor edge
+            foreach (var crossingPoint in neighborEdgeCrossingPoints)
+            {
+                var subEdgeIdx = otherTriangulation.Edges[neighborEdgeIndex]
+                    .ElementAt(crossingPoint.intersectionRepresentation.Value);
+                var subEdge = otherTriangulation.SubEdges.ElementAt(subEdgeIdx).Key;
+                var weight = crossingPoint.intersectionRepresentation.weight;
+                if (weight is > 0 and < 1)
+                {
+                    var action = new SplitSubEdgeAction(neighborEdgeIndex, subEdge.Item1, subEdge.Item2, weight);
+                    //neighborCellVertexEditor.RegisterAction(action, otherTriangulation);
+                    action.Apply(otherTriangulation);
+                }
+            }
+
+            //We recompute the edges after the required splits have occured
+            curEdge = ChunkConformalEditor.ExplicitEdge(triangulation.Edges[edgeIndex], triangulation);
+            neighborEdge = ChunkConformalEditor.ExplicitEdge(otherTriangulation.Edges[neighborEdgeIndex], otherTriangulation);
+
+            var fillAction = new DegeneratePolygonFillerAction(curEdge, edgeIndex, neighborEdge, curEdgeCrossingPoints);
+            cellVertexEditor.RegisterAction(fillAction, triangulation);
+            cellVertexEditor.ApplyTransformations(typeof(DegeneratePolygonFillerAction)); //TODO move to later
+        }
+        else
+        {
+            Console.WriteLine("TODO : Edges cross more than 2 times case not implemented. The hole is not filled");
+            return;
+        }
+    }
+
+
+    /// <summary>
+    /// Computes the crossing points of two edges in space.
+    /// </summary>
+    /// The output lists will be empty if there is no crossing.
+    private static void GetEdgeCrossingPoints(
+        List<Vector3> curEdge,
+        List<Vector3> neighborEdge,
+        out List<(Vector3 point, (int Value, float weight) intersectionRepresentation)> curOut,
+        out List<(Vector3 point, (int Value, float weight) intersectionRepresentation)> neighOut)
+    {
+        curOut = new();
+        neighOut = new();
+        List<(Vector3, Vector3)> curSegments = new();
+        List<(Vector3, Vector3)> neighSegments = new();
+
+        for (var i = 1; i < curEdge.Count; i++)
+        {
+            curSegments.Add((curEdge[i - 1], curEdge[i]));
+        }
+
+        for (var i = 1; i < neighborEdge.Count; i++)
+        {
+            neighSegments.Add((neighborEdge[i - 1], neighborEdge[i]));
+        }
+
+        //We do segment-pairwise checks
+        for (var i = 0; i < neighSegments.Count; i++)
+        {
+            var neighSegment = neighSegments[i];
+
+            var p1Neigh = new Point3d(neighSegment.Item1.X, neighSegment.Item1.Y, neighSegment.Item1.Z);
+            var p2Neigh = new Point3d(neighSegment.Item2.X, neighSegment.Item2.Y, neighSegment.Item2.Z);
+
+            Line3d neighborLine = new Line3d(p1Neigh, p2Neigh);
+            for (var j = 0; j < curSegments.Count; j++)
+            {
+                var curSegment = curSegments[j];
+
+                var p1Cur = new Point3d(curSegment.Item1.X, curSegment.Item1.Y, curSegment.Item1.Z);
+                var p2Cur = new Point3d(curSegment.Item2.X, curSegment.Item2.Y, curSegment.Item2.Z);
+                Line3d curLine = new Line3d(p1Cur, p2Cur);
+                //Check
+                var intersection = curLine.IntersectionWith(neighborLine);
+                if (intersection != null)
+                {
+                    if (intersection is Line3D)
+                    {
+                        throw new NotSupportedException("Not supported at this point");
+                    }
+
+                    if (intersection is Point3d intersectionPoint)
+                    {
+                        var v3Intersection = new Vector3(
+                            (float)intersectionPoint.X,
+                            (float)intersectionPoint.Y,
+                            (float)intersectionPoint.Z);
+
+                        //The lines have an intersection check if the intersection is withing the segment
+                        var iLerpCur = InverseLerpProjected(curSegment.Item1, curSegment.Item2, v3Intersection);
+                        if (iLerpCur is >= 0 and <= 1)
+                        {
+                            var iLerpNeigh =
+                                InverseLerpProjected(neighSegment.Item1, neighSegment.Item2, v3Intersection);
+                            curOut.Add((v3Intersection, (j, iLerpCur)));
+                            neighOut.Add((v3Intersection, (i, iLerpNeigh)));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static float InverseLerpProjected(Vector3 a, Vector3 b, Vector3 projection)
+    {
+        Vector3 ab = b - a;
+        Vector3 av = projection - a;
+        return av.Dot(ab) / ab.LengthSquared();
     }
 }
 

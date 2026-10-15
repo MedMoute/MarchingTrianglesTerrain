@@ -734,12 +734,13 @@ public class ChunkConformalEditor
             bool equivalentEdges = true;
             for (int i = 0; i < neighborEdge.Count; i++)
             {
-                if (!neighborEdge[^(i+1)].Item1.IsEqualApprox(curEdge[i].Item1))
+                if (!neighborEdge[^(i + 1)].Item1.IsEqualApprox(curEdge[i].Item1))
                 {
                     equivalentEdges = false;
                     break;
                 }
             }
+
             if (equivalentEdges) //The neighboring edges are equivalent
             {
                 return;
@@ -748,11 +749,16 @@ public class ChunkConformalEditor
 
         //We now reconstruct a mesh between the edges using the provided triangulation
         TriangleUtils.BuildPolygonTriangulation(
-            _cellVertexEditors[new Vector3I(cell.CellCoordsImplicit.X, cell.CellCoordsImplicit.Y, summitIdx)],
-            triangulation,
-            curEdge,
-            neighborEdge,
-            triIdxEdge);
+            new TriangleUtils.PolygonTriangulationBuilderData(
+                _cellVertexEditors[new Vector3I(cell.CellCoordsImplicit.X, cell.CellCoordsImplicit.Y, summitIdx)],
+                triangulation,
+                curEdge,
+                triIdxEdge),
+            new TriangleUtils.PolygonTriangulationBuilderData(
+                _cellVertexEditors[new Vector3I(cell.CellCoordsImplicit.X, cell.CellCoordsImplicit.Y, summitIdx)],
+                neighborTri,
+                neighborEdge,
+                neighborEdgeIdx));
 
 
         return;
@@ -777,17 +783,7 @@ public class ChunkConformalEditor
             };
         }
 
-        List<(Vector3, int Value)> ExplicitEdge(LinkedList<int> linkedList, Triangulation tri)
-        {
-            var edge = linkedList.Select(edge =>
-            {
-                var elem = tri.SubEdges.ElementAt(edge);
-                return (tri.Vertices[elem.Key.Item1], elem.Value);
-            }).ToList();
-            var lastElement = tri.SubEdges.ElementAt(linkedList.Last!.Value);
-            edge.Add((tri.Vertices[lastElement.Key.Item2], lastElement.Value));
-            return edge;
-        }
+
 
         bool CheckExtremitiesInXoZPlane(List<(Vector3, int)> nEdge, List<(Vector3, int)> cEdge)
         {
@@ -810,5 +806,17 @@ public class ChunkConformalEditor
 
             return nE.IsEqualApprox(cS);
         }
+    }
+    
+    public static List<(Vector3, int Value)> ExplicitEdge(LinkedList<int> linkedList, Triangulation tri)
+    {
+        var edge = linkedList.Select(edge =>
+        {
+            var elem = tri.SubEdges.ElementAt(edge);
+            return (tri.Vertices[elem.Key.Item1], elem.Value);
+        }).ToList();
+        var lastElement = tri.SubEdges.ElementAt(linkedList.Last!.Value);
+        edge.Add((tri.Vertices[lastElement.Key.Item2], lastElement.Value));
+        return edge;
     }
 }
