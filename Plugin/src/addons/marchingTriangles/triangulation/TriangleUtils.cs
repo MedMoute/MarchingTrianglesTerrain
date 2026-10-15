@@ -101,6 +101,20 @@ public static class TriangleUtils
             if (projection > max) max = projection;
         }
     }
+
+    /// <summary>
+    /// Edits a triangulation to triangulate a surface implicitly created by the polygon made of two edges.   
+    /// </summary>
+    /// <param name="triangulation">the edited triangulation</param>
+    /// <param name="curEdge">first edge</param>
+    /// <param name="neighborEdge">second edge</param>
+    public static void BuildPolygonTriangulation(
+        Triangulation triangulation,
+        List<(Vector3, int Value)> curEdge,
+        List<(Vector3, int Value)> neighborEdge)
+    {
+        //throw new NotImplementedException();
+    }
 }
 
 

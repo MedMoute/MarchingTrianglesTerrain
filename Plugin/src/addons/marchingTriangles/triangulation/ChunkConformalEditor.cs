@@ -595,46 +595,9 @@ public class ChunkConformalEditor
     /// <exception cref="InvalidOperationException"></exception>
     public void StitchEdges()
     {
-        //Edge-based requests were already processed into _stitchedEdges
-        foreach (var stitchRequest in _stitchedEdges.Values)
-        {
-            (Vector3, Vector3) GetEdgeExtremitiesInTriangulation((int, int) valueTuple)
-            {
-                var tri = _triangulationsById[valueTuple.Item1];
-
-                var firstNode = tri.Edges[valueTuple.Item2].First;
-                var lastNode = tri.Edges[valueTuple.Item2].Last;
-
-                if (firstNode == null || lastNode == null) throw new InvalidOperationException();
-                var startEdgeIdx = firstNode.Value;
-                var endEdgeIdx = lastNode.Value;
-                var startPos = tri.Vertices[tri.SubEdges.ElementAt(startEdgeIdx).Key.Item1];
-                var endPos = tri.Vertices[tri.SubEdges.ElementAt(endEdgeIdx).Key.Item2];
-                return (startPos, endPos);
-            }
-
-            var init = stitchRequest.First();
-            var posInitPair = GetEdgeExtremitiesInTriangulation(init);
-            var posXoZInitPair = (
-                new Vector2(posInitPair.Item1.X, posInitPair.Item1.Z),
-                new Vector2(posInitPair.Item2.X, posInitPair.Item2.Z));
-            var sameExtremitiesInXoZPlane = stitchRequest.Select(GetEdgeExtremitiesInTriangulation)
-                .Select(pair => (
-                    new Vector2(pair.Item1.X, pair.Item1.Z),
-                    new Vector2(pair.Item2.X, pair.Item2.Z))).All(p =>
-                    (p.Item1.IsEqualApprox(posXoZInitPair.Item1) ^ p.Item1.IsEqualApprox(posXoZInitPair.Item2)) &&
-                    (p.Item2.IsEqualApprox(posXoZInitPair.Item1) ^ p.Item2.IsEqualApprox(posXoZInitPair.Item2)));
-            if (!sameExtremitiesInXoZPlane)
-            {
-                throw new InvalidOperationException();
-            }
-
-            throw new NotImplementedException();
-        }
-
         //We process the edge requests to find which VERTICES have different requests
         OrderedDictionary<Vector3I,
-                Dictionary<(int triId, int vertex), List<(GeometryMode mode, (float, float) parameters)>>>
+                Dictionary<(int triId, int edge), List<(GeometryMode mode, (float, float) parameters)>>>
             _collectedVertexRequests = new();
 
         foreach (var kvp in _collectedEdgeRequests)
@@ -698,65 +661,131 @@ public class ChunkConformalEditor
             }
         }
 
-        var perTriangulationVertex = _collectedVertexRequests
-            .SelectMany(vertexEntry => vertexEntry.Value
-                .SelectMany(triEntry => triEntry.Value
-                    .Select(mode => (vertex: vertexEntry.Key, triEntry: triEntry.Key, mode))))
-            .GroupBy(t => t.triEntry.triId);
+        var distinctRequests =
+            new Dictionary<(Vector3I cellIdx, (int triId, int edge) triIdx),
+                List<(GeometryMode mode, (float, float) parameters)>>();
 
-        var perTriangulationEdge = _collectedEdgeRequests
-            .SelectMany(kvp =>
-                kvp.Value.Select(v => (kvp.Key, v).v)
-                    .GroupBy(x => x.Key.triId));
-
-        Dictionary<Vector3I, ((int triId, int vIdx) triData, GeometryMode mode, (float, float) param)>
-            vertexReprocessedEditions = new();
-
-        foreach (var trianglesWithVertexToReprocess in perTriangulationVertex
-                     .Where(g => g.Select(tuple => tuple.mode).Distinct().Count() > 1))
+        foreach (var collectedVertexRequest in _collectedVertexRequests)
         {
-            var triId = trianglesWithVertexToReprocess.Key;
-            var tri = _triangulationsById[triId];
-            //Console.WriteLine($"[V]Tri [{triId}] has conflicting Modes on vertices");
-
-            foreach (var vertexToReprocess in trianglesWithVertexToReprocess.GroupBy(edge => edge.triEntry.vertex)
-                         .Where(g => g.Select(v => v.mode).Distinct().Count() > 1))
+            foreach (var requestsPerTriangulation in collectedVertexRequest.Value)
             {
-                var pos = tri.SourceTriangle[vertexToReprocess.Key];
-                // Console.WriteLine(
-                //     $"[V]Tri [{triId},{vertexToReprocess.Key}] => [{new Vector2(pos.X, pos.Z)}]  has conflicting Modes");
-                var selection = GeometryMode.SmoothLinear;
-                var parameter1 = 0.5f;
-                var parameter2 = 0.5f;
-
-                foreach (var valueTuple in vertexToReprocess)
+                var newKey = (collectedVertexRequest.Key, requestsPerTriangulation.Key);
+                var distinct = requestsPerTriangulation.Value.Distinct().ToList();
+                if (distinct.Count > 1)
                 {
-                    var added = vertexReprocessedEditions.TryAdd(valueTuple.vertex,
-                        ((triId, vertexToReprocess.Key), selection, (parameter1, parameter2)));
-                    if (!added)
-                    {
-                        var current = vertexReprocessedEditions[valueTuple.vertex];
-                        if (current.mode != selection || current.param != (parameter1, parameter2))
-                        {
-                            throw new Exception();
-                        }
-                    }
+                    distinctRequests[newKey] = distinct;
                 }
             }
         }
-        
-        foreach (var vertexReprocessedEdition in vertexReprocessedEditions)
+
+        //Now we're finally stitchin some stuff
+        foreach (var distinctRequest in distinctRequests)
         {
-            var vertex = vertexReprocessedEdition.Key;
-            var replacement = vertexReprocessedEdition.Value;
-            foreach (var edgeRequestsDico in _collectedEdgeRequests.Where(kvp=> kvp.Key.start == vertex || kvp.Key.end == vertex))
+            var cellIdx = new Vector2I(distinctRequest.Key.cellIdx.X, distinctRequest.Key.cellIdx.Y);
+            var summitIdx = distinctRequest.Key.cellIdx.Z;
+            var triIdx = distinctRequest.Key.triIdx;
+
+            if (triIdx.edge == 0 && summitIdx == -1) //Easy case : inner cell triangulations
             {
-                foreach (var request in edgeRequestsDico.Value.Where(request=>
-                             request.Key == replacement.triData))
-                {
-                    _collectedEdgeRequests[edgeRequestsDico.Key][request.Key] = (replacement.mode, replacement.param);
-                }
+                StitchInnerCellEdge(_cells[cellIdx], summitIdx, _triangulationsById[triIdx.triId], triIdx.edge);
             }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+    }
+
+    private void StitchInnerCellEdge(HexTerrainCell cell, int summitIdx, Triangulation triangulation, int triIdxEdge)
+    {
+        int cellIdx;
+        if (summitIdx == -1)
+        {
+            cellIdx = _triangulationsPerCell[cell.CellCoordsImplicit]?
+                          .Index()
+                          .Where(t => t.Item == triangulation)
+                          .Select(t => t.Index).First()
+                      ?? throw new ArgumentException(
+                          "Triangulation cannot be found in the sub cells of the provided cell");
+        }
+        else
+        {
+            cellIdx = summitIdx;
+        }
+
+        //Fetch the neighbor cell index
+        var neighborSubCellIndex = GetNeighborSubCellIndex(cellIdx);
+
+        var neighborTri = _triangulationsPerCell[cell.CellCoordsImplicit]?[neighborSubCellIndex];
+        if (neighborTri == null) return;
+        var neighborEdgeIdx = GetNeighborEdgeIndex();
+
+        var neighborEdge = ExplicitEdge(neighborTri.Edges[neighborEdgeIdx], neighborTri);
+        var curEdge = ExplicitEdge(triangulation.Edges[triIdxEdge], triangulation);
+        //Ensure start point and end point are similar in the XoZ plane
+        // If that is the case, the polygon to cover will be easier to obtain
+        var invert = CheckExtremitiesInXoZPlane(neighborEdge, curEdge);
+        if (!invert) throw new NotImplementedException(); //the edges go in the "same" order,
+        //triangulating might create a flipped triangle
+
+        //We now reconstruct a mesh between the edges using the provided triangulation
+        TriangleUtils.BuildPolygonTriangulation(triangulation, curEdge, neighborEdge);
+        
+
+        return;
+
+        int GetNeighborSubCellIndex(int cellSummitIdx)
+        {
+            return triIdxEdge switch
+            {
+                0 => EngineUtils.Mod(cellSummitIdx - 1, HexTerrainCell.VertexCount),
+                2 => EngineUtils.Mod(cellSummitIdx + 1, HexTerrainCell.VertexCount),
+                _ => throw new NotSupportedException()
+            };
+        }
+
+        int GetNeighborEdgeIndex()
+        {
+            return triIdxEdge switch
+            {
+                0 => 2,
+                2 => 0,
+                _ => throw new NotSupportedException()
+            };
+        }
+
+        List<(Vector3, int Value)> ExplicitEdge(LinkedList<int> linkedList, Triangulation tri)
+        {
+            var edge = linkedList.Select(edge =>
+            {
+                var elem = tri.SubEdges.ElementAt(edge);
+                return (tri.Vertices[elem.Key.Item1], elem.Value);
+            }).ToList();
+            var lastElement = tri.SubEdges.ElementAt(linkedList.Last!.Value);
+            edge.Add((tri.Vertices[lastElement.Key.Item2], lastElement.Value));
+            return edge;
+        }
+
+        bool CheckExtremitiesInXoZPlane(List<(Vector3, int)> nEdge, List<(Vector3, int)> cEdge)
+        {
+            var nFirst = nEdge.First().Item1;
+            var nLast = nEdge.Last().Item1;
+
+            var nS = new Vector2(nFirst.X, nFirst.Z);
+            var nE = new Vector2(nLast.X, nLast.Z);
+
+            var cFirst = cEdge.First().Item1;
+            var cLast = cEdge.Last().Item1;
+            var cS = new Vector2(cFirst.X, cFirst.Z);
+            var cE = new Vector2(cLast.X, cLast.Z);
+
+            if (!(nS.IsEqualApprox(cE) ^ nS.IsEqualApprox(cS)) ||
+                !(nE.IsEqualApprox(cE) ^ nE.IsEqualApprox(cS)))
+            {
+                throw new InvalidOperationException();
+            }
+
+            return nE.IsEqualApprox(cS);
         }
     }
 }
