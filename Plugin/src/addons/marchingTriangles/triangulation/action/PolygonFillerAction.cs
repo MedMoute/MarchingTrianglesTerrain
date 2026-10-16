@@ -37,7 +37,7 @@ public class PolygonFillerAction : DelegatedTriangulationEditAction<int>
         int c1 = r1.s;
         int c2 = r2.s;
         // We start the front by building the first triangle. We always choose the edited edge for that first step 
-        var subEdgeIdx = triangulation.Edges[_edgeIndex].First!.Value;
+        var subEdgeIdx = triangulation.Edges[_edgeIndex].ElementAt(r1.s);
         var newPoint = _e2[c2];
         var action = new AddTrianglesOnBorderSubEdge(_edgeIndex,subEdgeIdx, newPoint);
         action.Apply(triangulation);

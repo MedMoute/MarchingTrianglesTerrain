@@ -429,9 +429,9 @@ public class HexagonalTerrainChunk
         data.Floor.Add(cell.FloorMode);
     }
 
-    public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> ProcessGeometry()
+    public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> ProcessGeometry(out ChunkConformalEditor editor)
     {
-        var editor = new ChunkConformalEditor(this);
+        editor = new ChunkConformalEditor(this);
         //Step 1 : Collect all the required operations
         editor.CollectAllOperationsRequests();
         editor.CollectBorderOperationRequests();
@@ -442,6 +442,8 @@ public class HexagonalTerrainChunk
         editor.ApplyGeometryOperations();
         // Step 1.5 : Stitch edges that need to be fixed
         editor.StitchEdges();
+        
+        editor.DebugDumpEditorState();
         //Step 4 : Extract the triangles
         var x =  editor.GetTriangleInfos();
         return x;

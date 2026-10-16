@@ -183,7 +183,7 @@ public static class TriangleUtils
 
             var fillAction = new DegeneratePolygonFillerAction(curEdge, edgeIndex, neighborEdge, curEdgeCrossingPoints);
             cellVertexEditor.RegisterAction(fillAction, triangulation);
-            cellVertexEditor.ApplyTransformations(typeof(DegeneratePolygonFillerAction)); //TODO move to later
+            fillAction.Apply(triangulation);
         }
         else
         {
@@ -274,6 +274,193 @@ public static class TriangleUtils
         Vector3 av = projection - a;
         return av.Dot(ab) / ab.LengthSquared();
     }
+
+    public static (Dictionary<float[], int> dico,
+        List<float[]> borderEdgesAsSets,
+        List<float[]>manifoldBorderEdgesAsSets) ReprocessEdgeGeometry(List<HexTerrainCell.TriangleInfo> outputTriangles,
+            bool throwOnFailedChecks = true)
+    {
+        var dico = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
+        var borderEdgesAsSets = new Dictionary<float[], int>(new FloatArrayComparer(1e-5));
+
+        var vertexSet = new SortedSet<Vector3>(V3Comp.Instance);
+        foreach (var tInfo in outputTriangles)
+        {
+            foreach (var edge in tInfo.GetEdges())
+            {
+                var set = new SortedSet<Vector3>(V3Comp.Instance);
+                vertexSet.Add(edge.Item1);
+                vertexSet.Add(edge.Item2);
+                set.Add(edge.Item1);
+                set.Add(edge.Item2);
+                float[] zob = set.SelectMany(v => Array.AsReadOnly([v.X, v.Y, v.Z])).ToArray();
+                var exists = dico.TryGetValue(zob, out int val);
+                if (exists)
+                {
+                    dico.Remove(zob);
+                }
+
+                dico.Add(zob, val + 1);
+            }
+        }
+
+        foreach (var edge in outputTriangles.SelectMany(t => t.GetBorderEdges()))
+        {
+            var set = new SortedSet<Vector3>(V3Comp.Instance)
+            {
+                edge.Item1,
+                edge.Item2
+            };
+            var edgeArray = set.SelectMany(v => Array.AsReadOnly([v.X, v.Y, v.Z])).ToArray();
+
+            if (!borderEdgesAsSets.TryAdd(edgeArray, 0))
+            {
+                borderEdgesAsSets.Remove(edgeArray);
+            }
+        }
+
+        var manifoldBordersAsSets = dico.Where(pair => pair.Value == 1).Select(pair => pair.Key).ToList();
+
+        // Console.WriteLine("Expected : ");
+        // foreach (var set in manifoldBordersAsSets)
+        // {
+        //     Console.WriteLine(set.Stringify());
+        // }
+        var eulerCharacteristic = vertexSet.Count - dico.Count + outputTriangles.Count;
+
+        if (eulerCharacteristic != 1)
+        {
+            Console.WriteLine("WARNING : Euler characteristic is not one of a closed loop (got " + eulerCharacteristic +
+                              " instead).");
+        }
+
+        // Checks on border edges sets : 
+        // On the manifold border set
+        if (throwOnFailedChecks)
+        {
+            AssertIsClosedManifoldBorder(manifoldBordersAsSets);
+        }
+
+    // On the rebuilt border edge set
+        var borderEdgesFromRebuilt = borderEdgesAsSets.Keys.ToList();
+        if (throwOnFailedChecks)
+        {
+        AssertIsClosedManifoldBorder(borderEdgesFromRebuilt);
+        }
+        return (dico, borderEdgesFromRebuilt, manifoldBordersAsSets);
+    }
+
+    public static bool AssertIsClosedManifoldBorder(List<float[]> setOfBorders, bool throwOnAssertFail=true)
+    {
+        var borderVerticesEnumerable = setOfBorders.SelectMany(e =>
+        {
+            var set = new SortedSet<Vector3>(V3Comp.Instance);
+            set.Add(new Vector3(e[0], e[1], e[2]));
+            set.Add(new Vector3(e[3], e[4], e[5]));
+            return set;
+        });
+
+        //Check that there is as many vertices as there are edges
+        var verticesEnumerable = borderVerticesEnumerable as Vector3[] ?? borderVerticesEnumerable.ToArray();
+        var borderVertices = verticesEnumerable.Distinct().ToList();
+
+        var edgeDico = new OrderedDictionary<(int, int), int>(UnorderedValueTupleComparer.Instance);
+        setOfBorders.ForEach(e =>
+        {
+            var v1 = borderVertices.Index()
+                .Where(v => v.Item.IsEqualApprox(new Vector3(e[0], e[1], e[2]))) //Filter out
+                .Select(kvp => kvp.Index) // Get index
+                .ToList(); // Output as list
+
+            if (v1.Count > 1)
+            {
+                Console.WriteLine(
+                    $"Vertex {new Vector3(e[0], e[1], e[2])} is present {v1.Count} times in the vertex set." +
+                    $" Expected a single occurence, got {String.Join(",", v1)}");
+            }
+
+            if (v1.Count == 0)
+            {
+                Console.WriteLine(
+                    $"Vertex {new Vector3(e[0], e[1], e[2])} from the edge dataset is not in the vertex set.");
+            }
+
+            var v2 = borderVertices.Index()
+                .Where(v => v.Item.IsEqualApprox(new Vector3(e[3], e[4], e[5]))) //Filter out
+                .Select(kvp => kvp.Index) // Get index
+                .ToList(); // Output as list
+
+            if (v2.Count > 1)
+            {
+                Console.WriteLine(
+                    $"Vertex {new Vector3(e[3], e[4], e[5])} is present {v1.Count} times in the vertex set." +
+                    $" Expected a single occurence, got {String.Join(",", v1)}");
+            }
+
+            if (v1.Count == 0)
+            {
+                Console.WriteLine(
+                    $"Vertex {new Vector3(e[3], e[4], e[5])} from the edge dataset is not in the vertex set.");
+            }
+
+            if (!edgeDico.TryAdd((v1[0], v2[0]), 1))
+            {
+                edgeDico[(v1[0], v2[0])]++;
+            }
+        });
+
+        var count = 0;
+        borderVertices.ForEach(v =>
+        {
+            var vOccurencesInEdges = edgeDico.Where(kvp => kvp.Key.Item1 == count || kvp.Key.Item2 == count)
+                .Select(e => edgeDico.IndexOf(e.Key))
+                .ToList();
+
+            if (vOccurencesInEdges.Count != 2)
+            {
+                Console.WriteLine(
+                    $"Vertex [{count}]({v}) is used {vOccurencesInEdges.Count} times in the border instead of 2.");
+            }
+
+            count++;
+        });
+
+        if (borderVertices.Count != setOfBorders.Count)
+        {
+            // Console.WriteLine("Debug count error");
+            // foreach (var edge in edgeDico)
+            // {
+            // Console.WriteLine(edge.Key+ " : " + edge.Value);
+            // }
+            if (throwOnAssertFail)
+            {
+                throw new Exception(
+                    "The provided data does not define closed manifold border because" +
+                    $" the count of border edges is not equal ({setOfBorders.Count})to the count of border vertices ({borderVertices.Count}).");
+            }
+            return false;
+        }
+
+        //Check that there every vertex is present twice
+        var vertexList = verticesEnumerable.ToList();
+        foreach (var v in borderVertices)
+        {
+            var vertexOccurenceCount = vertexList.FindAll(vec => vec.IsEqualApprox(v)).Count;
+            if (vertexOccurenceCount != 2)
+            {
+                if (throwOnAssertFail)
+                {
+                    throw new Exception(
+                        "The provided data does not define closed manifold border because" +
+                        " not all vertices have two occurrences ");
+                }
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 }
 
 public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
@@ -321,4 +508,6 @@ public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
 
         return x.Equals(y) ? 0 : x.GetHashCode() - y.GetHashCode();
     }
+    
+    
 }

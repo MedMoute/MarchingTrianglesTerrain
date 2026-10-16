@@ -15,9 +15,9 @@ public class DegeneratePolygonFillerAction : DelegatedTriangulationEditAction<in
     private readonly List<(Vector3, int Value)> _neighborEdge;
     private readonly int _edgeIndex;
     private readonly int _crossingPointsCount;
-    List<(Vector3, (int Value, float weight) intersectionRepresentation)> _crossingPoints;
+    private readonly List<(Vector3, (int Value, float weight) intersectionRepresentation)> _crossingPoints;
 
-    private bool unsupportedOPFlag = false;
+    private bool _unsupportedOpFlag = false;
     
     public DegeneratePolygonFillerAction(
         List<(Vector3, int Value)> curEdge,
@@ -51,7 +51,7 @@ public class DegeneratePolygonFillerAction : DelegatedTriangulationEditAction<in
                   _neighborEdge.Select(p => p.Item1).First().IsEqualApprox(_crossingPoints[0].Item1) ||
                   _neighborEdge.Select(p => p.Item1).Last().IsEqualApprox(_crossingPoints[0].Item1)))
             {
-                unsupportedOPFlag = true;
+                _unsupportedOpFlag = true;
                 Console.WriteLine("Knot point not supported.");
             }
         }
@@ -59,7 +59,7 @@ public class DegeneratePolygonFillerAction : DelegatedTriangulationEditAction<in
 
     protected override int DoApply(Triangulation t)
     {
-        if (unsupportedOPFlag) return int.MinValue;
+        if (_unsupportedOpFlag) return int.MinValue;
 
         //Get the indexes of the crossing vertices in both edges
         List<int> idx1 = new(); 

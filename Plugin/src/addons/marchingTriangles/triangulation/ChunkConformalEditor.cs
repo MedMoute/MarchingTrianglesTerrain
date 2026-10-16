@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
@@ -191,20 +194,27 @@ public class ChunkConformalEditor
     /// Returns the dictionary of mesh triangles, indexed by the cell it's originating from.  
     /// </summary>
     /// <returns></returns>
-    public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> GetTriangleInfos()
+    public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> GetTriangleInfos(
+        List<Vector2I>? cellIndices = null)
     {
-        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
-        foreach (var triangulation in _triangulationsPerCell)
+        if (cellIndices == null)
         {
-            if (triangulation.Value == null)
+            cellIndices = [.. _triangulationsPerCell.Keys];
+        }
+
+        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
+        foreach (var cellIndex in cellIndices)
+        {
+            var cellTriangulations = _triangulationsPerCell[cellIndex];
+            if (cellTriangulations == null)
             {
                 continue;
             }
 
             // Find the cell
-            var cell = _cells[triangulation.Key];
+            var cell = _cells[cellIndex];
             output.TryAdd(cell, []);
-            foreach (var tuple in triangulation.Value)
+            foreach (var tuple in cellTriangulations)
             {
                 if (tuple == null)
                 {
@@ -784,7 +794,6 @@ public class ChunkConformalEditor
         }
 
 
-
         bool CheckExtremitiesInXoZPlane(List<(Vector3, int)> nEdge, List<(Vector3, int)> cEdge)
         {
             var nFirst = nEdge.First().Item1;
@@ -807,7 +816,7 @@ public class ChunkConformalEditor
             return nE.IsEqualApprox(cS);
         }
     }
-    
+
     public static List<(Vector3, int Value)> ExplicitEdge(LinkedList<int> linkedList, Triangulation tri)
     {
         var edge = linkedList.Select(edge =>
@@ -818,5 +827,142 @@ public class ChunkConformalEditor
         var lastElement = tri.SubEdges.ElementAt(linkedList.Last!.Value);
         edge.Add((tri.Vertices[lastElement.Key.Item2], lastElement.Value));
         return edge;
+    }
+
+    /// <summary>
+    /// Debug method that dumps the state of the chunk editor to the standard output.
+    /// </summary>
+    public void DebugDumpEditorState()
+    {
+        StringBuilder sb = new();
+        AppendHSeparator(sb);
+        sb.Append($"Debug Chunk Editor state dump for chunk {_chunk.Coordinates}")
+            .AppendLine()
+            .Append($"Snapshot timestamp: {DateTime.Now.ToString(CultureInfo.InvariantCulture)}")
+            .AppendLine();
+        AppendHSeparator(sb);
+        sb.Append("General chunk information").AppendLine();
+        AppendHSeparator(sb);
+        sb.Append($"Chunk coordinates: {_chunk.Coordinates}")
+            .AppendLine()
+            .Append($"Chunk dimensions :{_chunk.Dimensions2D}")
+            .AppendLine()
+            .Append($"Data points count: {_chunk.DataGrid.Size}")
+            .AppendLine()
+            .Append($"Full hexagonal cells count: {_chunk.TerrainDualGrid.CompleteCells.Count}")
+            .AppendLine()
+            .Append($"Partial hexagonal cells count: {_chunk.TerrainDualGrid.PendingCells.Count}")
+            .AppendLine();
+        AppendHSeparator(sb);
+        sb.Append("Chunk Processing information").AppendLine();
+        AppendHSeparator(sb);
+        sb.Append($"Chunk threshold computation mode: {_chunk.DefaultThreshold.Item2}")
+            .AppendLine()
+            .Append($"Chunk threshold value: {_chunk.DefaultThreshold.Item1}")
+            .AppendLine()
+            .Append($"Default processing mode: {_chunk.DefaultGeometryModes?.Item1}")
+            .AppendLine()
+            .Append($"Over-threshold processing mode :{_chunk.DefaultGeometryModes?.Item2}")
+            .AppendLine();
+        AppendHSeparator(sb);
+        sb.Append("Current chunk editor information")
+            .AppendLine();
+        AppendHSeparator(sb);
+        sb.Append("Processing status: TODO")
+            .AppendLine()
+            .Append($"Edition request count: {
+                _collectedEdgeRequests.Sum(a => a.Value.Count)}")
+            .AppendLine()
+            .Append($"Triangulation count: {_triangulationsById.Count}")
+            .AppendLine();
+        AppendHSeparator(sb);
+        sb.Append("Per cell manifold data").AppendLine();
+        AppendHSeparator(sb);
+        foreach (var hexTerrainCell in _cells.Values)
+        {
+            DebugDumpCellState(hexTerrainCell, sb);
+            sb.AppendLine();
+            AppendHSeparator(sb);
+        }
+
+
+        Console.WriteLine(sb);
+    }
+
+    private void DebugDumpCellState(HexTerrainCell cell, StringBuilder sb)
+    {
+        sb.Append('\t').Append(cell)
+            .AppendLine()
+            .Append('\t');
+
+        sb.Append("Data Y values :");
+        for (int i = 0; i < HexTerrainCell.VertexCount; i++)
+        {
+            sb.Append($"     {cell.GetVertexData!(i):0.00}     ");
+        }
+
+        sb.AppendLine().Append('\t');
+        sb.Append($"Avg cell Y value: {cell.AverageHeight}")
+            .AppendLine().Append('\t')
+            .Append($"Overrides chunk geometry behavior: {cell.GeometryModesOverride != null}")
+            .AppendLine().Append('\t');
+        if (cell.GeometryModesOverride != null)
+        {
+            sb.Append($"Cell processing mode: {_chunk.DefaultGeometryModes?.Item1}")
+                .AppendLine().Append('\t')
+                .Append($"Cell over-threshold processing mode :{_chunk.DefaultGeometryModes?.Item2}")
+                .AppendLine().Append('\t');
+        }
+
+        var tris = GetTriangleInfos([cell.CellCoordsImplicit])[cell];
+        sb.Append($"Cell triangles count: {tris.Count}")
+            .AppendLine().Append('\t');
+
+        var (dico, borderEdgesAsSets, manifoldBorderEdgesAsSets) = TriangleUtils.ReprocessEdgeGeometry(tris, false);
+        var isManifold = true &&
+                         TriangleUtils.AssertIsClosedManifoldBorder(borderEdgesAsSets, false) &&
+                         TriangleUtils.AssertIsClosedManifoldBorder(manifoldBorderEdgesAsSets, false);
+        foreach (var _ in dico.Where(kvp => !(
+                     kvp.Value == 2 ||
+                     kvp.Value == 1 && borderEdgesAsSets.Contains(kvp.Key, new FloatArrayComparer(1e-5)))))
+        {
+            isManifold = false;
+        }
+
+        sb.Append($"Cell triangulation is manifold : {isManifold}").AppendLine();
+        AppendHSeparator(sb);
+        sb.Append('\t').Append('\t');
+        if (!isManifold)
+        {
+            sb.Append("Dumping cell triangulation data as obj snippet because of non-manifold output :")
+                .AppendLine();
+            AppendHSeparator(sb);
+            ToStlDump(tris, sb);
+        }
+    }
+
+    private static void ToStlDump(List<HexTerrainCell.TriangleInfo> tris, StringBuilder sb)
+    {
+        sb.Append("solid mesh").AppendLine();
+
+        foreach (var triangleInfo in tris)
+        {
+            var n = TriangleUtils.GetNormal(triangleInfo.Points);
+            sb.Append($"facet normal {n.X} {n.Y} {n.Z}").AppendLine()
+                .Append('\t').Append("outer loop").AppendLine();
+            foreach (var p in triangleInfo.Points)
+            {
+                sb.Append('\t')
+                    .Append('\t')
+                    .Append($"vertex {p.X} {p.Y} {p.Z}")
+                    .AppendLine();
+            }
+            sb.Append('\t').Append("end loop").AppendLine().Append("end facet").AppendLine();
+        }
+    }
+
+    private static void AppendHSeparator(StringBuilder sb)
+    {
+        sb.Append("------------------------------------------------------------------------------------").AppendLine();
     }
 }

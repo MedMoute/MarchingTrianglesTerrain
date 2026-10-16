@@ -250,9 +250,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
 
     private void ProcessGeometry()
     {
-        var editor = new ChunkConformalEditor(Underlying);
-
-        var data = Underlying.ProcessGeometry();
+        var data = Underlying.ProcessGeometry(out var editor);
         //Step 4 : Copy the triangulation outputs to the mesh
         CopyToMesh(data, editor);
     }

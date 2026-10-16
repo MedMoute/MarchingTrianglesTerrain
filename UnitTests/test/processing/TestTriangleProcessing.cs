@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MathNet.Numerics;
@@ -66,7 +67,7 @@ public class TestTriangleProcessing
 
         Assert.That(_chunk.TerrainDualGrid.CompleteCells, Has.Count.EqualTo(1));
 
-        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(); });
+        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out var editor); });
 
 
         //Per cell manifold checks
@@ -151,7 +152,7 @@ public class TestTriangleProcessing
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
 
-        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(); });
+        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out var editor); });
 
             int expectedCount;
             switch (geometryMode)
@@ -217,9 +218,10 @@ public class TestTriangleProcessing
             GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
         };
 
-        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = _chunk.ProcessGeometry();
-        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(); });
+        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>>? output=null;
+        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out var editor); });
 
+        Debug.Assert(output!=null);
         //Per cell manifold and value checks
         foreach (var keyValuePair in output)
         {

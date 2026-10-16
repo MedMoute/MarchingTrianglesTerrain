@@ -33,9 +33,10 @@ public class AddTriangleFan : DelegatedTriangulationEditAction<int>
             throw new ArgumentException("The provided sub edge does not exist.");
         }
 
-        if (t.SubEdges[_subEdge] > 2) // 0 means the edge is unused,
-                                      // 1 it's on the manifold border,
-                                      // 2  it's an interior edge, more is unknown
+        if (t.SubEdges[_subEdge] > 1) // 0 means the edge is unused,
+            // 1 it's on the manifold border,
+            // 2  it's an interior edge,
+            // we do not want to add a fan to an interior edge (at least in the same triangulation)
         {
             throw new NotSupportedException(
                 "Adding a triangle fan to an edge that is not on the manifold border is not supported.");
@@ -75,7 +76,7 @@ public class AddTriangleFan : DelegatedTriangulationEditAction<int>
         //Update the edge counter of the initial edge
         t.SubEdges[(sIdx, eIdx)]++;
 
-        t.TrianglesByVertices.Add(t.TrianglesByVertices.Keys.Max()+1, [sIdx, newIdx, eIdx]);
+        t.TrianglesByVertices.Add(t.TrianglesByVertices.Keys.Max() + 1, [sIdx, newIdx, eIdx]);
         return newIdx;
     }
 }

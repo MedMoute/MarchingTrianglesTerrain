@@ -55,7 +55,7 @@ public class AddTrianglesOnBorderSubEdge : DelegatedTriangulationEditAction<int>
         var angle1 = pVecS.AngleTo(edge);
         var angle2 = pVecE.AngleTo(edge);
 
-        if (
+        if (edge != Vector2.Zero &&
             !(pVecE.LengthSquared() < 1e-5 ||
               pVecS.LengthSquared() < 1e-5) //Degenerated case exclusion (new point is start or end + value on Y axis)  
             && (MathF.Abs(angle1) > MathF.PI / 2 || MathF.Abs(angle2) > MathF.PI / 2))
@@ -77,7 +77,7 @@ public class AddTrianglesOnBorderSubEdge : DelegatedTriangulationEditAction<int>
         // Walk along the implicit fan to obtain all the triangle fans to create
         List<(int, int)> borderSubEdges = FindBorderFromSubEdge(t, edge,new List<(int, int)>());
         createdIndexes.TryAdd(affectedSubEdge, new List<int>());
-        foreach (var borderEdge in borderSubEdges)
+        foreach (var borderEdge in borderSubEdges.Distinct())
         {
             var action = new AddTriangleFan(borderEdge, _p);
             var createdIdx = action.Apply(t);

@@ -91,16 +91,17 @@ public class TestAddTriangleFanAction
             action.Apply(_t);
         });
         edit += Vector3.Up;
-        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(2));
-
-        Assert.DoesNotThrow(() =>
+        var e = Assert.Throws<NotSupportedException>(() =>
         {
             var action = new AddTriangleFan((0, 1), edit);
             action.Apply(_t);
         });
-        Assert.That(_t.ToTriangleInfoList(), Has.Count.EqualTo(3));
-    }
 
+        Assert.That(e,
+            Has.Message.EqualTo(
+                "Adding a triangle fan to an edge that is not on the manifold border is not supported."));
+    }
+    
     [Test]
     public void TestApplyAddTriangleFanActionOnAddedTriangle()
     {

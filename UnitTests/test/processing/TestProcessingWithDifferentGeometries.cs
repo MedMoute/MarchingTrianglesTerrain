@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
@@ -56,15 +57,15 @@ public class TestProcessingWithDifferentGeometries
             DefaultThreshold =
                 new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference),
             Dirty = true,
-            GeometryModeParameters = ((0.4f,0.4f),(0.4f,0.4f))
+            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
         };
 
-        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
+        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>>? output = null;
 
         Assert.That(_chunk.TerrainDualGrid.CompleteCells, Has.Count.EqualTo(1));
-        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(); });
+        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out _); });
         Assert.That(output, Has.Count.EqualTo(1));
-
+        Debug.Assert(output != null);
         foreach (var keyValuePair in output)
         {
             if (geometryMode is not GeometryMode.FlatTrianglesNoFans &&
@@ -92,19 +93,19 @@ public class TestProcessingWithDifferentGeometries
             DefaultThreshold =
                 new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference),
             Dirty = true,
-            GeometryModeParameters = ((0.4f,0.4f),(0.4f,0.4f))
+            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
         };
 
-        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
+        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>>? output = null;
 
-        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(); });
+        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out _); });
 
-
+        Debug.Assert(output != null);
         //Per cell manifold checks
         foreach (var keyValuePair in output)
         {
             TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
-           // Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
+            // Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
         }
 
         //Global checks
@@ -142,12 +143,11 @@ public class TestProcessingWithDifferentGeometries
             DefaultThreshold =
                 new Tuple<float, ThresholdComputationMode>(0.5f, ThresholdComputationMode.HeightDifference),
             Dirty = true,
-            GeometryModeParameters = ((0.4f,0.4f),(0.4f,0.4f))
+            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
         };
-
-        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = _chunk.ProcessGeometry();
-        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(); });
-
+        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>>? output = null;
+        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out _); });
+        Debug.Assert(output != null);
         //Per cell manifold and value checks
         foreach (var keyValuePair in output)
         {

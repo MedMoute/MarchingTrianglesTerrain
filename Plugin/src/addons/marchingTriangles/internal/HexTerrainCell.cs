@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor;
 using MarchingTrianglesTerrain.addons.marchingTriangles.tiling;
 using MathNet.Spatial.Euclidean;
+using Microsoft.Extensions.Logging;
 using static MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.EngineUtils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
@@ -589,4 +591,18 @@ public class UnorderedValueTupleComparer : IComparer<(int, int)>, IEqualityCompa
              minCompare == 0 ? Math.Max(x.Item1, x.Item2).CompareTo(Math.Max(y.Item1, y.Item2)) : minCompare;
     }
 
+
+    public static void PrintStateDebug(HexTerrainCell cell)
+    {
+        StringBuilder sb = new();
+        sb.Append($"Debug dump for cell  [{cell.CellCoordsImplicit}]");
+        sb.AppendLine();
+        sb.Append("Cell implicit definition:");
+        sb.AppendLine();
+        sb.Append(cell);
+        sb.AppendLine();
+        sb.Append("Cell processing state");
+        sb.AppendLine();
+        sb.Append($"GeometryMode :{cell.GeometryModesOverride}");
+    } 
 }
