@@ -603,7 +603,7 @@ public class ChunkConformalEditor
     /// Adds the missing triangles to make the chunk triangulation conformal if needed. 
     /// </summary>
     /// <exception cref="InvalidOperationException"></exception>
-    public void StitchEdges()
+    private void StitchEdges()
     {
         //We process the edge requests to find which VERTICES have different requests
         OrderedDictionary<Vector3I,
@@ -964,5 +964,18 @@ public class ChunkConformalEditor
     private static void AppendHSeparator(StringBuilder sb)
     {
         sb.Append("------------------------------------------------------------------------------------").AppendLine();
+    }
+
+    /// <summary>
+    /// This method aims to fix issues with the chunk triangulation if the output is not cell-wise manifold 
+    /// </summary>
+    public void PostProcess()
+    {
+        //TODO : DO it cellwise otherwise the cost may become prohibitive
+        var output = TriangleUtils.ReprocessEdgeGeometry(GetTriangleInfos().SelectMany(res=> res.Value).ToList());
+        if (TriangleUtils.AssertIsClosedManifoldBorder(output.borderEdgesAsSets)) return;
+        //TODO find coplanar triangles with intersections
+        DebugDumpEditorState();
+        StitchEdges();
     }
 }

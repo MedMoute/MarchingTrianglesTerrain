@@ -441,9 +441,10 @@ public class HexagonalTerrainChunk
         //Step 3 : Apply all the operations on triangulations
         editor.ApplyGeometryOperations();
         // Step 1.5 : Stitch edges that need to be fixed
-        editor.StitchEdges();
-        
-        editor.DebugDumpEditorState();
+                
+
+        editor.PostProcess();
+
         //Step 4 : Extract the triangles
         var x =  editor.GetTriangleInfos();
         return x;
