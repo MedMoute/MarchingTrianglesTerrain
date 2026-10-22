@@ -82,16 +82,17 @@ public class TerrainColorMaps(
         return wall1[cellCoords];
     }
 
-    public void SetHeight(Vector3I cell, float yValue)
+    public void SetHeight(Vector3I dataGridPos, float yValue)
     {
-        EnsureRange(cell,parent.Dimensions);
-        parent.DataGrid.Data[cell] = yValue;
+        EnsureRange(dataGridPos,parent.Dimensions);
+        parent.DataGrid.Data[dataGridPos] = yValue;
+        parent.EdgeGraph.UpdateVertexValueInTris(parent.DataGrid.OrientationSystem.GetCellCentroid(dataGridPos),yValue);
     }
     
-    public void SetDualCellGeometryMode(Vector3I cellDataIdx, Vector2I value)
+    public void SetDualCellGeometryMode(Vector3I dataIdx, Vector2I value)
     {
-        EnsureRange(cellDataIdx,parent.Dimensions);
-        foreach (var hexTerrainCell in parent.TerrainDualGrid.CompleteCells.Where(cell=> cell.Visits.ContainsKey(cellDataIdx)))
+        EnsureRange(dataIdx,parent.Dimensions);
+        foreach (var hexTerrainCell in parent.TerrainDualGrid.CompleteCells.Values.Where(cell=> cell.Visits.ContainsKey(dataIdx)))
         {
             hexTerrainCell.GeometryModesOverride = new Tuple<GeometryMode, GeometryMode>((GeometryMode)value.X, (GeometryMode)value.Y);
         }
@@ -100,7 +101,7 @@ public class TerrainColorMaps(
     public void SetDualCellGeometryEditionParameters(Vector3I cellDataIdx, Vector4 parameters)
     {
         EnsureRange(cellDataIdx,parent.Dimensions);
-        foreach (var hexTerrainCell in parent.TerrainDualGrid.CompleteCells.Where(cell=> cell.Visits.ContainsKey(cellDataIdx)))
+        foreach (var hexTerrainCell in parent.TerrainDualGrid.CompleteCells.Values.Where(cell=> cell.Visits.ContainsKey(cellDataIdx)))
         {
             hexTerrainCell.ParametersOverride = ((parameters.X,parameters.Y) ,(parameters.Z,parameters.W));
         }

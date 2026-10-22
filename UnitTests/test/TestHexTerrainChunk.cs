@@ -12,7 +12,7 @@ public class TestHexTerrainChunk
     {
         Assert.DoesNotThrow(() =>
         {
-            var hexTerrainChunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(3, 3), _=>null);
+            var hexTerrainChunk = HexagonalTerrainChunk.NewChunkAtCoordinates(Vector2I.Zero, new Vector2I(3, 3), _=>null);
         });
     }
 
@@ -39,7 +39,7 @@ public class TestHexTerrainChunk
                     foreach (var j in itemOrder2)
                     {
                         var pt = new Vector2I(i, j);
-                        var newChunk = new HexagonalTerrainChunk(
+                        var newChunk = HexagonalTerrainChunk.NewChunkAtCoordinates(
                             pt, 
                             dims,
                             v=>neighborChunkProvider(pt,v));

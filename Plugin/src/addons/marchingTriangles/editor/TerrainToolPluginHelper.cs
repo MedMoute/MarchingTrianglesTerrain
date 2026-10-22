@@ -562,9 +562,9 @@ public class TerrainToolPluginHelper
                     var chunk = terrain.Chunks[chunkCoord];
                     foreach (var drawCellCoords in chunkDataDrawn.Keys)
                     {
-                        var cellCoord = new Vector2I(drawCellCoords.X, drawCellCoords.Y);
+                        var  dataCoord = new Vector2I(drawCellCoords.X, drawCellCoords.Y);
                         var polyIdx = drawCellCoords.Z;
-                        var pos = chunk.Underlying.DataGrid.OrientationSystem.GetCellCentroid(cellCoord, polyIdx);
+                        var pos = chunk.Underlying.DataGrid.OrientationSystem.GetCellCentroid( dataCoord, polyIdx);
 
                         float sample = Mathf.Clamp(chunkDataDrawn[drawCellCoords], 0.001f, 0.999f); // why not 0 - 1 ?
                         Variant? drawValue = 0f;
@@ -604,9 +604,9 @@ public class TerrainToolPluginHelper
                             case TerrainToolMode.TerrainSettings:
                                 break;
                             case TerrainToolMode.GeometryEdit:
-                                var cell = chunk.Underlying.TerrainDualGrid.CompleteCells
+                                var cell = chunk.Underlying.TerrainDualGrid.CompleteCells.Values
                                     .FirstOrDefault(c =>
-                                        c.Visits.ContainsKey(new Vector3I(cellCoord.X, cellCoord.Y, 0)));
+                                        c.Visits.ContainsKey(drawCellCoords));
                                 if (cell is null)
                                 {
                                     restoreValue = null;
@@ -793,15 +793,15 @@ public class TerrainToolPluginHelper
 
         foreach (var stringActionPair in actions)
         {
-            if (!compositeDisabled && patternActionData.TryGetValue(stringActionPair.Key, out var colorData))
+            if (!compositeDisabled && patternActionData.TryGetValue(stringActionPair.Key, out var actionData))
             {
-                foreach (var kvp in colorData)
+                foreach (var kvp in actionData)
                 {
                     terrain.Chunks.TryGetValue(kvp.Key, out var chunk);
                     if (chunk != null)
                     {
                         affectedChunks[chunk.Underlying.Coordinates] = chunk;
-                        foreach (var data in colorData[chunk.Underlying.Coordinates])
+                        foreach (var data in actionData[chunk.Underlying.Coordinates])
                         {
                             stringActionPair.Value.Invoke(
                                 chunk.Underlying.ColorMaps ??
@@ -810,9 +810,14 @@ public class TerrainToolPluginHelper
                                 data.Key,
                                 data.Value);
                         }
+
+                            chunk.Underlying.UpdateFullCellCenterValues(actionData[chunk.Underlying.Coordinates].Keys);
+
                     }
                 }
             }
+
+
         }
         //TODO : Re-freeze the cell;
 

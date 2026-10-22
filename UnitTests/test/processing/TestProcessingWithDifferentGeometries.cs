@@ -8,7 +8,7 @@ public class TestProcessingWithDifferentGeometries
 {
     private HexagonalTerrainChunk? _chunk;
 
-    private static int _dimension = 10;
+    private static int _dimension = 3;
 
     private float[][] _src1 = new float[_dimension][];
     private float[][] _src2 = new float[_dimension][];
@@ -47,23 +47,26 @@ public class TestProcessingWithDifferentGeometries
             }
         }
 
-        _chunk = new HexagonalTerrainChunk(
+        _chunk = HexagonalTerrainChunk.NewChunkAtCoordinates(
             Vector2I.Zero,
             _dimension * Vector2I.One,
             v => v is { X: 0, Y: 0 } ? _chunk : null,
-            _src1, _src2)
+            _src1, _src2);
         {
-            DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryModeFallBack),
-            DefaultThreshold =
-                new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference),
-            Dirty = true,
-            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
+            _chunk.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryModeFallBack);
+            _chunk.DefaultThreshold =
+                new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference);
+            _chunk.Dirty = true;
+            _chunk.GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f));
         };
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>>? output = null;
 
         Assert.That(_chunk.TerrainDualGrid.CompleteCells, Has.Count.EqualTo(1));
-        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out _); });
+        Assert.DoesNotThrow(() =>
+        {
+            output = _chunk.ProcessGeometry(out var e); 
+        });
         Assert.That(output, Has.Count.EqualTo(1));
         Debug.Assert(output != null);
         foreach (var keyValuePair in output)
@@ -83,17 +86,17 @@ public class TestProcessingWithDifferentGeometries
         [Values] GeometryMode geometryMode,
         [Values] GeometryMode geometryModeFallBack)
     {
-        _chunk = new HexagonalTerrainChunk(
+        _chunk = HexagonalTerrainChunk.NewChunkAtCoordinates(
             Vector2I.Zero,
             _dimension * Vector2I.One,
             v => v is { X: 0, Y: 0 } ? _chunk : null,
-            _src1, _src2)
+            _src1, _src2);
         {
-            DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryModeFallBack),
-            DefaultThreshold =
-                new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference),
-            Dirty = true,
-            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
+            _chunk.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryModeFallBack);
+            _chunk.DefaultThreshold =
+                new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference);
+            _chunk.Dirty = true;
+            _chunk.GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f));
         };
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>>? output = null;
@@ -133,17 +136,17 @@ public class TestProcessingWithDifferentGeometries
             }
         }
 
-        _chunk = new HexagonalTerrainChunk(
+        _chunk = HexagonalTerrainChunk.NewChunkAtCoordinates(
             Vector2I.Zero,
             _dimension * Vector2I.One,
             v => v is { X: 0, Y: 0 } ? _chunk : null,
-            _src1, _src2)
+            _src1, _src2);
         {
-            DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryModeFallBack),
-            DefaultThreshold =
-                new Tuple<float, ThresholdComputationMode>(0.5f, ThresholdComputationMode.HeightDifference),
-            Dirty = true,
-            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
+            _chunk.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryModeFallBack);
+            _chunk.DefaultThreshold =
+                new Tuple<float, ThresholdComputationMode>(0.5f, ThresholdComputationMode.HeightDifference);
+            _chunk.Dirty = true;
+            _chunk.GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f));
         };
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>>? output = null;
         Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out _); });

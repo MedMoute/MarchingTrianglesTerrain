@@ -71,10 +71,10 @@ public class HexagonalTerrainChunk
     /// Neighbor-only aware chunk provider.
     /// The coordinates to provide are the offset coordinates.  
     /// </summary>
-    private readonly Func<Vector2I, HexagonalTerrainChunk?> _neighborChunksProvider;
+    private Func<Vector2I, HexagonalTerrainChunk?> _neighborChunksProvider;
 
     /// Helper for computing/interpolating cell colors.
-    private readonly VertexColorHelper _colorHelper;
+    private VertexColorHelper _colorHelper;
 
     /// <summary>
     /// Dirtiness (need to reprocess) flag for the chunk.
@@ -92,7 +92,7 @@ public class HexagonalTerrainChunk
     /// Default geometry mode value 
     /// </summary>
     public Tuple<GeometryMode, GeometryMode>? DefaultGeometryModes { get; set; }
-    
+
     /// <summary>
     /// Default chunk geometry mode parameters 
     /// </summary>
@@ -115,8 +115,40 @@ public class HexagonalTerrainChunk
     /// </summary>
     public int MergeMode { get; set; } = 1;
 
-    public Dictionary<Vector3I, bool> NeedUpdate { get; }
-    
+    public Dictionary<Vector3I, bool> NeedUpdate { get; set; }
+
+    //TEMP
+    private TerrainChunkEdgeGraph _edgeGraph;
+
+    public TerrainChunkEdgeGraph EdgeGraph => _edgeGraph;
+
+    public static HexagonalTerrainChunk NewChunkAtCoordinates(Vector2I chunkCoordinates,
+        Vector2I dimension,
+        Func<Vector2I, HexagonalTerrainChunk?> neighboringChunkDataHandle,
+        float[][]? dataSource = null,
+        float[][]? dataSource2 = null)
+    {
+        var chunk = new HexagonalTerrainChunk(
+            chunkCoordinates,
+            dimension,
+            neighboringChunkDataHandle,
+            dataSource,
+            dataSource2);
+
+        chunk._neighborChunksProvider = neighboringChunkDataHandle;
+        chunk.TerrainDualGrid = HexagonGrid.BuildFromDual(
+            chunk.DataGrid,
+            chunk.Dimensions2D,
+            v => (v == Vector2I.Zero ? chunk : neighboringChunkDataHandle(v))?.DataGrid,
+            v => chunk.ExistingNeighbors.Contains(v));
+        chunk._colorHelper = new VertexColorHelper(neighboringChunkDataHandle);
+        chunk.NeedUpdate = new();
+
+        chunk._edgeGraph = chunk.BuildEdgeAdjacencyGraph();
+        chunk.FillAdjacencyGraphWithSubCellBorders();
+        return chunk;
+    }
+
     /// <summary>
     /// Chunk constructor.
     /// </summary>
@@ -125,7 +157,7 @@ public class HexagonalTerrainChunk
     /// <param name="neighboringChunkDataHandle">Neighbor-only aware chunk provider.</param>
     /// <param name="dataSource">Starting height data for the 0-triangle cells of the triangular tiling</param>
     /// <param name="dataSource2">Starting height data for the 1-triangle cells of the triangular tiling</param>
-    public HexagonalTerrainChunk(Vector2I chunkCoordinates,
+    private HexagonalTerrainChunk(Vector2I chunkCoordinates,
         Vector2I dimension,
         Func<Vector2I, HexagonalTerrainChunk?> neighboringChunkDataHandle,
         float[][]? dataSource = null,
@@ -140,17 +172,81 @@ public class HexagonalTerrainChunk
         var chunkPos = GetChunkGlobalPosition(chunkCoordinates, TerrainSettings.OrientationSystem);
         IRegularUniformFrame terrainFrame = TerrainSettings.OrientationSystem.OffsetBy(chunkPos);
         DataGrid = TriangleGrid.BuildFrom(src1, src2, terrainFrame);
-
-        _neighborChunksProvider = neighboringChunkDataHandle;
-        TerrainDualGrid = HexagonGrid.BuildFromDual(
-            DataGrid,
-            Dimensions2D,
-            v => neighboringChunkDataHandle(v)?.DataGrid,
-            v => ExistingNeighbors.Contains(v));
-        _colorHelper = new VertexColorHelper(neighboringChunkDataHandle);
-        NeedUpdate = new();
-        
     }
+
+
+    /// <summary>
+    /// Edits the chunk's <see cref="TerrainChunkEdgeGraph"/> to add triangulations.
+    /// </summary>
+    /// The triangulations are created so that the first vertex matches a cell center.
+    internal void FillAdjacencyGraphWithSubCellBorders()
+    {
+        //Create the triangulations
+        foreach (var cell in TerrainDualGrid.CompleteCells.Values)
+        {
+            for (int i = 0; i < HexTerrainCell.VertexCount; i++)
+            {
+                var a2D = cell.CenterPosition;
+                var b2D = cell.VertexPositionsInPlane[i];
+                var c2D = cell.VertexPositionsInPlane[EngineUtils.Mod(i + 1, HexTerrainCell.VertexCount)];
+                var a = new Vector3(
+                    (float)a2D.X,
+                    float.IsNaN(cell.AverageHeight) ? float.MaxValue : cell.AverageHeight,
+                    (float)a2D.Y);
+                
+                var b = new Vector3(
+                    (float)b2D.X,
+                    float.IsNaN(cell.GetVertexData!(i)) ? float.MaxValue : cell.GetVertexData!(i),
+                    (float)b2D.Y);
+
+                var c = new Vector3(
+                    (float)c2D.X,
+                    float.IsNaN(cell.GetVertexData!(EngineUtils.Mod(i + 1, HexTerrainCell.VertexCount)))
+                        ? float.MaxValue
+                        : cell.GetVertexData!(EngineUtils.Mod(i + 1, HexTerrainCell.VertexCount)),
+                    (float)c2D.Y);
+
+                var triangle = new Triangulation([a, b, c], false, true);
+                _edgeGraph.AddTriangulationToMap(cell.CellCoordsImplicit, i, triangle);
+                //We set the triangulation for each graph node
+                _edgeGraph.RegisterTriangulationInGraph(cell, i, triangle);
+                
+                // For each triangulation, we create a SubCellBorder for each edge.
+                for (int j = 0; j < 3; j++)
+                {
+                    (int s1, int s2) summits = ComputeCellSummits(i, j);
+                    var subCellBorder = new SubCellBorder(cell, triangle, j, summits);
+
+                    var pos13D = triangle.SourceTriangle[j];
+                    var pos23D = triangle.SourceTriangle[(j + 1) % 3];
+                    var v1 = _edgeGraph.Vertices.First(n => n.Position.IsEqualApprox(new Vector2(pos13D.X, pos13D.Z)));
+                    var v2 = _edgeGraph.Vertices.First(n => n.Position.IsEqualApprox(new Vector2(pos23D.X, pos23D.Z)));
+
+                    var exists = _edgeGraph.TryGetEdge(v1, v2, out var edge);
+                    if (exists && edge != null)
+                    {
+                        edge.AddBorder(subCellBorder);
+                        subCellBorder.SetParentEdge(edge);
+                    }
+                }
+                
+            }
+        }
+
+        return;
+
+        (int s1, int s2) ComputeCellSummits(int sI, int eI)
+        {
+            return eI switch
+            {
+                0 => (-1, sI),
+                1 => (sI, (sI + 1) % 6),
+                2 => ((sI + 1) % 6, -1),
+                _ => throw new NotSupportedException()
+            };
+        }
+    }
+
 
     public HexagonalTerrainChunk? GetNeighborChunk(Vector2I chunk)
     {
@@ -206,17 +302,16 @@ public class HexagonalTerrainChunk
 
     public float GetHeightFromTriCellCoords(Vector3I cellCoords)
     {
+        var offset = HexTerrainCell.GetChunkOffsetForDualCell(_dimension2D, cellCoords);
+        var grid = _neighborChunksProvider(offset)?.DataGrid;
 
-            var offset = HexTerrainCell.GetChunkOffsetForDualCell(_dimension2D, cellCoords);
-            var grid = _neighborChunksProvider(offset)?.DataGrid;
-            
-            if (grid is null)
-            {
-                return 0f;
-            }
+        if (grid is null)
+        {
+            return 0f;
+        }
 
-            var scaledOffset = new Vector3I(offset.X * _dimension2D.X, offset.Y * _dimension2D.Y, 0);
-            return grid.Data[cellCoords + scaledOffset];
+        var scaledOffset = new Vector3I(offset.X * _dimension2D.X, offset.Y * _dimension2D.Y, 0);
+        return grid.Data[cellCoords + scaledOffset];
     }
 
     public Vector2D GetChunkGlobalPosition(Vector2I chunkIndex, IRegularUniformFrame referenceFrame)
@@ -277,7 +372,7 @@ public class HexagonalTerrainChunk
     /// </summary>
     public List<HexTerrainCell> GetHexCells(Func<HexTerrainCell, bool>? predicate = null)
     {
-        var result = new List<HexTerrainCell>(TerrainDualGrid.CompleteCells.Where(predicate ?? (_ => true)));
+        var result = new List<HexTerrainCell>(TerrainDualGrid.CompleteCells.Values.Where(predicate ?? (_ => true)));
         result.AddRange(
             TerrainDualGrid.PendingCells
                 .Where(c => c.Value != null && (predicate?.Invoke(c.Value) ?? true))
@@ -343,6 +438,7 @@ public class HexagonalTerrainChunk
         {
             throw new InvalidOperationException("the chunk provider is not set properly");
         }
+
         HashSet<HexagonalTerrainChunk?> neighbors =
         [
             _neighborChunksProvider.Invoke(Vector2I.Up),
@@ -356,7 +452,7 @@ public class HexagonalTerrainChunk
         ];
 
         var neighborsNotNull = neighbors.Where(c => c != null)
-            .Select(c=>c!)
+            .Select(c => c!)
             .ToHashSet();
 
         HashSet<Vector2I> chunksFlaggedForRebuild = new HashSet<Vector2I>();
@@ -402,16 +498,18 @@ public class HexagonalTerrainChunk
         // Pack two colors in a single channel using half-precision (16 bits)
         //
         var parameters = cell.ParametersOverride ?? GeometryModeParameters;
-        var color1 = (cell.GeometryModesOverride 
+        var color1 = (cell.GeometryModesOverride
                       ?? DefaultGeometryModes
-                      ?? throw new InvalidOperationException("DefaultGeometryModes should have been set")).Item1.GetModePalette()(
-            parameters!.Value.Item1.Item1,
-            parameters.Value.Item1.Item2);
-        var color2 = (cell.GeometryModesOverride 
+                      ?? throw new InvalidOperationException("DefaultGeometryModes should have been set")).Item1
+            .GetModePalette()(
+                parameters!.Value.Item1.Item1,
+                parameters.Value.Item1.Item2);
+        var color2 = (cell.GeometryModesOverride
                       ?? DefaultGeometryModes
-                      ?? throw new InvalidOperationException("DefaultGeometryModes should have been set")).Item2.GetModePalette()(
-            parameters.Value.Item2.Item1,
-            parameters.Value.Item2.Item2);
+                      ?? throw new InvalidOperationException("DefaultGeometryModes should have been set")).Item2
+            .GetModePalette()(
+                parameters.Value.Item2.Item1,
+                parameters.Value.Item2.Item2);
 
         var bytesR = BitConverter.GetBytes((Half)color1.R).Concat(BitConverter.GetBytes((Half)color2.R)).ToArray();
         var bytesG = BitConverter.GetBytes((Half)color1.G).Concat(BitConverter.GetBytes((Half)color2.G)).ToArray();
@@ -429,9 +527,10 @@ public class HexagonalTerrainChunk
         data.Floor.Add(cell.FloorMode);
     }
 
-    public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> ProcessGeometry(out ChunkConformalEditor editor)
+    public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> ProcessGeometry(
+        out ChunkConformalEditor editor, bool forcePrintOutput = false)
     {
-        editor = new ChunkConformalEditor(this);
+        editor = new ChunkConformalEditor(_edgeGraph);
         //Step 1 : Collect all the required operations
         editor.CollectAllOperationsRequests();
         editor.CollectBorderOperationRequests();
@@ -441,13 +540,57 @@ public class HexagonalTerrainChunk
         //Step 3 : Apply all the operations on triangulations
         editor.ApplyGeometryOperations();
         // Step 1.5 : Stitch edges that need to be fixed
-                
-
         editor.PostProcess();
 
         //Step 4 : Extract the triangles
-        var x =  editor.GetTriangleInfos();
+        var x = editor.GetTriangleInfos();
         return x;
+    }
+
+    private TerrainChunkEdgeGraph BuildEdgeAdjacencyGraph()
+    {
+        var graph = new TerrainChunkEdgeGraph(this);
+
+        //Create all the GraphNodes : 
+        var nodes = new List<EdgeGraphNode>();
+        var cellCenters = new Dictionary<Vector2I, CellCenterPoint>();
+        var cellSummits = new Dictionary<Vector3I, CellSummitPoint>();
+        foreach (var vertexAndData in DataGrid.Data) //Add the data points
+        {
+            var cellSummit = new CellSummitPoint(DataGrid, vertexAndData.Key);
+            nodes.Add(cellSummit);
+            cellSummits.Add(vertexAndData.Key, cellSummit);
+        }
+
+        foreach (var fullCell in TerrainDualGrid.CompleteCells.Values) //Add the cell centers
+        {
+            var idx = fullCell.CellCoordsImplicit;
+            var cellCenter = new CellCenterPoint(fullCell);
+
+            nodes.Add(cellCenter);
+            cellCenters.Add(idx, cellCenter);
+        }
+
+        var edges = ChunkTerrainEdge.BuildEdgesFromChunkAndNodes(this, cellSummits, cellCenters);
+
+        foreach (var terrainEdge in edges)
+        {
+            var added = graph.AddVertex(terrainEdge.Source);
+            if (added) graph.AddNodeToMap(terrainEdge.Source.Position, terrainEdge.Source);
+            added = graph.AddVertex(terrainEdge.Target);
+            if (added) graph.AddNodeToMap(terrainEdge.Target.Position, terrainEdge.Target);
+
+            if (graph.Edges.Any(edge => terrainEdge.Equals(edge))) continue;
+            graph.AddEdge(terrainEdge);
+        }
+
+        return graph;
+    }
+
+    //
+    public void UpdateFullCellCenterValues(ICollection<Vector3I> dataIndexes)
+    {
+        _edgeGraph.UpdateCellCenterValuesInTris(dataIndexes);
     }
 }
 
@@ -505,13 +648,14 @@ public static class GeometryModeExtensions
     /// </summary>
     private const float SaturationMargin = 0.3f;
 
-    public static bool SupportsParameter(this GeometryMode gMode,int parameterIdx)
+    public static bool SupportsParameter(this GeometryMode gMode, int parameterIdx)
     {
         bool supportsParameter;
         if (parameterIdx >= 2)
         {
             throw new NotSupportedException();
         }
+
         switch (gMode)
 
         {
@@ -530,19 +674,21 @@ public static class GeometryModeExtensions
             default:
                 throw new NotSupportedException();
         }
+
         return supportsParameter;
     }
-    
-    public static GeometryModeActions.ModeProcessor Processor(this GeometryMode gMode){
+
+    public static GeometryModeActions.ModeProcessor Processor(this GeometryMode gMode)
+    {
         switch (gMode)
         {
             case GeometryMode.FlatHexagons:
                 return FlatHexagons.Processor;
             case GeometryMode.FlatTriangles:
                 return FlatTriangles.Processor;
-            case GeometryMode.BendingEdge :
+            case GeometryMode.BendingEdge:
                 return BendingEdge.Processor;
-            case  GeometryMode.Foothill:
+            case GeometryMode.Foothill:
                 return Foothill.Processor;
             case GeometryMode.Plateau:
                 return Plateau.Processor;
@@ -554,9 +700,9 @@ public static class GeometryModeExtensions
                 return FlatTrianglesNoFan.Processor;
             default:
                 throw new NotSupportedException();
-        } 
+        }
     }
-    
+
     /// <summary>
     /// Returns the palette method (a double parameterized float function)
     /// for a given GeometryMode.
@@ -588,7 +734,7 @@ public static class GeometryModeExtensions
         var vMid = v(sDefault, lMid);
         // Parameter #1 handling
         bool supportsParameter1 = SupportsParameter(gMode, 0);
-        bool supportsParameter2 = SupportsParameter(gMode,1);
+        bool supportsParameter2 = SupportsParameter(gMode, 1);
 
         if (supportsParameter2)
         {

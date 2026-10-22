@@ -659,7 +659,7 @@ public abstract class MttDataHandler
         dataStruct.FullCellVisitsMappingValueAsV2I = new int[6 * dataStruct.FullCellIndicesAsV2I.Length * 3];
 
         int cursor = 0;
-        foreach (var hexTerrainCell in chunk.TerrainDualGrid.CompleteCells)
+        foreach (var hexTerrainCell in chunk.TerrainDualGrid.CompleteCells.Values)
         {
             dataStruct.FullCellIndicesAsV2I[2 * cursor] = hexTerrainCell.CellCoordsImplicit.X;
             dataStruct.FullCellIndicesAsV2I[2 * cursor + 1] = hexTerrainCell.CellCoordsImplicit.Y;
@@ -892,7 +892,7 @@ public abstract class MttDataHandler
                     v => terrain.NeighborChunkProviderProvider(coords, v)!.DataGrid,
                     v => terrain.Chunks[coords].Underlying.ExistingNeighbors.Contains(v));
             }
-            foreach (var hexTerrainCell in terrain.Chunks[coords].Underlying.TerrainDualGrid.CompleteCells)
+            foreach (var hexTerrainCell in terrain.Chunks[coords].Underlying.TerrainDualGrid.CompleteCells.Values)
             {
                 hexTerrainCell.SetDataFetchingFunction(terrain.TerrainSettings.ChunkDimensions,
                     v => terrain.NeighborChunkProviderProvider(coords, v)!.DataGrid,

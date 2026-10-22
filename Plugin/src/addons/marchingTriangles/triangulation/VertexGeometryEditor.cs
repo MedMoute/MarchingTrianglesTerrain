@@ -6,6 +6,8 @@ using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
+public record GeometryEditionRequest(GeometryMode mode, float param1, float param2);
+
 public class VertexGeometryEditor
 {
     private readonly Dictionary<ITriangulationEditAction<int>, Triangulation> _actionToTriangulationHandle = new();
@@ -13,7 +15,7 @@ public class VertexGeometryEditor
     private readonly List<ITriangulationEditAction<int>> _actions = new();
 
 
-    public void RegisterAction(ITriangulationEditAction<int> action, Triangulation triangulation)
+    internal void RegisterAction(ITriangulationEditAction<int> action, Triangulation triangulation)
     {
         _actionToTriangulationHandle.Add(action, triangulation);
         _actions.Add(action);
@@ -109,7 +111,7 @@ public class VertexGeometryEditor
             RegisterLocalVertexAction(cell, edge.end, triangulation, endVertexIdx, neighborCells, effectiveEdgeAction);
         }
 
-        RegisterLocalEdgeAction(cell, edge, triangulation, edgeIdx, neighborCells, effectiveEdgeAction);
+        RegisterLocalEdgeAction(cell, edge, triangulation, edgeIdx, [.. neighborCells.Where(c => c != cell)], effectiveEdgeAction);
     }
 
     public static int GetEdgeStartVertexIndex(

@@ -43,44 +43,12 @@ public class FlatTriangles : GeometryModeActions.ModeProcessor
         //offset : when processing the vertex 2, we're on the second edge
         //so we apply a -1 offset to get the correct index
         var pInit = tri.SourceTriangle[edgeIdx];
-
+        
         Debug.Assert(cell.GetEdgeAvgHeight != null);
         var height = cell.GetEdgeAvgHeight(heightIndex);
-        //Console.WriteLine($"[Triangles] Move T[#{tri.Id};{edgeIdx}]=>{height}");
-
+        
         var action = new MovePointAlongYAxisAction(edgeIdx, height);
         editor.RegisterAction(action, tri);
-
-        if (edgeIdx != 1) //The action is on an internal edge of the cell, we essentially do
-            //the same thing except we don't need to find either the index
-            //(0=> VertexInHtCellIdx-1; 2=>VertexInHtCellIdx-1), or  the cell
-        {
-            height = edgeIdx == 0
-                ? cell.GetEdgeAvgHeight(EngineUtils.Mod(heightIndex - 1, HexTerrainCell.VertexCount))
-                : cell.GetEdgeAvgHeight(EngineUtils.Mod(heightIndex + 1, HexTerrainCell.VertexCount));
-
-            var newPointPos = new Vector3(pInit.X, height, pInit.Z);
-            editor.RegisterAction(
-                new AddTrianglesOnBorderEdge(edgeIdx, newPointPos),
-                tri);
-            //Console.WriteLine($"[Triangles] Add Tri [#{tri.Id};{edgeIdx}]=>@{newPointPos}");
-        }
-        else // External edge : same behavior as FlatHexagons 
-        {
-            if (neighborCells.Count != 0)
-            {
-                var otherCell = neighborCells.First();
-                var hOtherCell =
-                    otherCell.GetEdgeAvgHeight!(EngineUtils.Mod(heightIndex + 3, HexTerrainCell.VertexCount));
-                
-                var newPointPos = new Vector3(pInit.X, hOtherCell, pInit.Z);
-
-                //Console.WriteLine($"[Triangles] Add Tri [#{tri.Id};{edgeIdx}]=>@{newPointPos}");
-
-                editor.RegisterAction(
-                    new AddTrianglesOnBorderEdge(edgeIdx, newPointPos),
-                    tri);
-            }
-        }
+        
     }
 }

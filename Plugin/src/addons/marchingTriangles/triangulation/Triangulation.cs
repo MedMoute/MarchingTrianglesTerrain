@@ -69,6 +69,13 @@ public class Triangulation
     };
 
 
+    /// <summary>
+    /// Default constructor.
+    /// </summary>
+    /// <param name="triangle">the initial positions of the triangle vertex</param>
+    /// <param name="verbose"></param>
+    /// <param name="extensiveVerification"></param>
+    /// <exception cref="ArgumentException"></exception>
     public Triangulation(
         Vector3[] triangle,
         bool verbose = false,

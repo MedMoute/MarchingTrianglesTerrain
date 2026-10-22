@@ -70,6 +70,8 @@ public class DoubleDeltaTileOrientationSystem : IRegularUniformFrame
     private Matrix<double> _transformInverseSquare;
     private Vector<double> _transformInverseOffset;
 
+    public static int polygonCount = 2;
+    
     public int PolygonCount => 2;
 
     /// <summary>

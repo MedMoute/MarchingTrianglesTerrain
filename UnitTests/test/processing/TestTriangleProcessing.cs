@@ -50,24 +50,29 @@ public class TestTriangleProcessing
             }
         }
 
-        _chunk = new HexagonalTerrainChunk(
+
+        _chunk = HexagonalTerrainChunk.NewChunkAtCoordinates(
             Vector2I.Zero,
             _dimension * Vector2I.One,
-            v => v is { X: 0, Y: 0 } ? _chunk : null,
-            _src1, _src2)
-        {
-            DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode),
-            DefaultThreshold =
-                new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference),
-            Dirty = true,
-            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
-        };
+            _ => null,
+            _src1, _src2);
+
+        _chunk.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode);
+        _chunk.DefaultThreshold =
+            new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference);
+        _chunk.Dirty = true;
+        _chunk.GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f));
+
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
 
         Assert.That(_chunk.TerrainDualGrid.CompleteCells, Has.Count.EqualTo(1));
 
-        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out var editor); });
+        Assert.DoesNotThrow(() =>
+        {
+            output = _chunk.ProcessGeometry(out var editor);
+            editor.DebugDumpEditorState(true);
+        });
 
 
         //Per cell manifold checks
@@ -136,48 +141,48 @@ public class TestTriangleProcessing
         _dimension = 2;
         _src1 = new float[_dimension][];
         _src2 = new float[_dimension][];
-        
-        _chunk = new HexagonalTerrainChunk(
+
+        _chunk = HexagonalTerrainChunk.NewChunkAtCoordinates(
             Vector2I.Zero,
             _dimension * Vector2I.One,
-            v => v is { X: 0, Y: 0 } ? _chunk : null,
-            _src1, _src2)
+            _ => null,
+            _src1, _src2);
         {
-            DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode),
-            DefaultThreshold =
-                new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference),
-            Dirty = true,
-            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
-        };
+            _chunk.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode);
+            _chunk.DefaultThreshold =
+                new Tuple<float, ThresholdComputationMode>(1f, ThresholdComputationMode.HeightDifference);
+            _chunk.Dirty = true;
+            _chunk.GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f));
+        }
+        
 
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> output = new();
 
         Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out var editor); });
 
-            int expectedCount;
-            switch (geometryMode)
-            {
-                case GeometryMode.FlatTrianglesNoFans:
-                case GeometryMode.FlatHexagons:
-                case GeometryMode.FlatTriangles:
-                case GeometryMode.FlatHexagonsNoFans:
-                case GeometryMode.SmoothLinear:
-                    expectedCount = 6;
-                    break;
-                case GeometryMode.Foothill:
-                case GeometryMode.Plateau:
-                    expectedCount = 6 + 12;
-                    break;
-                case GeometryMode.BendingEdge:
-                    expectedCount = 6 + 12 + 12;
-                    break;
-                default: throw new NotSupportedException();
-            }
+        int expectedCount;
+        switch (geometryMode)
+        {
+            case GeometryMode.FlatTrianglesNoFans:
+            case GeometryMode.FlatHexagons:
+            case GeometryMode.FlatTriangles:
+            case GeometryMode.FlatHexagonsNoFans:
+            case GeometryMode.SmoothLinear:
+                expectedCount = 6;
+                break;
+            case GeometryMode.Foothill:
+            case GeometryMode.Plateau:
+                expectedCount = 6 + 12;
+                break;
+            case GeometryMode.BendingEdge:
+                expectedCount = 6 + 12 + 12;
+                break;
+            default: throw new NotSupportedException();
+        }
+
         //Per cell manifold checks
         foreach (var keyValuePair in output)
         {
-
-
             Assert.That(keyValuePair.Value, Has.Count.EqualTo(expectedCount));
         }
 
@@ -205,27 +210,35 @@ public class TestTriangleProcessing
             }
         }
 
-        _chunk = new HexagonalTerrainChunk(
+        _chunk = HexagonalTerrainChunk.NewChunkAtCoordinates(
             Vector2I.Zero,
             _dimension * Vector2I.One,
-            v => v is { X: 0, Y: 0 } ? _chunk : null,
-            _src1, _src2)
+            v =>
+            {
+                HexagonalTerrainChunk? GetChunk() => _chunk;
+
+                return v is { X: 0, Y: 0 } ? GetChunk() : null;
+            },
+            _src1, _src2);
+
+        _chunk.DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode);
+        _chunk.DefaultThreshold =
+            new Tuple<float, ThresholdComputationMode>(0.5f, ThresholdComputationMode.HeightDifference);
+        _chunk.Dirty = true;
+        _chunk.GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f));
+
+
+        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>>? output = null;
+        Assert.DoesNotThrow(() =>
         {
-            DefaultGeometryModes = new Tuple<GeometryMode, GeometryMode>(geometryMode, geometryMode),
-            DefaultThreshold =
-                new Tuple<float, ThresholdComputationMode>(0.5f, ThresholdComputationMode.HeightDifference),
-            Dirty = true,
-            GeometryModeParameters = ((0.4f, 0.4f), (0.4f, 0.4f))
-        };
+            output = _chunk.ProcessGeometry(out var editor);
+      //      editor.DebugDumpEditorState(true);
+        });
 
-        Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>>? output=null;
-        Assert.DoesNotThrow(() => { output = _chunk.ProcessGeometry(out var editor); });
-
-        Debug.Assert(output!=null);
+        Debug.Assert(output != null);
         //Per cell manifold and value checks
         foreach (var keyValuePair in output)
         {
-
             var curCell = keyValuePair.Key;
             var triangulation = keyValuePair.Value;
             //Extra checks depending on the selected mode
@@ -265,8 +278,8 @@ public class TestTriangleProcessing
                         .All(p => p.Y.AlmostEqual(tri.Points[0].Y))), Is.EqualTo(6));
                     break;
             }
-            TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
 
+            TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
         }
 
         //Global checks

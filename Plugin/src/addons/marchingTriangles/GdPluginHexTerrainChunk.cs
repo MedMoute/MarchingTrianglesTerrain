@@ -40,7 +40,7 @@ public partial class GdPluginHexTerrainChunk : MeshInstance3D
         float[][]? dataSource = null,
         float[][]? dataSource2 = null)
     {
-        Underlying = new HexagonalTerrainChunk(
+        Underlying = HexagonalTerrainChunk.NewChunkAtCoordinates(
             chunkIndex,
             dimension,
             neighboringChunkDataHandle,

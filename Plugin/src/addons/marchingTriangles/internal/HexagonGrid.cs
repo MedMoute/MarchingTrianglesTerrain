@@ -15,7 +15,7 @@ public class HexagonGrid
 
     public Dictionary<Vector2I, HexTerrainCell> PendingCells { get; } = new();
 
-    public HashSet<HexTerrainCell> CompleteCells = new();
+    public Dictionary<Vector2I,HexTerrainCell> CompleteCells = new();
 
     private readonly IRegularUniformFrame _dualFrame;
 
@@ -92,7 +92,7 @@ public class HexagonGrid
 
             if (cell.IsReady())
             {
-                CompleteCells.Add(cell);
+                CompleteCells.Add(cell.CellCoordsImplicit,cell);
                 PendingCells.Remove(cellCoords);
             }
         }
@@ -171,7 +171,7 @@ public class HexagonGrid
         );
         IRegularUniformFrame dualFrame = frame.GetDual();
         HexagonGrid grid = new HexagonGrid(frame, dualFrame);
-        grid.CompleteCells = new HashSet<HexTerrainCell>();
+        grid.CompleteCells = new Dictionary<Vector2I, HexTerrainCell>();
         for (int i = 0; i < dataStructFullCellIndices.Length / 2; i++)
         {
             Vector2I fulCellIndex = new Vector2I(
@@ -195,7 +195,7 @@ public class HexagonGrid
                 cell.Visits.Add(cellMappingKey, cellMappingValue);
             }
 
-            grid.CompleteCells.Add(cell);
+            grid.CompleteCells.Add(cell.CellCoordsImplicit,cell);
         }
 
         for (int i = 0; i < dataStructPendingCellIndices.Length / 2; i++)

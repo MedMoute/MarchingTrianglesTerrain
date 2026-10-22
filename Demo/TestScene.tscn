@@ -1,3 +1,11 @@
 [gd_scene format=3 uid="uid://betoa8a8g0wjk"]
 
+[ext_resource type="Script" uid="uid://cgso4gk7o0ek3" path="res://addons/marchingTriangles/MarchingTrianglesTerrain.cs" id="1_mncer"]
+
 [node name="TestScene" type="Node3D" unique_id=1319442563]
+
+[node name="MarchingTrianglesTerrain" type="Node3D" parent="." unique_id=1227808545]
+script = ExtResource("1_mncer")
+DataDirectory = "res://TestScene_TerrainData/MarchingTrianglesTerrain_ac776058-fec5-4b38-8003-f5d81c87f06e"
+StorageInitialized = true
+metadata/_custom_type_script = "uid://cgso4gk7o0ek3"

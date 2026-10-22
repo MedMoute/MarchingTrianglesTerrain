@@ -45,15 +45,15 @@ public class Plateau : GeometryModeActions.ModeProcessor
 
         var p1 = tri.Vertices[edgeIdx];
         var p2 = tri.Vertices[EngineUtils.Mod(edgeIdx + 1, 3)];
-
-        var invert = GeometryModeActions.IsEdgeOrdered(cell, edge, tri, edgeIdx);
+        
+        if (edgeIdx == 1) return;
+        
+        var invert = edgeIdx==2;
+        
         var value = invert
             ? Mathf.Lerp(p2.Y, p1.Y, parameters.Item2)
             : Mathf.Lerp(p1.Y, p2.Y, parameters.Item2);
-        var weight = invert ? parameters.Item1 : 1 - parameters.Item1;
-
-        if (edgeIdx == 1) return;
-        
+        var weight = invert ? parameters.Item1 : 1 - parameters.Item1;     
         editor.RegisterAction(new ComposedTriangularEditAction(triangulation =>
             {
                 var newPt = new SplitSubEdgeAction(

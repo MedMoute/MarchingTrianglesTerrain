@@ -175,7 +175,7 @@ public class TestSaveActions
     [GdUnit4.TestCase]
     public void TestCanWriteStructureToFile()
     {
-        var chunk = new HexagonalTerrainChunk(Vector2I.Zero, new Vector2I(10, 10), _ => null);
+        var chunk = HexagonalTerrainChunk.NewChunkAtCoordinates(Vector2I.Zero, new Vector2I(10, 10), _ => null);
         var dataStructImpl = new ChunkDataStructImpl();
         MttDataHandler.FillDataStructFromChunk(dataStructImpl, chunk);
         var facade = new DelegatedChunkDataStruct(dataStructImpl);

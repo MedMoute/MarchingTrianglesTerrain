@@ -142,7 +142,7 @@ public static class TriangleUtils
         {
             var action = new PolygonFillerAction(curEdge, neighborEdge, edgeIndex);
             cellVertexEditor.RegisterAction(action, triangulation);
-            cellVertexEditor.ApplyTransformations(typeof(PolygonFillerAction)); //TODO move to later
+            cellVertexEditor.ApplyTransformations(typeof(PolygonFillerAction));
         }
         else if (curEdgeCrossingPoints.Count <= 2 && neighborEdgeCrossingPoints.Count <= 2)
         {
@@ -156,7 +156,7 @@ public static class TriangleUtils
                 if (weight is > 0 and < 1)
                 {
                     var action = new SplitSubEdgeAction(edgeIndex, subEdge.Item1, subEdge.Item2, weight);
-                    //cellVertexEditor.RegisterAction(action, triangulation);
+                    cellVertexEditor.RegisterAction(action, triangulation);
                     action.Apply(triangulation);
                 }
             }
@@ -171,7 +171,7 @@ public static class TriangleUtils
                 if (weight is > 0 and < 1)
                 {
                     var action = new SplitSubEdgeAction(neighborEdgeIndex, subEdge.Item1, subEdge.Item2, weight);
-                    //neighborCellVertexEditor.RegisterAction(action, otherTriangulation);
+                    neighborCellVertexEditor.RegisterAction(action, otherTriangulation);
                     action.Apply(otherTriangulation);
                 }
             }
@@ -179,7 +179,7 @@ public static class TriangleUtils
             //We recompute the edges after the required splits have occured
             curEdge = ChunkConformalEditor.ExplicitEdge(triangulation.Edges[edgeIndex], triangulation);
             neighborEdge =
-                ChunkConformalEditor.ExplicitEdge(otherTriangulation.Edges[neighborEdgeIndex], otherTriangulation);
+                ChunkConformalEditor.ExplicitEdge(triangulation.Edges[neighborEdgeIndex], otherTriangulation);
 
             var fillAction = new DegeneratePolygonFillerAction(curEdge, edgeIndex, neighborEdge, curEdgeCrossingPoints);
             cellVertexEditor.RegisterAction(fillAction, triangulation);
@@ -326,13 +326,15 @@ public static class TriangleUtils
         // {
         //     Console.WriteLine(set.Stringify());
         // }
+        /*
         var eulerCharacteristic = vertexSet.Count - dico.Count + outputTriangles.Count;
+
 
         if (eulerCharacteristic != 1)
         {
             Console.WriteLine("WARNING : Euler characteristic is not one of a closed loop (got " + eulerCharacteristic +
                               " instead).");
-        }
+        }*/
 
         // Checks on border edges sets : 
         // On the manifold border set
@@ -372,12 +374,12 @@ public static class TriangleUtils
                 .Select(kvp => kvp.Index) // Get index
                 .ToList(); // Output as list
 
-            if (v1.Count > 1)
+            /*if (v1.Count > 1)
             {
                 Console.WriteLine(
                     $"Vertex {new Vector3(e[0], e[1], e[2])} is present {v1.Count} times in the vertex set." +
                     $" Expected a single occurence, got {String.Join(",", v1)}");
-            }
+            }*/
 
             if (v1.Count == 0)
             {

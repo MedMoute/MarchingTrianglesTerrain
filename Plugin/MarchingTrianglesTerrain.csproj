@@ -14,6 +14,7 @@
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12"/>
         <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12"/>
+        <PackageReference Include="QuikGraph" Version="2.5.0" />
     </ItemGroup>
 
 </Project>

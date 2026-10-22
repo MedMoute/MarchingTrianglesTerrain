@@ -26,7 +26,7 @@ public class TestHexCells
                 v => v is { X: 0, Y: 0 } ? terrainHeightMap : null,
                 v=>v is { X: 0, Y: 0 });
 
-            HexTerrainCell cell = terrainDualGrid.CompleteCells.First();
+            HexTerrainCell cell = terrainDualGrid.CompleteCells.Values.First();
 
             Assert.That(() => cell.CellCoordsImplicit, Is.EqualTo(Vector2I.Down));
             for (int i = 0; i < HexTerrainCell.VertexCount; i++)
