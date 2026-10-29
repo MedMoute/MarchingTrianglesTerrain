@@ -4,24 +4,20 @@ using Godot;
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
 /// <summary>
-/// The extremity of an edge (can be seen as a segment endpoint)
+/// The extremity of an edge (can be seen as a segment endpoint) within a subCell.
+/// An edge extremity can be assimilated to a (vertex,direction) tuple within a triangulation.
 /// </summary>
 public class EdgeExtremity
 {
     /// <summary>
     /// The edge graph node (i.e. vertex) this extremity leads to.
     /// </summary>
-    public EdgeGraphNode Node { get; init; }
+    public ChunkTerrainNode Node { get; init; }
 
     /// <summary>
     /// The representation of the edge extremity as a cell summit.
     /// </summary>
     public int CellSummitIndex { get; init; }
-
-    /// <summary>
-    /// The other cell summit of the edge this extrezmity is part of.
-    /// </summary>
-    public int OtherCellSummitIndex { get; init; }
 
     public Vector2I CellIndex { get; init; }
 
@@ -44,21 +40,30 @@ public class EdgeExtremity
         }
     }
 
-    public int IndexInTriangulation { get; set; }
+    private int? _indexInTriangulation;
 
-    private ChunkTerrainEdge _parent;
+    public int? IndexInTriangulation     {
+        get => _indexInTriangulation;
 
+        set
+        {
+            if (_indexInTriangulation == value || _indexInTriangulation is null && value != null)
+            {
+                _indexInTriangulation = value;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+    }
+    
 
-    public EdgeExtremity(EdgeGraphNode node, Vector2I cellIndex, int selfCellSummitIndex, int otherCellSummitIndex)
+    public EdgeExtremity(ChunkTerrainNode node, Vector2I cellIndex, int selfCellSummitIndex)
     {
         Node = node;
         CellSummitIndex = selfCellSummitIndex;
-        OtherCellSummitIndex = otherCellSummitIndex;
         CellIndex = cellIndex;
     }
-
-    public void SetParent(ChunkTerrainEdge edge)
-    {
-        _parent = edge;
-    }
+    
 }

@@ -10,16 +10,68 @@ using QuikGraph;
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 
 /// <summary>
-/// Representation of the graph of edges' bidirectional adjacency within a terrain chunk.
+/// Representation of a terrain chunk as an undirected graph.
+/// Nodes of the graph are cell summits (including the center point),
+/// while the graph edges are sub-cell edges (e.g. triangulation "sides")
 /// </summary>
-public class TerrainChunkEdgeGraph : UndirectedGraph<EdgeGraphNode, ChunkTerrainEdge>
+/// This graph is a layered abstraction between the conformal mesh of the terrain and
+/// the Dual Grids of the chunk.
+public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainEdge>
 {
     public HexagonalTerrainChunk Chunk { get; }
 
-    private readonly Dictionary<Vector2I, Triangulation?[]?> _triangulationsMap = new();
-    private readonly Dictionary<Vector2, EdgeGraphNode> _edgeGraphNodesMapByPosition = new();
+    public record TriangulationVertex(int TriId, int[] TeIds, int Idx)
+    {
+        public int Id => _id;
 
-    public TerrainChunkEdgeGraph(HexagonalTerrainChunk parent)
+        private readonly int _id = GetId();
+
+        private static int _counter;
+
+        private static int GetId()
+        {
+            var id = _counter;
+            _counter++;
+            return id;
+        }
+    }
+
+    public record TriangulationEdge(int TriId, int[] TriVIds, int EdgeIdx)
+    {
+        public int Id => _id;
+
+        private readonly int _id = GetId();
+
+        private static int _counter;
+
+        private static int GetId()
+        {
+            var id = _counter;
+            _counter++;
+            return id;
+        }
+    }
+
+    public struct GraphTriangulation
+    {
+        public int TriId;
+        public (int, int, int) TriVertices;
+        public (int, int, int) TriEdges;
+    }
+
+    public Dictionary<int, TriangulationVertex> TriangulationVerticesById = new();
+    public Dictionary<int, GraphTriangulation> GraphTriangulationsById = new();
+    public Dictionary<int, TriangulationEdge> TriangulationsEdgesById = new();
+    public Dictionary<int, Triangulation> TriangulationsById = new();
+
+    private readonly Dictionary<Vector2I, Triangulation?[]?> _triangulationsMap = new();
+    private readonly Dictionary<Vector2, ChunkTerrainNode> _edgeGraphNodesMapByPosition = new();
+
+    /// <summary>
+    /// Public constructor. This only builds the instance and does not populate the graph
+    /// </summary>
+    /// <param name="parent"></param>
+    public TerrainChunkGraph(HexagonalTerrainChunk parent)
     {
         Chunk = parent;
     }
@@ -42,7 +94,7 @@ public class TerrainChunkEdgeGraph : UndirectedGraph<EdgeGraphNode, ChunkTerrain
         }
     }
 
-    public void AddNodeToMap(Vector2 point, EdgeGraphNode node)
+    public void AddNodeToMap(Vector2 point, ChunkTerrainNode node)
     {
         if (!_edgeGraphNodesMapByPosition.TryGetValue(point, out var existingNode))
         {
@@ -193,7 +245,7 @@ public class TerrainChunkEdgeGraph : UndirectedGraph<EdgeGraphNode, ChunkTerrain
             {
                 if (ee.Value.CellIndex != cell.CellCoordsImplicit) continue;
                 //We are in the same cell
-                if (ee.Value.OtherCellSummitIndex != cellSummit && ee.Value.CellSummitIndex !=cellSummit) continue;
+                if (ee.Value.OtherCellSummitIndex != cellSummit && ee.Value.CellSummitIndex != cellSummit) continue;
                 //We are touching the provided cell summit
                 var otherIndex = ee.Value.OtherCellSummitIndex;
                 var posOther = otherIndex == -1
@@ -207,6 +259,7 @@ public class TerrainChunkEdgeGraph : UndirectedGraph<EdgeGraphNode, ChunkTerrain
                 {
                     throw new InvalidOperationException();
                 }
+
                 int triIdx = idxSelf;
                 ee.Value.Triangulation = triangle;
                 ee.Value.IndexInTriangulation = triIdx;

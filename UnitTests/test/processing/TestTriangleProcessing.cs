@@ -112,7 +112,7 @@ public class TestTriangleProcessing
 
                     break;
                 case GeometryMode.FlatTriangles:
-                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6 + 12));
+                    Assert.That(keyValuePair.Value, Has.Count.EqualTo(6));
                     TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
                     break;
             }

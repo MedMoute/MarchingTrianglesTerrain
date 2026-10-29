@@ -86,7 +86,7 @@ public class TerrainColorMaps(
     {
         EnsureRange(dataGridPos,parent.Dimensions);
         parent.DataGrid.Data[dataGridPos] = yValue;
-        parent.EdgeGraph.UpdateVertexValueInTris(parent.DataGrid.OrientationSystem.GetCellCentroid(dataGridPos),yValue);
+        parent.Graph.UpdateVertexValueInTris(parent.DataGrid.OrientationSystem.GetCellCentroid(dataGridPos),yValue);
     }
     
     public void SetDualCellGeometryMode(Vector3I dataIdx, Vector2I value)

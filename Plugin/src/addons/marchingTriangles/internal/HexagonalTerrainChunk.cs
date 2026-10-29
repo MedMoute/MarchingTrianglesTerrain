@@ -118,9 +118,9 @@ public class HexagonalTerrainChunk
     public Dictionary<Vector3I, bool> NeedUpdate { get; set; }
 
     //TEMP
-    private TerrainChunkEdgeGraph _edgeGraph;
+    private TerrainChunkGraph _graph;
 
-    public TerrainChunkEdgeGraph EdgeGraph => _edgeGraph;
+    public TerrainChunkGraph Graph => _graph;
 
     public static HexagonalTerrainChunk NewChunkAtCoordinates(Vector2I chunkCoordinates,
         Vector2I dimension,
@@ -144,7 +144,7 @@ public class HexagonalTerrainChunk
         chunk._colorHelper = new VertexColorHelper(neighboringChunkDataHandle);
         chunk.NeedUpdate = new();
 
-        chunk._edgeGraph = chunk.BuildEdgeAdjacencyGraph();
+        chunk._graph = chunk.BuildEdgeAdjacencyGraph();
         chunk.FillAdjacencyGraphWithSubCellBorders();
         return chunk;
     }
@@ -176,7 +176,7 @@ public class HexagonalTerrainChunk
 
 
     /// <summary>
-    /// Edits the chunk's <see cref="TerrainChunkEdgeGraph"/> to add triangulations.
+    /// Edits the chunk's <see cref="TerrainChunkGraph"/> to add triangulations.
     /// </summary>
     /// The triangulations are created so that the first vertex matches a cell center.
     internal void FillAdjacencyGraphWithSubCellBorders()
@@ -207,9 +207,9 @@ public class HexagonalTerrainChunk
                     (float)c2D.Y);
 
                 var triangle = new Triangulation([a, b, c], false, true);
-                _edgeGraph.AddTriangulationToMap(cell.CellCoordsImplicit, i, triangle);
+                _graph.AddTriangulationToMap(cell.CellCoordsImplicit, i, triangle);
                 //We set the triangulation for each graph node
-                _edgeGraph.RegisterTriangulationInGraph(cell, i, triangle);
+                _graph.RegisterTriangulationInGraph(cell, i, triangle);
                 
                 // For each triangulation, we create a SubCellBorder for each edge.
                 for (int j = 0; j < 3; j++)
@@ -219,10 +219,10 @@ public class HexagonalTerrainChunk
 
                     var pos13D = triangle.SourceTriangle[j];
                     var pos23D = triangle.SourceTriangle[(j + 1) % 3];
-                    var v1 = _edgeGraph.Vertices.First(n => n.Position.IsEqualApprox(new Vector2(pos13D.X, pos13D.Z)));
-                    var v2 = _edgeGraph.Vertices.First(n => n.Position.IsEqualApprox(new Vector2(pos23D.X, pos23D.Z)));
+                    var v1 = _graph.Vertices.First(n => n.Position.IsEqualApprox(new Vector2(pos13D.X, pos13D.Z)));
+                    var v2 = _graph.Vertices.First(n => n.Position.IsEqualApprox(new Vector2(pos23D.X, pos23D.Z)));
 
-                    var exists = _edgeGraph.TryGetEdge(v1, v2, out var edge);
+                    var exists = _graph.TryGetEdge(v1, v2, out var edge);
                     if (exists && edge != null)
                     {
                         edge.AddBorder(subCellBorder);
@@ -530,7 +530,7 @@ public class HexagonalTerrainChunk
     public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> ProcessGeometry(
         out ChunkConformalEditor editor, bool forcePrintOutput = false)
     {
-        editor = new ChunkConformalEditor(_edgeGraph);
+        editor = new ChunkConformalEditor(_graph);
         //Step 1 : Collect all the required operations
         editor.CollectAllOperationsRequests();
         editor.CollectBorderOperationRequests();
@@ -540,24 +540,24 @@ public class HexagonalTerrainChunk
         //Step 3 : Apply all the operations on triangulations
         editor.ApplyGeometryOperations();
         // Step 1.5 : Stitch edges that need to be fixed
-        editor.PostProcess();
+        var res = editor.PostProcess();
 
         //Step 4 : Extract the triangles
-        var x = editor.GetTriangleInfos();
-        return x;
+        return res;
     }
 
-    private TerrainChunkEdgeGraph BuildEdgeAdjacencyGraph()
+    private TerrainChunkGraph BuildEdgeAdjacencyGraph()
     {
-        var graph = new TerrainChunkEdgeGraph(this);
+        var graph = new TerrainChunkGraph(this);
 
         //Create all the GraphNodes : 
-        var nodes = new List<EdgeGraphNode>();
+        var nodes = new List<ChunkTerrainNode>();
         var cellCenters = new Dictionary<Vector2I, CellCenterPoint>();
         var cellSummits = new Dictionary<Vector3I, CellSummitPoint>();
         foreach (var vertexAndData in DataGrid.Data) //Add the data points
         {
             var cellSummit = new CellSummitPoint(DataGrid, vertexAndData.Key);
+            cellSummit.BuildTriangulationStructsFromChunk(graph);
             nodes.Add(cellSummit);
             cellSummits.Add(vertexAndData.Key, cellSummit);
         }
@@ -566,7 +566,7 @@ public class HexagonalTerrainChunk
         {
             var idx = fullCell.CellCoordsImplicit;
             var cellCenter = new CellCenterPoint(fullCell);
-
+            cellCenter.BuildTriangulationStructsFromChunk(graph);
             nodes.Add(cellCenter);
             cellCenters.Add(idx, cellCenter);
         }
@@ -590,7 +590,7 @@ public class HexagonalTerrainChunk
     //
     public void UpdateFullCellCenterValues(ICollection<Vector3I> dataIndexes)
     {
-        _edgeGraph.UpdateCellCenterValuesInTris(dataIndexes);
+        _graph.UpdateCellCenterValuesInTris(dataIndexes);
     }
 }
 

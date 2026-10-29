@@ -9,6 +9,8 @@ using System.Threading;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
+using MathNet.Numerics;
 using MathNet.Spatial.Euclidean;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
@@ -20,7 +22,7 @@ public class ChunkConformalEditor
     /// </summary>
     private readonly HexagonalTerrainChunk _chunk;
 
-    private readonly TerrainChunkEdgeGraph _graph;
+    private readonly TerrainChunkGraph _graph;
 
     private readonly Dictionary<Vector2I, Triangulation?[]?> _triangulationsPerCell;
 
@@ -35,7 +37,7 @@ public class ChunkConformalEditor
 
     private readonly Dictionary<(EdgeExtremity, Triangulation), VertexGeometryEditor> _vertexGeometryEditors = new();
 
-    private readonly Dictionary<EdgeGraphNode, GeometryEditionRequest> _vertexProcessedRequests = new();
+    private readonly Dictionary<ChunkTerrainNode, GeometryEditionRequest> _vertexProcessedRequests = new();
 
     ///
     /// Dictionaries of the vertex editors indexed by the graph edge.
@@ -47,7 +49,7 @@ public class ChunkConformalEditor
     private readonly Dictionary<ChunkTerrainEdge, GeometryEditionRequest> _edgeProcessedRequests = new();
 
 
-    public ChunkConformalEditor(TerrainChunkEdgeGraph graph)
+    public ChunkConformalEditor(TerrainChunkGraph graph)
     {
         _chunk = graph.Chunk;
         _graph = graph;
@@ -150,7 +152,7 @@ public class ChunkConformalEditor
         var cell = _cells[cellIdx];
 
         GetPosAndValue(out var pos2D, out var value);
-        pos[0] = new Vector3((float)pos2D.X,  value,(float)pos2D.Y);
+        pos[0] = new Vector3((float)pos2D.X, value, (float)pos2D.Y);
         vertexIdx = edgeExtremity.OtherCellSummitIndex;
 
         GetPosAndValue(out pos2D, out value);
@@ -370,7 +372,7 @@ public class ChunkConformalEditor
             {
                 var editor = new VertexGeometryEditor();
                 _edgeGeometryEditors.Add(subCellBorder, editor);
-                
+
                 var request = (processedRequest.mode, (processedRequest.param1, processedRequest.param2));
                 //Console.WriteLine($"<E>T{subCellBorder.Triangulation.Id};({subCellBorder.TriEdgeIdx}) => {request}");
 
@@ -394,29 +396,24 @@ public class ChunkConformalEditor
         {
             return requests.First();
         }
-        else
-        {
-            var mode =  requests.Min(r=>r.mode);
-            var p1 = requests.Average(r => r.param1);
-            var p2 = requests.Average(r => r.param2);
-            return new GeometryEditionRequest(mode, p1, p2);
-            
-        }
+
+        var mode = requests.Min(r => r.mode);
+        var p1 = requests.Average(r => r.param1);
+        var p2 = requests.Average(r => r.param2);
+        return new GeometryEditionRequest(mode, p1, p2);
     }
 
-    private GeometryEditionRequest MergeRequests(EdgeGraphNode vertex, HashSet<GeometryEditionRequest> requests)
+    private GeometryEditionRequest MergeRequests(ChunkTerrainNode vertex, HashSet<GeometryEditionRequest> requests)
     {
         if (requests.Count == 1)
         {
             return requests.First();
         }
-        else
-        {
-            var mode =  requests.Min(r=>r.mode);
-            var p1 = requests.Average(r => r.param1);
-            var p2 = requests.Average(r => r.param2);
-            return new GeometryEditionRequest(mode, p1, p2);
-        }
+
+        var mode = requests.Min(r => r.mode);
+        var p1 = requests.Average(r => r.param1);
+        var p2 = requests.Average(r => r.param2);
+        return new GeometryEditionRequest(mode, p1, p2);
     }
 
 
@@ -426,91 +423,22 @@ public class ChunkConformalEditor
     /// <exception cref="InvalidOperationException"></exception>
     private void StitchEdges()
     {
-
-
-        //Now we're finally stitchin some stuff
-        foreach (var distinctRequest in _edgeGeometryEditors)
-        {
-            var triIdx = distinctRequest.Key.TriEdgeIdx;
-
-            if (triIdx == 0 ) //Easy case : inner cell triangulations
-            {
-                StitchInnerCellEdge(distinctRequest.Key);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
     }
 
     private void StitchInnerCellEdge(SubCellBorder scb)
     {
-
-        var summitIdx = scb.CellSummitIndices.Item1 == -1
-            ? scb.CellSummitIndices.Item2
-            : scb.CellSummitIndices.Item1;
-        int cellIdx;
-        if (summitIdx == -1)
-        {
-            cellIdx = _triangulationsPerCell[scb.ParentCell.CellCoordsImplicit]?
-                          .Index()
-                          .Where(t => t.Item == scb.Triangulation)
-                          .Select(t => t.Index).First()
-                      ?? throw new ArgumentException(
-                          "Triangulation cannot be found in the sub cells of the provided cell");
-        }
-        else
-        {
-            cellIdx = summitIdx;
-        }
-
-        //Fetch the neighbor cell index
-        var neighborSubCellIndex = GetNeighborSubCellIndex(cellIdx);
-
-        var neighborTri = _triangulationsPerCell[scb.ParentCell.CellCoordsImplicit]?[neighborSubCellIndex];
-        if (neighborTri == null) return;
-        var neighborEdgeIdx = GetNeighborEdgeIndex();
-
-        var neighborEdge = ExplicitEdge(neighborTri.Edges[neighborEdgeIdx], neighborTri);
-        var curEdge = ExplicitEdge(scb.Triangulation.Edges[scb.TriEdgeIdx], scb.Triangulation);
-
-        //Ensure start point and end point are similar in the XoZ plane
-        // If that is the case, the polygon to cover will be easier to obtain
-        var invert = CheckExtremitiesInXoZPlane(neighborEdge, curEdge);
-        if (!invert) throw new NotImplementedException(); //the edges go in the "same" order,
-        //triangulating might create a flipped triangle
-        //Check if the edges are identical.
-        if (neighborEdge.Count == curEdge.Count)
-        {
-            bool equivalentEdges = true;
-            for (int i = 0; i < neighborEdge.Count; i++)
-            {
-                if (!neighborEdge[^(i + 1)].Item1.IsEqualApprox(curEdge[i].Item1))
-                {
-                    equivalentEdges = false;
-                    break;
-                }
-            }
-
-            if (equivalentEdges) //The neighboring edges are equivalent
-            {
-                return;
-            }
-        }
-
         //We now reconstruct a mesh between the edges using the provided triangulation
-        TriangleUtils.BuildPolygonTriangulation(
-            new TriangleUtils.PolygonTriangulationBuilderData(
-                _edgeGeometryEditors[scb],
-                scb.Triangulation,
-                curEdge,
-                scb.TriEdgeIdx),
-            new TriangleUtils.PolygonTriangulationBuilderData(
-                _edgeGeometryEditors[scb],
-                neighborTri,
-                neighborEdge,
-                neighborEdgeIdx));
+        // TriangleUtils.BuildPolygonTriangulation(
+        //     new TriangleUtils.PolygonTriangulationBuilderData(
+        //         _edgeGeometryEditors[scb],
+        //         scb.Triangulation,
+        //         curEdge,
+        //         scb.TriEdgeIdx),
+        //     new TriangleUtils.PolygonTriangulationBuilderData(
+        //         _edgeGeometryEditors[scb],
+        //         neighborTri,
+        //         neighborEdge,
+        //         neighborEdgeIdx));
 
 
         return;
@@ -571,7 +499,7 @@ public class ChunkConformalEditor
         return edge;
     }
 
-    
+
     /// <summary>
     /// Debug method that dumps the state of the chunk editor to the standard output.
     /// </summary>
@@ -680,7 +608,7 @@ public class ChunkConformalEditor
         sb.Append('\t').Append('\t');
         if (!isManifold || forceStlOutput)
         {
-            sb.Append("Dumping cell triangulation data as obj snippet because of non-manifold output :")
+            sb.Append("Dumping cell triangulation data as .stl snippet because of non-manifold output :")
                 .AppendLine();
             AppendHSeparator(sb);
             ToStlDump(tris, sb);
@@ -716,8 +644,87 @@ public class ChunkConformalEditor
     /// <summary>
     /// This method aims to fix issues with the chunk triangulation if the output is not cell-wise manifold 
     /// </summary>
-    public void PostProcess()
+    public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> PostProcess()
     {
+        var result = GetTriangleInfos();
+        var flatResult = result.SelectMany(res => res.Value).ToList();
+        var output = TriangleUtils.ReprocessEdgeGeometry(flatResult, false);
+        if (TriangleUtils.AssertIsClosedManifoldBorder(output.borderEdgesAsSets, false))
+        {
+            return result;
+        }
 
+        MergePoints();
+        DebugDumpEditorState();
+        return GetTriangleInfos();
+    }
+
+    private void MergePoints()
+    {
+        var groupings = VertexRequests.GroupBy(g => g.Key.Node);
+        var skipMergeDueToRequest = new Dictionary<ChunkTerrainNode, bool>();
+        foreach (var grouping in groupings)
+        {
+            var doSkip = grouping.Any(o =>
+                o.Value.mode is GeometryMode.FlatTrianglesNoFans or GeometryMode.FlatHexagonsNoFans);
+            skipMergeDueToRequest[grouping.Key] = doSkip;
+        }
+
+        foreach (var vertex in _graph.Vertices)
+        {
+            if (skipMergeDueToRequest[vertex]) continue;
+            var pos = vertex.Position;
+            var positions = new Dictionary<float, List<(EdgeExtremity, int)>>();
+            foreach (var edgeExtremity in vertex.RelatedEdgeExtremities.Values)
+            {
+                Debug.Assert(edgeExtremity.Triangulation != null);
+                var edge = edgeExtremity.Triangulation.Edges[edgeExtremity.IndexInTriangulation];
+                var pointIdxInTri = edgeExtremity.Triangulation.SubEdges.ElementAt(edge.First!.Value).Key.Item1;
+                var point = edgeExtremity.Triangulation.Vertices[pointIdxInTri];
+                if (point.X.AlmostEqual(pos.X) && point.Z.AlmostEqual(pos.Y))
+                {
+                    var exists = positions.TryGetValue(point.Y, out var list);
+                    if (!exists || list is null)
+                    {
+                        list = [];
+                        positions[point.Y] = list;
+                    }
+
+                    list.Add((edgeExtremity, pointIdxInTri));
+                }
+                else
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+
+            Console.WriteLine($"Vertex {vertex.Position} : ");
+            Console.WriteLine(String.Join(";",
+                positions.Select(kvp => (kvp.Key,
+                    String.Join(";", kvp.Value.Select(ee => (ee.Item1.Triangulation!.Id, ee.Item2)))))));
+
+            float value;
+            switch (positions.Count)
+            {
+                case 0: throw new InvalidOperationException();
+                case 1: continue;
+                case 2:
+                    value = positions.Keys.GroupBy(v => v).OrderByDescending(g => g.Count()).First().Key;
+                    break;
+                default:
+                    value = positions.Keys.Average();
+                    break;
+            }
+
+            var editions = positions.Values.SelectMany(v =>
+                v.Select(u => (triangulation: u.Item1.Triangulation, vIdx: u.Item2))).ToList();
+            foreach (var res in editions)
+            {
+                Console.WriteLine(String.Join(";", editions.Select(o=>(o.triangulation.Id,o.vIdx))));
+                var action = new MovePointAlongYAxisAction(res.vIdx, value);
+                Debug.Assert(res.triangulation != null);
+                action.Apply(res.triangulation);
+            }
+        }
     }
 }

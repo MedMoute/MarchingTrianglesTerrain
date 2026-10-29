@@ -1,0 +1,32 @@
+It has become increasingly tedious to use the Logical grids to manage Chunk Surface modifications through Cell Triangulations
+The proposal is to introduce a graph abstraction between the Grids and The Mesh/Triangulation.
+
+The graph nodes are the Grid Data points, supplemented by the cell center points, while the edges of the graph are 
+the sides of the triangulations.
+
+ChunkGraphNode [Id] => CellSummitPoint [DataGridIndex,()]
+                    => CellCenterPoint [CellIndex,[ImpactingDataIndexes],()]
+        * GetPosition()
+        * TriangulationVertices[6] GetTriVertices()
+        * ComputeModificationRequest()<==IGraphDataAware
+        * ApplyModification <== ConformalEditor
+      
+ChunkGraphEdge [eid] => ([Id#1],[Id#2]) Key, unordered
+         * TriangulationEdges[2] ~TriangulationEdges
+         * ComputeModificationRequest()<==IGraphDataAware
+         * ApplyModification <==Conformal Editor       
+        
+TriangulationVertex : TVId 
+         => [TEId  => TriangulationVertex] (neighbors)
+         => TId 
+
+TriangulationEdge : TEId
+        => TId triangle
+        => (TVidSource,TVidTarget) vertices unordered tuple
+        => idx (Triangulation's edge index)
+        
+GraphTriangulation 
+    =>Triangulation
+    =>[TVId#1,TVId#2,TVId#3] vertices
+    =>[TEId#1,TEId#2,TEId#3] edges
+                

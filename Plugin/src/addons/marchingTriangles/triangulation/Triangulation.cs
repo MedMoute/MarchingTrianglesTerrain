@@ -110,6 +110,7 @@ public class Triangulation
         TrianglesByVertices.Add(0, [0, 1, 2]);
         EnsureIntegrity(true);
     }
+    
 
     public List<HexTerrainCell.TriangleInfo> ToTriangleInfoList()
     {
@@ -306,5 +307,14 @@ public class Triangulation
             res += (add?1:0) << i;
         }
         return res; 
+    }
+
+    /// <summary>
+    /// Returns the id count value. Used for testing.
+    /// </summary>
+    /// <returns></returns>
+    public static int PeekId()
+    {
+        return _classCounter;
     }
 }
