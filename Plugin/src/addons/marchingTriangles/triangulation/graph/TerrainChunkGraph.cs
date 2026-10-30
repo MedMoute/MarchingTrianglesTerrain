@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Godot;
+using MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 using MathNet.Numerics;
 using MathNet.Spatial.Euclidean;
@@ -20,7 +22,13 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
 {
     public HexagonalTerrainChunk Chunk { get; }
 
-    public record TriangulationVertex(int TriId, int[] TeIds, int Idx)
+    /// <summary>
+    /// Record holding the chunk-based indices of a triangulation vertex. 
+    /// </summary>
+    /// <param name="TriId">Index of the triangulation the vertex is part of.</param>
+    /// <param name="TeIds">Index of the triangulation edges touching the triangulation vertex. </param>
+    /// <param name="Idx">Index of the triangulation vertex</param>
+    public record VertexTriangulationData(int TriId, int[] TeIds, int Idx)
     {
         public int Id => _id;
 
@@ -36,7 +44,13 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
         }
     }
 
-    public record TriangulationEdge(int TriId, int[] TriVIds, int EdgeIdx)
+    /// <summary>
+    /// Record holding the chunk-based indices of a triangulation edge. 
+    /// </summary>
+    /// <param name="TriId">Index of the triangulation the vertex is part of.</param>
+    /// <param name="TriVIds">Index of the triangulation vertices touching the triangulation edge. </param>
+    /// <param name="EdgeIdx">Index of the triangulation edge.</param>
+    public record EdgeTriangulationData(int TriId, int[] TriVIds, int EdgeIdx)
     {
         public int Id => _id;
 
@@ -54,18 +68,17 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
 
     public struct GraphTriangulation
     {
-        public int TriId;
+        public Triangulation Triangulation;
         public (int, int, int) TriVertices;
         public (int, int, int) TriEdges;
     }
 
-    public Dictionary<int, TriangulationVertex> TriangulationVerticesById = new();
+    public Dictionary<int, VertexTriangulationData> TriangulationVerticesById = new();
     public Dictionary<int, GraphTriangulation> GraphTriangulationsById = new();
-    public Dictionary<int, TriangulationEdge> TriangulationsEdgesById = new();
-    public Dictionary<int, Triangulation> TriangulationsById = new();
+    public Dictionary<int, EdgeTriangulationData> TriangulationsEdgesById = new();
 
     private readonly Dictionary<Vector2I, Triangulation?[]?> _triangulationsMap = new();
-    private readonly Dictionary<Vector2, ChunkTerrainNode> _edgeGraphNodesMapByPosition = new();
+    private readonly Dictionary<Vector2, ChunkTerrainNode> _edgeGraphNodesMapByPosition = new(V2CloseComp.Instance);
 
     /// <summary>
     /// Public constructor. This only builds the instance and does not populate the graph
@@ -124,22 +137,22 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
         var nbVertex = 0;
         var newPos = new Vector3(posF.X, yValue, posF.Y);
 
-        foreach (var ee in graphNode.RelatedEdgeExtremities.Values)
+        foreach (var tv in graphNode.TriangulationVertices.Values)
         {
             var edgeIdx = 0;
-            if (ee.Triangulation is null)
+            if (tv.Triangulation is null)
             {
-                throw new InvalidOperationException($"Triangulation is not set for {ee.CellIndex};" +
-                                                    $"({ee.CellSummitIndex},{ee.OtherCellSummitIndex})");
+                throw new InvalidOperationException($"Triangulation is not set for {tv.Cell.CellCoordsImplicit};" +
+                                                    $"({tv.CellSummitIndex})");
             }
 
-            foreach (var v in ee.Triangulation.SourceTriangle)
+            foreach (var v in tv.Triangulation.SourceTriangle)
             {
                 if (v.X.Equals(posF.X) && v.Z.Equals(posF.Y))
                 {
                     //Update Source Triangle
-                    ee.Triangulation.SourceTriangle =
-                        ee.Triangulation.SourceTriangle.SetItem(edgeIdx, newPos);
+                    tv.Triangulation.SourceTriangle =
+                        tv.Triangulation.SourceTriangle.SetItem(edgeIdx, newPos);
                     break;
                 }
 
@@ -147,21 +160,21 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
             }
 
             //Update Vertex and Reverse Vertex mappings
-            var idxOfFirstVertexInEdge = ee.Triangulation
-                .SubEdges.ElementAt(ee.Triangulation.Edges[edgeIdx].First!.Value).Key.Item1;
+            var idxOfFirstVertexInEdge = tv.Triangulation
+                .SubEdges.ElementAt(tv.Triangulation.Edges[edgeIdx].First!.Value).Key.Item1;
 
-            var oldPos = ee.Triangulation.Vertices[idxOfFirstVertexInEdge];
+            var oldPos = tv.Triangulation.Vertices[idxOfFirstVertexInEdge];
             //Swap oldPos with newPos
             if (!oldPos.X.AlmostEqual(newPos.X) || !oldPos.Z.AlmostEqual(newPos.Z))
             {
                 throw new InvalidOperationException("Positions do not match");
             }
 
-            ee.Triangulation.Vertices.Remove(idxOfFirstVertexInEdge);
-            ee.Triangulation.ReverseVertices.Remove(oldPos);
+            tv.Triangulation.Vertices.Remove(idxOfFirstVertexInEdge);
+            tv.Triangulation.ReverseVertices.Remove(oldPos);
             //
-            ee.Triangulation.Vertices[idxOfFirstVertexInEdge] = newPos;
-            ee.Triangulation.ReverseVertices[newPos] = idxOfFirstVertexInEdge;
+            tv.Triangulation.Vertices[idxOfFirstVertexInEdge] = newPos;
+            tv.Triangulation.ReverseVertices[newPos] = idxOfFirstVertexInEdge;
         }
     }
 
@@ -179,10 +192,10 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
                 var posF = new Vector2((float)pos.X, (float)pos.Y);
                 _edgeGraphNodesMapByPosition.TryGetValue(posF, out var graphNode);
                 if (graphNode is CellCenterPoint or null) return [];
-                return graphNode.RelatedEdgeExtremities.Values;
+                return graphNode.TriangulationVertices.Values;
             })
             .Distinct()
-            .GroupBy(ee => ee.CellIndex);
+            .GroupBy(tv => tv.Cell.CellCoordsImplicit);
 
         //Iterate over the edges for each cell
         foreach (var cellGroup in affectedCellSummitsList)
@@ -192,32 +205,32 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
                 cell.AverageHeight,
                 (float)cell.CenterPosition.Y);
             const int edgeIdx = 0;
-            foreach (var ee in cellGroup)
+            foreach (var tv in cellGroup)
             {
-                if (ee.Triangulation is null)
+                if (tv.Triangulation is null)
                 {
-                    throw new InvalidOperationException($"Triangulation is not set for{ee.CellIndex};" +
-                                                        $"({ee.CellSummitIndex},{ee.OtherCellSummitIndex})");
+                    throw new InvalidOperationException($"Triangulation is not set for{tv.Cell.CellCoordsImplicit};" +
+                                                        $"({tv.CellSummitIndex})");
                 } //Update Source Triangle
 
-                ee.Triangulation.SourceTriangle = ee.Triangulation.SourceTriangle.SetItem(edgeIdx, newCenterPos);
+                tv.Triangulation.SourceTriangle = tv.Triangulation.SourceTriangle.SetItem(edgeIdx, newCenterPos);
                 //Update Vertex and Reverse Vertex mappings
 
-                var idxOfFirstVertexInEdge = ee.Triangulation
-                    .SubEdges.ElementAt(ee.Triangulation.Edges[edgeIdx].First!.Value).Key.Item1;
+                var idxOfFirstVertexInEdge = tv.Triangulation
+                    .SubEdges.ElementAt(tv.Triangulation.Edges[edgeIdx].First!.Value).Key.Item1;
 
-                var oldPos = ee.Triangulation.Vertices[idxOfFirstVertexInEdge];
+                var oldPos = tv.Triangulation.Vertices[idxOfFirstVertexInEdge];
                 if (!oldPos.X.AlmostEqual(newCenterPos.X) || !oldPos.Z.AlmostEqual(newCenterPos.Z))
                 {
                     throw new InvalidOperationException("Positions do not match");
                 }
 
                 //Swap oldPos with newPos
-                ee.Triangulation.Vertices.Remove(idxOfFirstVertexInEdge);
-                ee.Triangulation.ReverseVertices.Remove(oldPos);
+                tv.Triangulation.Vertices.Remove(idxOfFirstVertexInEdge);
+                tv.Triangulation.ReverseVertices.Remove(oldPos);
                 //
-                ee.Triangulation.Vertices[idxOfFirstVertexInEdge] = newCenterPos;
-                ee.Triangulation.ReverseVertices[newCenterPos] = idxOfFirstVertexInEdge;
+                tv.Triangulation.Vertices[idxOfFirstVertexInEdge] = newCenterPos;
+                tv.Triangulation.ReverseVertices[newCenterPos] = idxOfFirstVertexInEdge;
             }
         }
     }
@@ -230,39 +243,80 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
     /// <param name="triangle"></param>
     public void RegisterTriangulationInGraph(HexTerrainCell cell, int cellSummit, Triangulation triangle)
     {
-        foreach (var edgeGraphNode in Vertices)
+        //Instantiate the Triangulation-related nodes and edges
+        for (int i = 0; i < 3; i++) //Start with the vertices
+        {     
+            //Get the position of each edge start
+            var pos = triangle.GetFirstPointOfEdge(i);
+            var pos2 = new Vector2(pos.X, pos.Z);
+            var node = _edgeGraphNodesMapByPosition[pos2];
+            var tVertex = new TriangulationVertex( node, cell, cellSummit, triangle, i);
+            
+            node.AddTriangulationVertex(tVertex);
+        }
+
+        for (int i = 0; i < 3; i++) //Do the edges
         {
-            var posF = edgeGraphNode.Position;
-            var source2D = triangle.SourceTriangle.Select(v3 => new Vector2(v3.X, v3.Z));
-            //The triangle does not contain the vertex node
-            var match = source2D.Index().Where(v => v.Item.IsEqualApprox(posF));
+            var posS = triangle.GetFirstPointOfEdge(i);
+            var posS2 = new Vector2(posS.X, posS.Z);
+            var nodeS = _edgeGraphNodesMapByPosition[posS2];
 
-            if (!match.Any()) continue;
-            var idxSelf = match.First().Index;
+            var posE = triangle.GetFirstPointOfEdge((i+1)%3);
+            var posE2 = new Vector2(posE.X, posE.Z);
+            var nodeE = _edgeGraphNodesMapByPosition[posE2];
 
-            var list = edgeGraphNode.RelatedEdgeExtremities.Where(ee => ee.Value.Triangulation == null).ToList();
-            foreach (var ee in list)
+            var success = TryGetEdge(nodeS, nodeE,out var edge);
+            if (!success)
             {
-                if (ee.Value.CellIndex != cell.CellCoordsImplicit) continue;
-                //We are in the same cell
-                if (ee.Value.OtherCellSummitIndex != cellSummit && ee.Value.CellSummitIndex != cellSummit) continue;
-                //We are touching the provided cell summit
-                var otherIndex = ee.Value.OtherCellSummitIndex;
-                var posOther = otherIndex == -1
-                    ? new Vector2((float)cell.CenterPosition.X, (float)cell.CenterPosition.Y)
-                    : new Vector2((float)cell.VertexPositionsInPlane[otherIndex].X,
-                        (float)cell.VertexPositionsInPlane[otherIndex].Y);
-                match = source2D.Index().Where(v => v.Item.IsEqualApprox(posOther));
-                if (!match.Any()) continue;
-                var idxOther = match.First().Index;
-                if (idxOther == idxSelf)
-                {
-                    throw new InvalidOperationException();
-                }
+                throw new ArgumentException("Triangle summit data does not match any entry in edges", nameof(triangle));
+            }
 
-                int triIdx = idxSelf;
-                ee.Value.Triangulation = triangle;
-                ee.Value.IndexInTriangulation = triIdx;
+            var tuple = GetCellSummitsFromIndexSubCellAndEdgeIndex(cellSummit, i);
+            var tEdge = new TriangulationEdge(cell, triangle, i,tuple,edge);
+            
+            edge.AddBorder(tEdge);
+        }
+    }
+
+    /// <summary>
+    /// Returns the cell Summit index tuple for the provided edge of a triangulation.
+    /// This method assumes that the first vertex is the cell center.
+    /// </summary>
+    private (int s1, int s2) GetCellSummitsFromIndexSubCellAndEdgeIndex(int cellSummit, int i)
+    {
+        return i switch
+        {
+            0 => (-1, cellSummit),
+            1 => (cellSummit, EngineUtils.Mod(cellSummit + 1, HexTerrainCell.VertexCount)),
+            2 => (EngineUtils.Mod(cellSummit + 1, HexTerrainCell.VertexCount), -1),
+            _ => throw new NotSupportedException()
+        };
+    }
+    
+    public void RegisterTriangulationDtos()
+    {
+        // Instantiate the DTOs for all triangulations
+        foreach (var triangle in _triangulationsMap.SelectMany(tArr=> tArr.Value!))
+        {
+            if (triangle==null) continue;
+            GraphTriangulation gt = new ()
+            {
+                Triangulation = triangle
+            };
+
+        }
+        foreach (var node in Vertices)
+        {
+            foreach (var triangulationVertex in node.TriangulationVertices)
+            {
+                triangulationVertex.Value.RegisterVertexData();
+            }
+        }
+        foreach (var edge in Edges)
+        {
+            foreach (var triangulationEdge in edge.GetSubCellBorders())
+            {
+                triangulationEdge.RegisterEdgeData();
             }
         }
     }

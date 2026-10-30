@@ -52,7 +52,7 @@ public class TestTerrainGraph
         Assert.That(nbTriCreated,Is.EqualTo(6));
         
         //Check that the EdgeExtremities and SubCellBorders have been created
-        List<(Vector3I indices ,EdgeExtremity eeInstance)> collectedEdgeExtremities = CollectEdgeExtremities(graph);
+        List<(Vector3I indices ,TriangulationVertex eeInstance)> collectedEdgeExtremities = CollectEdgeExtremities(graph);
         
         // Assert.That(collectedEdgeExtremities
         //     .Count(p => p.eeInstance.Triangulation!.Id == 0),Is.EqualTo(6));
@@ -73,13 +73,13 @@ public class TestTerrainGraph
         
 
 
-        List<(Vector3I indices ,EdgeExtremity eeInstance)> CollectEdgeExtremities(TerrainChunkGraph graphTested)
+        List<(Vector3I indices ,TriangulationVertex eeInstance)> CollectEdgeExtremities(TerrainChunkGraph graphTested)
         {
             return
             [
                 .. from vertex in graphTested.Vertices
                 from ee
-                    in vertex.RelatedEdgeExtremities
+                    in vertex.TriangulationVertices
                 select (ee.Key, ee.Value)
             ];
         }

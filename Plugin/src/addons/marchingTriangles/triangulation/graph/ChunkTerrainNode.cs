@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.graph;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
@@ -10,29 +11,32 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 /// In this particular context, these are points with a fixes XZ value, an editable Y value,
 /// and can have multiple related edges.
 /// </summary>
-public abstract class ChunkTerrainNode : IComparable<Vector2>,IComparable
+public abstract class ChunkTerrainNode : IComparable<Vector2>,IComparable,IImplicitlyBuildableFromGraph<Vector2>
 {
     public abstract Vector2 Position { get; init; }
 
-    public readonly Dictionary<Vector3I, EdgeExtremity> RelatedEdgeExtremities = new();
+    public readonly Dictionary<Vector3I, TriangulationVertex> TriangulationVertices = new();
 
-    public void AddEdgeExtremity(EdgeExtremity ee)
+    protected ChunkTerrainNode(TerrainChunkGraph parentGraph)
     {
-        if (RelatedEdgeExtremities.Count >= 12)
-            throw new NotSupportedException("A node should not have move than 12 extremities.");
-        RelatedEdgeExtremities.Add(
-            new Vector3I(
-                ee.CellIndex.X,
-                ee.CellIndex.Y,
-                ee.OtherCellSummitIndex),
-            ee);
+        ParentGraph = parentGraph;
     }
 
-    public List<TerrainChunkGraph.TriangulationVertex> subVertices;
-
+    public void AddTriangulationVertex(TriangulationVertex tv)
+    {
+        if (TriangulationVertices.Count >= 12)
+            throw new NotSupportedException("A node should not have move than 12 extremities.");
+        TriangulationVertices.Add(
+            new Vector3I(
+                tv.Cell.CellCoordsImplicit.X,
+                tv.Cell.CellCoordsImplicit.Y,
+                tv.CellSummitIndex),
+            tv);
+    }
+    
     protected abstract float GetValue();
 
-    public abstract void BuildTriangulationStructsFromChunk(TerrainChunkGraph graph);
+    public abstract void BuildStructuresFromParent(Vector2 source);
 
     private bool Equals(ChunkTerrainNode other)
     {
@@ -66,15 +70,8 @@ public abstract class ChunkTerrainNode : IComparable<Vector2>,IComparable
         throw new ArgumentException();
     }
 
-    public static bool operator ==(ChunkTerrainNode? left, ChunkTerrainNode? right)
-    {
-        return Equals(left, right);
-    }
+    public TerrainChunkGraph ParentGraph { get; }
 
-    public static bool operator !=(ChunkTerrainNode? left, ChunkTerrainNode? right)
-    {
-        return !Equals(left, right);
-    }
 }
 
 /// <summary>
@@ -82,7 +79,7 @@ public abstract class ChunkTerrainNode : IComparable<Vector2>,IComparable
 /// </summary>
 public sealed class CellCenterPoint : ChunkTerrainNode
 {
-    public CellCenterPoint(HexTerrainCell cell)
+    public CellCenterPoint(HexTerrainCell cell,TerrainChunkGraph graph):base(graph)
     {
         _parentCell = cell;
         Position = new Vector2(
@@ -99,7 +96,7 @@ public sealed class CellCenterPoint : ChunkTerrainNode
         return _parentCell.AverageHeight;
     }
 
-    public override void BuildTriangulationStructsFromChunk(TerrainChunkGraph graph)
+    public override void BuildStructuresFromParent(Vector2 position)
     {
         
     }
@@ -116,7 +113,7 @@ public sealed class CellSummitPoint : ChunkTerrainNode
 
     public override Vector2 Position { get; init; }
 
-    public CellSummitPoint(TriangleGrid dataGrid, Vector3I dataGridIndex)
+    public CellSummitPoint(TriangleGrid dataGrid, Vector3I dataGridIndex,TerrainChunkGraph graph):base(graph)
     {
         _dataGridIndex = dataGridIndex;
         _dataGrid = dataGrid;
@@ -129,45 +126,7 @@ public sealed class CellSummitPoint : ChunkTerrainNode
         return _dataGrid.Data[_dataGridIndex];
     }
 
-    public override void BuildTriangulationStructsFromChunk(TerrainChunkGraph graph)
+    public override void BuildStructuresFromParent(Vector2 position)
     {
-    }
-}
-
-/// <summary>
-/// Representation of an Edge within the context of being the border of a SubCell,
-/// and subsequently tied to a triangulation and an edgeIdx within said triangulation. 
-/// </summary>
-public class SubCellBorder
-{
-    public SubCellBorder(HexTerrainCell cell,
-        Triangulation triangulation,
-        int edgeTriIndex,
-        (int s1, int s2) cellSummits)
-    {
-        ParentCell = cell;
-        Triangulation = triangulation;
-        TriEdgeIdx = edgeTriIndex;
-        CellSummitIndices = cellSummits;
-    }
-
-
-    public Triangulation Triangulation { get; init; }
-    public  int TriEdgeIdx{ get; init; }
-
-    private ChunkTerrainEdge _parentEdge;
-
-    public  HexTerrainCell ParentCell{ get; init; }
-    public  (int, int) CellSummitIndices{ get; init; }
-    
-    public void SetParentEdge(ChunkTerrainEdge edge)
-    {
-        if (_parentEdge!=null && !_parentEdge.Equals(edge)) throw new ArgumentException("Cannot set the parent edge twice with different values");
-        _parentEdge = edge;
-    }
-
-    public ChunkTerrainEdge GetParentEdge()
-    {
-        return _parentEdge;
     }
 }

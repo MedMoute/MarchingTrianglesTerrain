@@ -33,18 +33,18 @@ public class ChunkConformalEditor
     ///
     /// Dictionaries of the vertex editors indexed by the graph node.
     ///
-    public Dictionary<EdgeExtremity, GeometryEditionRequest> VertexRequests { get; } = new();
+    public Dictionary<TriangulationVertex, GeometryEditionRequest> VertexRequests { get; } = new();
 
-    private readonly Dictionary<(EdgeExtremity, Triangulation), VertexGeometryEditor> _vertexGeometryEditors = new();
+    private readonly Dictionary<TriangulationVertex, VertexGeometryEditor> _vertexGeometryEditors = new();
 
     private readonly Dictionary<ChunkTerrainNode, GeometryEditionRequest> _vertexProcessedRequests = new();
 
     ///
     /// Dictionaries of the vertex editors indexed by the graph edge.
     ///
-    public Dictionary<SubCellBorder, GeometryEditionRequest> EdgeRequests { get; } = new();
+    public Dictionary<TriangulationEdge, GeometryEditionRequest> EdgeRequests { get; } = new();
 
-    private readonly Dictionary<SubCellBorder, VertexGeometryEditor> _edgeGeometryEditors = new();
+    private readonly Dictionary<TriangulationEdge, VertexGeometryEditor> _edgeGeometryEditors = new();
 
     private readonly Dictionary<ChunkTerrainEdge, GeometryEditionRequest> _edgeProcessedRequests = new();
 
@@ -135,7 +135,7 @@ public class ChunkConformalEditor
     {
         foreach (var edgeGraphNode in _graph.Vertices)
         {
-            foreach (var nodeEdgeExtremities in edgeGraphNode.RelatedEdgeExtremities)
+            foreach (var nodeEdgeExtremities in edgeGraphNode.TriangulationVertices)
             {
                 ComputeAction(nodeEdgeExtremities.Value, out var mode, out var p1, out var p2);
                 VertexRequests.Add(nodeEdgeExtremities.Value, new GeometryEditionRequest(mode, p1, p2));
@@ -143,17 +143,17 @@ public class ChunkConformalEditor
         }
     }
 
-    private void ComputeAction(EdgeExtremity edgeExtremity, out GeometryMode mode, out float param1, out float param2)
+    private void ComputeAction(TriangulationVertex triangulationVertex, out GeometryMode mode, out float param1, out float param2)
     {
         var pos = new Vector3[2];
 
-        var cellIdx = edgeExtremity.CellIndex;
-        var vertexIdx = edgeExtremity.CellSummitIndex;
+        var cellIdx = triangulationVertex.Cell.CellCoordsImplicit;
+        var vertexIdx = triangulationVertex.CellSummitIndex;
         var cell = _cells[cellIdx];
 
         GetPosAndValue(out var pos2D, out var value);
         pos[0] = new Vector3((float)pos2D.X, value, (float)pos2D.Y);
-        vertexIdx = edgeExtremity.OtherCellSummitIndex;
+        vertexIdx = triangulationVertex.CellSummitIndex;
 
         GetPosAndValue(out pos2D, out value);
         pos[1] = new Vector3((float)pos2D.X, value, (float)pos2D.Y);
@@ -191,12 +191,12 @@ public class ChunkConformalEditor
     }
 
 
-    private void ComputeAction(SubCellBorder border, out GeometryMode mode, out float param1, out float param2)
+    private void ComputeAction(TriangulationEdge border, out GeometryMode mode, out float param1, out float param2)
     {
         var pos = new Vector3[2];
 
-        pos[0] = border.Triangulation.SourceTriangle[border.TriEdgeIdx];
-        pos[1] = border.Triangulation.SourceTriangle[(border.TriEdgeIdx + 1) % 3];
+        pos[0] = border.Triangulation.SourceTriangle[border.TriEdgeIndex];
+        pos[1] = border.Triangulation.SourceTriangle[(border.TriEdgeIndex + 1) % 3];
 
         var isOverThreshold =
             Chunk.DefaultThreshold.Item2.IsOverThreshold(Chunk.DefaultThreshold.Item1, pos[0], pos[1]);
@@ -226,139 +226,6 @@ public class ChunkConformalEditor
     /// </summary>
     public void RegisterOperations()
     {
-        RegisterVertexOperations();
-        RegisterEdgeOperations();
-    }
-
-    private void RegisterVertexOperations()
-    {
-        var vertexEditionGroups = VertexRequests.GroupBy(kvp => kvp.Key.Node);
-        var comparer = new UnorderedValueTupleComparer<SubCellBorder?>();
-        foreach (var group in vertexEditionGroups)
-        {
-            HashSet<(SubCellBorder, SubCellBorder)> consolidatedRes = new(comparer);
-            var vertexNode = group.Key;
-            var requests = group.Select(g => g.Value).ToHashSet();
-            var sources = group.Select(g => g.Key).ToList();
-
-            GeometryEditionRequest processedRequest = MergeRequests(vertexNode, requests);
-            _vertexProcessedRequests.Add(vertexNode, processedRequest);
-
-            var adjCells = vertexNode.RelatedEdgeExtremities.Keys
-                .Select(v => _cells[new Vector2I(v.X, v.Y)])
-                .Distinct()
-                .ToList();
-            var adjEdges = _graph.AdjacentEdges(vertexNode).SelectMany(n => n.GetSubCellBorders());
-
-            var pairwiseList = sources.SelectMany(e1 =>
-                    sources
-                        .Where(e2 => e1 != e2 && e1.CellIndex == e2.CellIndex)
-                        .Select(e2 => (e1, e2)))
-                .ToList();
-            //We do a pairwise check on the implicit edges of
-            // each EdgeExtremity to find Triangulations that exist in one of the subcellborders, for both of the edges in the pair.  
-            foreach (var pair in pairwiseList)
-            {
-                var oExtrem1 = pair.Item1.OtherCellSummitIndex;
-                var oExtrem2 = pair.Item2.OtherCellSummitIndex;
-
-                //We restrict the SubCellBorders to the ones within the same cell 
-                var subCellBordersOfEdge1 = adjEdges.Where(scb =>
-                    scb.ParentCell.CellCoordsImplicit == pair.Item1.CellIndex &&
-                    ( //Select subcellborders that match the first EdgeExtremity's implicit edges
-                        //Checks against edge1 of the pair
-                        scb.CellSummitIndices ==
-                        (pair.Item1.CellSummitIndex, pair.Item1.OtherCellSummitIndex) ||
-                        scb.CellSummitIndices ==
-                        (pair.Item1.OtherCellSummitIndex, pair.Item1.CellSummitIndex)
-                    )).ToList();
-                var subCellBordersOfEdge2 = adjEdges.Where(scb =>
-                    scb.ParentCell.CellCoordsImplicit == pair.Item1.CellIndex &&
-                    (
-                        //Checks against edge2 of the pair
-                        scb.CellSummitIndices ==
-                        (pair.Item2.CellSummitIndex, pair.Item2.OtherCellSummitIndex) ||
-                        scb.CellSummitIndices ==
-                        (pair.Item2.OtherCellSummitIndex, pair.Item2.CellSummitIndex)
-                    )).ToList();
-
-
-                foreach (var scbE1 in subCellBordersOfEdge1)
-                {
-                    bool found = false;
-                    foreach (var scbE2 in subCellBordersOfEdge2)
-                    {
-                        if (scbE1.Triangulation != scbE2.Triangulation) continue;
-                        consolidatedRes.Add((scbE1, scbE2));
-                        found = true;
-                        break;
-                    }
-
-                    if (found) break;
-                }
-            }
-
-            foreach (var tuple in consolidatedRes)
-            {
-                var sc1 = tuple.Item1;
-                var sc2 = tuple.Item2;
-                List<int> sc1Indices = [sc1.CellSummitIndices.Item1, sc1.CellSummitIndices.Item2];
-                List<int> sc2Indices = [sc2.CellSummitIndices.Item1, sc2.CellSummitIndices.Item2];
-                var common = sc1Indices.Intersect(sc2Indices).ToList();
-                if (common.Count != 1)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                var commonValue = common.First();
-                var editor = new VertexGeometryEditor();
-
-                var edges = sources.Where(ee => ee.CellIndex == sc1.ParentCell.CellCoordsImplicit
-                                                && (ee.CellSummitIndex == sc1.CellSummitIndices.Item1 &&
-                                                    ee.OtherCellSummitIndex == sc1.CellSummitIndices.Item2)
-                                                ||
-                                                (ee.OtherCellSummitIndex == sc1.CellSummitIndices.Item1 &&
-                                                 ee.CellSummitIndex == sc1.CellSummitIndices.Item2)
-                                                && ee.CellSummitIndex == commonValue).ToList();
-
-                if (edges.Count != 1)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                var request = (processedRequest.mode, (processedRequest.param1, processedRequest.param2));
-                //Console.WriteLine($"<V>T{sc1.Triangulation.Id};({GetVertexIndexInTriangulation(sc1.TriEdgeIdx, sc2.TriEdgeIdx)}) => {request}");
-                _vertexGeometryEditors.Add((edges[0], sc1.Triangulation), editor);
-                editor.RegisterLocalVertexAction(
-                    sc1.ParentCell,
-                    commonValue,
-                    sc1.Triangulation,
-                    GetVertexIndexInTriangulation(sc1.TriEdgeIdx, sc2.TriEdgeIdx),
-                    [.. adjCells.Where(c => c != sc1.ParentCell)],
-                    request);
-            }
-        }
-
-        int GetVertexIndexInTriangulation(int edgeIdx1, int edgeIdx2)
-        {
-            switch (edgeIdx1, edgeIdx2)
-            {
-                case (0, 1):
-                case (1, 0):
-                    return 0;
-                case (1, 2):
-                case (2, 1):
-                    return 1;
-                case (0, 2):
-                case (2, 0):
-                    return 2;
-                default: throw new NotSupportedException();
-            }
-        }
-    }
-
-    private void RegisterEdgeOperations()
-    {
         var edgeEditionGroups = EdgeRequests.GroupBy(kvp => kvp.Key.GetParentEdge());
         foreach (var group in edgeEditionGroups)
         {
@@ -380,15 +247,16 @@ public class ChunkConformalEditor
                     subCellBorder.ParentCell,
                     subCellBorder.CellSummitIndices,
                     subCellBorder.Triangulation,
-                    subCellBorder.TriEdgeIdx,
+                    subCellBorder.TriEdgeIndex,
                     [
                         .. edge.GetSubCellBorders().Select(scb => scb.ParentCell)
                             .Where(c => c != subCellBorder.ParentCell)
                     ],
-                    (processedRequest.mode, (processedRequest.param1, processedRequest.param2)));
+                    request);
             }
         }
     }
+
 
     private GeometryEditionRequest MergeRequests(ChunkTerrainEdge edge, HashSet<GeometryEditionRequest> requests)
     {
@@ -425,7 +293,7 @@ public class ChunkConformalEditor
     {
     }
 
-    private void StitchInnerCellEdge(SubCellBorder scb)
+    private void StitchInnerCellEdge(TriangulationEdge scb)
     {
         //We now reconstruct a mesh between the edges using the provided triangulation
         // TriangleUtils.BuildPolygonTriangulation(
@@ -441,50 +309,50 @@ public class ChunkConformalEditor
         //         neighborEdgeIdx));
 
 
-        return;
+        // return;
+        //
+        // int GetNeighborSubCellIndex(int cellSummitIdx)
+        // {
+        //     return scb.TriEdgeIndex switch
+        //     {
+        //         0 => EngineUtils.Mod(cellSummitIdx - 1, HexTerrainCell.VertexCount),
+        //         2 => EngineUtils.Mod(cellSummitIdx + 1, HexTerrainCell.VertexCount),
+        //         _ => throw new NotSupportedException()
+        //     };
+        // }
+        //
+        // int GetNeighborEdgeIndex()
+        // {
+        //     return scb.TriEdgeIndex switch
+        //     {
+        //         0 => 2,
+        //         2 => 0,
+        //         _ => throw new NotSupportedException()
+        //     };
+        // }
 
-        int GetNeighborSubCellIndex(int cellSummitIdx)
-        {
-            return scb.TriEdgeIdx switch
-            {
-                0 => EngineUtils.Mod(cellSummitIdx - 1, HexTerrainCell.VertexCount),
-                2 => EngineUtils.Mod(cellSummitIdx + 1, HexTerrainCell.VertexCount),
-                _ => throw new NotSupportedException()
-            };
-        }
 
-        int GetNeighborEdgeIndex()
-        {
-            return scb.TriEdgeIdx switch
-            {
-                0 => 2,
-                2 => 0,
-                _ => throw new NotSupportedException()
-            };
-        }
-
-
-        bool CheckExtremitiesInXoZPlane(List<(Vector3, int)> nEdge, List<(Vector3, int)> cEdge)
-        {
-            var nFirst = nEdge.First().Item1;
-            var nLast = nEdge.Last().Item1;
-
-            var nS = new Vector2(nFirst.X, nFirst.Z);
-            var nE = new Vector2(nLast.X, nLast.Z);
-
-            var cFirst = cEdge.First().Item1;
-            var cLast = cEdge.Last().Item1;
-            var cS = new Vector2(cFirst.X, cFirst.Z);
-            var cE = new Vector2(cLast.X, cLast.Z);
-
-            if (!(nS.IsEqualApprox(cE) ^ nS.IsEqualApprox(cS)) ||
-                !(nE.IsEqualApprox(cE) ^ nE.IsEqualApprox(cS)))
-            {
-                throw new InvalidOperationException();
-            }
-
-            return nE.IsEqualApprox(cS);
-        }
+        // bool CheckExtremitiesInXoZPlane(List<(Vector3, int)> nEdge, List<(Vector3, int)> cEdge)
+        // {
+        //     var nFirst = nEdge.First().Item1;
+        //     var nLast = nEdge.Last().Item1;
+        //
+        //     var nS = new Vector2(nFirst.X, nFirst.Z);
+        //     var nE = new Vector2(nLast.X, nLast.Z);
+        //
+        //     var cFirst = cEdge.First().Item1;
+        //     var cLast = cEdge.Last().Item1;
+        //     var cS = new Vector2(cFirst.X, cFirst.Z);
+        //     var cE = new Vector2(cLast.X, cLast.Z);
+        //
+        //     if (!(nS.IsEqualApprox(cE) ^ nS.IsEqualApprox(cS)) ||
+        //         !(nE.IsEqualApprox(cE) ^ nE.IsEqualApprox(cS)))
+        //     {
+        //         throw new InvalidOperationException();
+        //     }
+        //
+        //     return nE.IsEqualApprox(cS);
+        // }
     }
 
     public static List<(Vector3, int Value)> ExplicitEdge(LinkedList<int> linkedList, Triangulation tri)
@@ -674,11 +542,11 @@ public class ChunkConformalEditor
         {
             if (skipMergeDueToRequest[vertex]) continue;
             var pos = vertex.Position;
-            var positions = new Dictionary<float, List<(EdgeExtremity, int)>>();
-            foreach (var edgeExtremity in vertex.RelatedEdgeExtremities.Values)
+            var positions = new Dictionary<float, List<(TriangulationVertex, int)>>();
+            foreach (var edgeExtremity in vertex.TriangulationVertices.Values)
             {
                 Debug.Assert(edgeExtremity.Triangulation != null);
-                var edge = edgeExtremity.Triangulation.Edges[edgeExtremity.IndexInTriangulation];
+                var edge = edgeExtremity.Triangulation.Edges[edgeExtremity.TriVertexIndex];
                 var pointIdxInTri = edgeExtremity.Triangulation.SubEdges.ElementAt(edge.First!.Value).Key.Item1;
                 var point = edgeExtremity.Triangulation.Vertices[pointIdxInTri];
                 if (point.X.AlmostEqual(pos.X) && point.Z.AlmostEqual(pos.Y))

@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
+using MathNet.Spatial.Euclidean;
 using static MarchingTrianglesTerrain.addons.marchingTriangles.editor.utils.EngineUtils;
 
 namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
@@ -58,7 +59,7 @@ public class Triangulation
     private readonly bool _extensiveVerification;
 
     public readonly int Id = IdSupplier();
-    
+
     private static int _classCounter;
 
     private static readonly Func<int> IdSupplier = () =>
@@ -81,7 +82,6 @@ public class Triangulation
         bool verbose = false,
         bool extensiveVerification = false)
     {
-        
         if (triangle.Length != 3)
         {
             throw new ArgumentException("Wrong array size, expected 3, got " + triangle.Length, nameof(triangle));
@@ -110,7 +110,7 @@ public class Triangulation
         TrianglesByVertices.Add(0, [0, 1, 2]);
         EnsureIntegrity(true);
     }
-    
+
 
     public List<HexTerrainCell.TriangleInfo> ToTriangleInfoList()
     {
@@ -219,7 +219,7 @@ public class Triangulation
         {
             // try
             // {
-                DoExtensiveChecksOnTriangulation();
+            DoExtensiveChecksOnTriangulation();
             // }
             // catch (Exception e)
             // {
@@ -304,9 +304,10 @@ public class Triangulation
         {
             bool add = threshold.Item2.IsOverThreshold(threshold.Item1, SourceTriangle[i],
                 SourceTriangle[Mod(i + 1, 3)]);
-            res += (add?1:0) << i;
+            res += (add ? 1 : 0) << i;
         }
-        return res; 
+
+        return res;
     }
 
     /// <summary>
@@ -316,5 +317,29 @@ public class Triangulation
     public static int PeekId()
     {
         return _classCounter;
+    }
+
+    internal Vector3 GetFirstPointOfEdge(int edgeIndex)
+    {
+        if (Vertices.Count < 3)
+        {
+            throw new InvalidOperationException("The triangulation is in an unexpected state : Vertices.Cout < 3");
+        }
+
+        if (Vertices.Count == 3) //Fast track, initial state
+        {
+            return Vertices[edgeIndex];
+        }
+
+        //General case, we look for the edge and get the first entry
+        var linkedListNode = Edges[edgeIndex].First;
+        if (linkedListNode != null)
+        {
+            var vIdx = SubEdges.ElementAt(linkedListNode.Value).Key.Item1;
+            return Vertices[vIdx];
+        }
+
+        throw new InvalidOperationException(
+            $"The triangulation is in an unexpected state : Missing entry in Edges[{edgeIndex}].First()");
     }
 }

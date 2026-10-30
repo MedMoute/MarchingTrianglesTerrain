@@ -118,9 +118,8 @@ public class HexagonalTerrainChunk
     public Dictionary<Vector3I, bool> NeedUpdate { get; set; }
 
     //TEMP
-    private TerrainChunkGraph _graph;
 
-    public TerrainChunkGraph Graph => _graph;
+    public TerrainChunkGraph Graph { get; private set; }
 
     public static HexagonalTerrainChunk NewChunkAtCoordinates(Vector2I chunkCoordinates,
         Vector2I dimension,
@@ -128,25 +127,12 @@ public class HexagonalTerrainChunk
         float[][]? dataSource = null,
         float[][]? dataSource2 = null)
     {
-        var chunk = new HexagonalTerrainChunk(
+        return new HexagonalTerrainChunk(
             chunkCoordinates,
             dimension,
             neighboringChunkDataHandle,
             dataSource,
             dataSource2);
-
-        chunk._neighborChunksProvider = neighboringChunkDataHandle;
-        chunk.TerrainDualGrid = HexagonGrid.BuildFromDual(
-            chunk.DataGrid,
-            chunk.Dimensions2D,
-            v => (v == Vector2I.Zero ? chunk : neighboringChunkDataHandle(v))?.DataGrid,
-            v => chunk.ExistingNeighbors.Contains(v));
-        chunk._colorHelper = new VertexColorHelper(neighboringChunkDataHandle);
-        chunk.NeedUpdate = new();
-
-        chunk._graph = chunk.BuildEdgeAdjacencyGraph();
-        chunk.FillAdjacencyGraphWithSubCellBorders();
-        return chunk;
     }
 
     /// <summary>
@@ -172,6 +158,18 @@ public class HexagonalTerrainChunk
         var chunkPos = GetChunkGlobalPosition(chunkCoordinates, TerrainSettings.OrientationSystem);
         IRegularUniformFrame terrainFrame = TerrainSettings.OrientationSystem.OffsetBy(chunkPos);
         DataGrid = TriangleGrid.BuildFrom(src1, src2, terrainFrame);
+        _neighborChunksProvider = neighboringChunkDataHandle;
+        
+        TerrainDualGrid = HexagonGrid.BuildFromDual(
+            DataGrid,
+            Dimensions2D,
+            v => (v == Vector2I.Zero ? this : neighboringChunkDataHandle(v))?.DataGrid,
+            v => ExistingNeighbors.Contains(v));
+        _colorHelper = new VertexColorHelper(neighboringChunkDataHandle);
+        NeedUpdate = new();
+
+        Graph = BuildEdgeAdjacencyGraph();
+        FillGraphTriangulationData();
     }
 
 
@@ -179,7 +177,7 @@ public class HexagonalTerrainChunk
     /// Edits the chunk's <see cref="TerrainChunkGraph"/> to add triangulations.
     /// </summary>
     /// The triangulations are created so that the first vertex matches a cell center.
-    internal void FillAdjacencyGraphWithSubCellBorders()
+    internal void FillGraphTriangulationData()
     {
         //Create the triangulations
         foreach (var cell in TerrainDualGrid.CompleteCells.Values)
@@ -207,44 +205,13 @@ public class HexagonalTerrainChunk
                     (float)c2D.Y);
 
                 var triangle = new Triangulation([a, b, c], false, true);
-                _graph.AddTriangulationToMap(cell.CellCoordsImplicit, i, triangle);
+                Graph.AddTriangulationToMap(cell.CellCoordsImplicit, i, triangle);
                 //We set the triangulation for each graph node
-                _graph.RegisterTriangulationInGraph(cell, i, triangle);
-                
-                // For each triangulation, we create a SubCellBorder for each edge.
-                for (int j = 0; j < 3; j++)
-                {
-                    (int s1, int s2) summits = ComputeCellSummits(i, j);
-                    var subCellBorder = new SubCellBorder(cell, triangle, j, summits);
-
-                    var pos13D = triangle.SourceTriangle[j];
-                    var pos23D = triangle.SourceTriangle[(j + 1) % 3];
-                    var v1 = _graph.Vertices.First(n => n.Position.IsEqualApprox(new Vector2(pos13D.X, pos13D.Z)));
-                    var v2 = _graph.Vertices.First(n => n.Position.IsEqualApprox(new Vector2(pos23D.X, pos23D.Z)));
-
-                    var exists = _graph.TryGetEdge(v1, v2, out var edge);
-                    if (exists && edge != null)
-                    {
-                        edge.AddBorder(subCellBorder);
-                        subCellBorder.SetParentEdge(edge);
-                    }
-                }
-                
+                Graph.RegisterTriangulationInGraph(cell, i, triangle);
             }
         }
 
-        return;
-
-        (int s1, int s2) ComputeCellSummits(int sI, int eI)
-        {
-            return eI switch
-            {
-                0 => (-1, sI),
-                1 => (sI, (sI + 1) % 6),
-                2 => ((sI + 1) % 6, -1),
-                _ => throw new NotSupportedException()
-            };
-        }
+        Graph.RegisterTriangulationDtos();
     }
 
 
@@ -530,7 +497,7 @@ public class HexagonalTerrainChunk
     public Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>> ProcessGeometry(
         out ChunkConformalEditor editor, bool forcePrintOutput = false)
     {
-        editor = new ChunkConformalEditor(_graph);
+        editor = new ChunkConformalEditor(Graph);
         //Step 1 : Collect all the required operations
         editor.CollectAllOperationsRequests();
         editor.CollectBorderOperationRequests();
@@ -556,8 +523,7 @@ public class HexagonalTerrainChunk
         var cellSummits = new Dictionary<Vector3I, CellSummitPoint>();
         foreach (var vertexAndData in DataGrid.Data) //Add the data points
         {
-            var cellSummit = new CellSummitPoint(DataGrid, vertexAndData.Key);
-            cellSummit.BuildTriangulationStructsFromChunk(graph);
+            var cellSummit = new CellSummitPoint(DataGrid, vertexAndData.Key,graph);
             nodes.Add(cellSummit);
             cellSummits.Add(vertexAndData.Key, cellSummit);
         }
@@ -565,8 +531,7 @@ public class HexagonalTerrainChunk
         foreach (var fullCell in TerrainDualGrid.CompleteCells.Values) //Add the cell centers
         {
             var idx = fullCell.CellCoordsImplicit;
-            var cellCenter = new CellCenterPoint(fullCell);
-            cellCenter.BuildTriangulationStructsFromChunk(graph);
+            var cellCenter = new CellCenterPoint(fullCell,graph);
             nodes.Add(cellCenter);
             cellCenters.Add(idx, cellCenter);
         }
@@ -579,7 +544,6 @@ public class HexagonalTerrainChunk
             if (added) graph.AddNodeToMap(terrainEdge.Source.Position, terrainEdge.Source);
             added = graph.AddVertex(terrainEdge.Target);
             if (added) graph.AddNodeToMap(terrainEdge.Target.Position, terrainEdge.Target);
-
             if (graph.Edges.Any(edge => terrainEdge.Equals(edge))) continue;
             graph.AddEdge(terrainEdge);
         }
@@ -590,7 +554,7 @@ public class HexagonalTerrainChunk
     //
     public void UpdateFullCellCenterValues(ICollection<Vector3I> dataIndexes)
     {
-        _graph.UpdateCellCenterValuesInTris(dataIndexes);
+        Graph.UpdateCellCenterValuesInTris(dataIndexes);
     }
 }
 

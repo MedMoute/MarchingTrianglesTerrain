@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.graph;
 using MathNet.Spatial.Euclidean;
 using QuikGraph;
 
@@ -10,21 +11,20 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
 /// <summary>
 /// Representation of an edge of a HexTerrainChunk, as the geometrical relation between two linked vertices.
-///  
 /// </summary>
-public class ChunkTerrainEdge : EquatableUndirectedEdge<ChunkTerrainNode>
+public class ChunkTerrainEdge : EquatableUndirectedEdge<ChunkTerrainNode>,IImplicitlyBuildableFromGraph<(Vector2 source,Vector2 target)>
 {
     public new ChunkTerrainNode Source { get; init; }
     public new ChunkTerrainNode Target { get; init; }
 
-    private SubCellBorder? _border1 = null;
-    private SubCellBorder? _border2 = null;
+    private TriangulationEdge? _border1 = null;
+    private TriangulationEdge? _border2 = null;
     
-    internal ChunkTerrainEdge(ChunkTerrainNode source, ChunkTerrainNode target) : base(source, target)
+    internal ChunkTerrainEdge(ChunkTerrainNode source, ChunkTerrainNode target, TerrainChunkGraph parentGraph) : base(source, target)
     {
         Source = source;
         Target = target;
-
+        ParentGraph = parentGraph;
     }
 
 
@@ -47,24 +47,15 @@ public class ChunkTerrainEdge : EquatableUndirectedEdge<ChunkTerrainNode>
             {
                 //Build interior edges
 
-                //We first create the extremities of the edge and add them to the matching graph vertices 
-                var cellCenterAsEdgeExtremity = new EdgeExtremity(centerPoint, idx, -1);
-                centerPoint.AddEdgeExtremity(cellCenterAsEdgeExtremity);
                 //We use this loop to also add the CellSummitPoints's edge extremities
                 Vector2D cellSummitPositionD = fullCell.VertexPositionsInPlane[i];
                 ChunkTerrainNode matchingNode = cellSummits.Values.First(p => p.Position.IsEqualApprox(
                     new Vector2((float)cellSummitPositionD.X, (float)cellSummitPositionD.Y)));
-                var cellSummitAsInteriorEdgeExtremity = new EdgeExtremity(matchingNode, idx, i);
-                var cellSummitAsExteriorEdgeExtremity =
-                    new EdgeExtremity(matchingNode, idx, i);
-
-                matchingNode.AddEdgeExtremity(cellSummitAsInteriorEdgeExtremity);
-                matchingNode.AddEdgeExtremity(cellSummitAsExteriorEdgeExtremity);
 
                 //We build the edge instance 
                 var intEdge = centerPoint.CompareTo(matchingNode)< 0 ? 
-                    new ChunkTerrainEdge(centerPoint, matchingNode):
-                    new ChunkTerrainEdge(matchingNode,centerPoint);
+                    new ChunkTerrainEdge(centerPoint, matchingNode,hexagonalTerrainChunk.Graph):
+                    new ChunkTerrainEdge(matchingNode,centerPoint,hexagonalTerrainChunk.Graph);
                 edges.Add(intEdge);
 
                 //Build the exterior edges
@@ -72,20 +63,18 @@ public class ChunkTerrainEdge : EquatableUndirectedEdge<ChunkTerrainNode>
                     fullCell.VertexPositionsInPlane[(i + 1) % HexTerrainCell.VertexCount];
                 ChunkTerrainNode matchingNextNode = cellSummits.Values.First(p => p.Position.IsEqualApprox(
                     new Vector2((float)cellSummitNextPositionD.X, (float)cellSummitNextPositionD.Y)));
-                var cellNextSummitAsExteriorEdgeExtremity = new EdgeExtremity(matchingNextNode, idx, (i + 1) % HexTerrainCell.VertexCount);
-                matchingNextNode.AddEdgeExtremity(cellNextSummitAsExteriorEdgeExtremity);
+
                 var extEdge = matchingNode.CompareTo(matchingNextNode) < 0 ? 
-                    new ChunkTerrainEdge(matchingNode, matchingNextNode) :
-                    new ChunkTerrainEdge( matchingNextNode,matchingNode);
+                    new ChunkTerrainEdge(matchingNode, matchingNextNode,hexagonalTerrainChunk.Graph) :
+                    new ChunkTerrainEdge( matchingNextNode,matchingNode,hexagonalTerrainChunk.Graph);
                 edges.Add(extEdge); 
 
             }
         }
-
         return edges;
     }
     
-    public List<SubCellBorder> GetSubCellBorders()
+    public List<TriangulationEdge> GetSubCellBorders()
     {
         if (_border1 == null)
         {
@@ -97,20 +86,29 @@ public class ChunkTerrainEdge : EquatableUndirectedEdge<ChunkTerrainNode>
         return [_border1,_border2];
     }
 
-    public void AddBorder(SubCellBorder subCellBorder)
+    internal void AddBorder(TriangulationEdge triangulationEdge)
     {
         if (_border1==null)
         {
-            _border1 = subCellBorder;
+            _border1 = triangulationEdge;
         }
         else if (_border2 == null)
         {
-            _border2 = subCellBorder;
+            _border2 = triangulationEdge;
         }
         else
         {
             throw new NotSupportedException("Two borders are already on this edge");
         }
     }
+
+    public TerrainChunkGraph ParentGraph { get; }
+    
+    public void BuildStructuresFromParent((Vector2 source, Vector2 target) dataPoints)
+    {
+        throw new NotImplementedException();
+    }
+
+
 }
 

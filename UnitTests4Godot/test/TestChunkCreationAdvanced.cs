@@ -58,8 +58,8 @@ public class TestChunkCreationAdvanced
             Is.EqualTo(Enumerable.Repeat(0f, cellCount).ToList())); //Accessible avg, equal to 0f
         
         // Graph content checks
-        Assert.That(chunk.EdgeGraph.Vertices.Count(), Is.GreaterThan(0));
-        Assert.That(chunk.EdgeGraph.Edges.Count(), Is.GreaterThan(0));
+        Assert.That(chunk.Graph.Vertices.Count(), Is.GreaterThan(0));
+        Assert.That(chunk.Graph.Edges.Count(), Is.GreaterThan(0));
         
     }
 

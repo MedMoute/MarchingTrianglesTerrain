@@ -482,7 +482,24 @@ public class V3CloseComp : IEqualityComparer<Vector3>
 
     public int GetHashCode(Vector3 obj)
     {
-        return 0;
+        //From Vector3I.GetHashCode()
+        return HashCode.Combine((int)(obj.X/Mathf.Epsilon),(int)(obj.Y/Mathf.Epsilon),(int)(obj.Z/Mathf.Epsilon));
+    }
+}
+
+public class V2CloseComp : IEqualityComparer<Vector2>
+{
+    public static V2CloseComp Instance = new ();
+    private V2CloseComp(){}
+    public bool Equals(Vector2 x, Vector2 y)
+    {
+        return x.IsEqualApprox(y);
+    }
+
+    public int GetHashCode(Vector2 obj)
+    {
+        //From Vector2I.GetHashCode()
+        return HashCode.Combine((int)(obj.X/Mathf.Epsilon),(int)(obj.Y/Mathf.Epsilon));
     }
 }
 
@@ -570,7 +587,7 @@ public class UnorderedValueTupleComparer<T> :  IEqualityComparer<(T, T)>
 {
     private readonly IEqualityComparer<T> _comparer;
 
-    public UnorderedValueTupleComparer(IEqualityComparer<T> comparer = default)
+    public UnorderedValueTupleComparer(IEqualityComparer<T>? comparer = null)
     {
         _comparer = comparer ?? EqualityComparer<T>.Default;
     }
@@ -586,8 +603,8 @@ public class UnorderedValueTupleComparer<T> :  IEqualityComparer<(T, T)>
 
     public int GetHashCode((T, T) obj)
     {
-        int h1 = _comparer.GetHashCode(obj.Item1);
-        int h2 = _comparer.GetHashCode(obj.Item2);
+        int h1 = _comparer.GetHashCode(obj.Item1 ?? throw new InvalidOperationException());
+        int h2 = _comparer.GetHashCode(obj.Item2 ?? throw new InvalidOperationException());
         if (h1 > h2) (h1, h2) = (h2, h1);
         return HashCode.Combine(h1, h2);
     }
