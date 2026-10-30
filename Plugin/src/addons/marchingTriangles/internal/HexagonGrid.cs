@@ -11,6 +11,7 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 /// </summary>
 public class HexagonGrid
 {
+    
     public IRegularUniformFrame Frame { get; }
 
     public Dictionary<Vector2I, HexTerrainCell> PendingCells { get; } = new();
@@ -18,6 +19,8 @@ public class HexagonGrid
     public Dictionary<Vector2I,HexTerrainCell> CompleteCells = new();
 
     private readonly IRegularUniformFrame _dualFrame;
+    
+    public event HexagonalTerrainChunk.FullCellEventHandler NewFullCell = (_)=>{};
 
     private HexagonGrid(IRegularUniformFrame frame, IRegularUniformFrame dualFrame)
     {
@@ -93,6 +96,7 @@ public class HexagonGrid
             if (cell.IsReady())
             {
                 CompleteCells.Add(cell.CellCoordsImplicit,cell);
+                NewFullCell.Invoke(cell);
                 PendingCells.Remove(cellCoords);
             }
         }

@@ -126,6 +126,15 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
     }
 
     /// <summary>
+    /// Registers a new cell's underlying subcells in the graph
+    /// </summary>
+    /// <param name="newCellIndex"></param>
+    public void AddNewCell(Vector2I newCellIndex)
+    {
+        
+    }
+
+    /// <summary>
     /// Updates the triangulation values for a given data point position.
     /// If the provided position does not match any entry in the point graph, nothing is done.
     /// </summary>
