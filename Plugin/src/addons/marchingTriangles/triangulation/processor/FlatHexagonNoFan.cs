@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
 using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.action;
 
@@ -8,21 +9,6 @@ public class FlatHexagonNoFan : GeometryModeActions.ModeProcessor
 {
     public static readonly FlatHexagonNoFan Processor = new();
 
-    private FlatHexagonNoFan()
-    {
-    }
-
-    public void Vertex(VertexGeometryEditor editor,
-        HexTerrainCell cell, 
-        int cellSummit,
-        Triangulation tri,
-        int vertexIdx,
-        List<HexTerrainCell> neighborCells, 
-        (float, float) parameters)
-    {
-        FlatHexagons.Processor.Vertex(editor, cell, cellSummit, tri, vertexIdx, neighborCells, parameters);
-    }
-
     public void Edge(VertexGeometryEditor editor,
         HexTerrainCell cell,
         (int start, int end) edge, 
@@ -31,6 +17,11 @@ public class FlatHexagonNoFan : GeometryModeActions.ModeProcessor
         List<HexTerrainCell> neighborCells, 
         (float, float) parameters)
     {
-        //no action on edges 
-    }
+        Debug.Assert(cell.GetVertexData is not null);
+
+        var height = cell.AverageHeight;
+        var action = new MovePointAlongYAxisAction(edgeIdx, height);
+
+        editor.RegisterAction(action, tri);
+        var pInit = tri.SourceTriangle[edgeIdx];    }
 }

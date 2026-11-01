@@ -565,11 +565,11 @@ public class ChunkConformalEditor
                     throw new InvalidOperationException();
                 }
             }
-
-            Console.WriteLine($"Vertex {vertex.Position} : ");
-            Console.WriteLine(String.Join(";",
-                positions.Select(kvp => (kvp.Key,
-                    String.Join(";", kvp.Value.Select(ee => (ee.Item1.Triangulation!.Id, ee.Item2)))))));
+            //
+            // Console.WriteLine($"Vertex {vertex.Position} : ");
+            // Console.WriteLine(String.Join(";",
+            //     positions.Select(kvp => (kvp.Key,
+            //         String.Join(";", kvp.Value.Select(ee => (ee.Item1.Triangulation!.Id, ee.Item2)))))));
 
             float value;
             switch (positions.Count)

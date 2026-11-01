@@ -35,9 +35,7 @@ public abstract class ChunkTerrainNode : IComparable<Vector2>,IComparable,IImpli
     }
     
     protected abstract float GetValue();
-
-    public abstract void BuildStructuresFromParent(Vector2 source);
-
+    
     private bool Equals(ChunkTerrainNode other)
     {
         return Position.IsEqualApprox(other.Position);
@@ -95,11 +93,7 @@ public sealed class CellCenterPoint : ChunkTerrainNode
     {
         return _parentCell.AverageHeight;
     }
-
-    public override void BuildStructuresFromParent(Vector2 position)
-    {
-        
-    }
+    
 }
 
 /// <summary>
@@ -126,7 +120,4 @@ public sealed class CellSummitPoint : ChunkTerrainNode
         return _dataGrid.Data[_dataGridIndex];
     }
 
-    public override void BuildStructuresFromParent(Vector2 position)
-    {
-    }
 }

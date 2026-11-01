@@ -8,6 +8,5 @@ namespace MarchingTrianglesTerrain.addons.marchingTriangles.triangulation.graph;
 public interface  IImplicitlyBuildableFromGraph<in T>
 {
     protected TerrainChunkGraph ParentGraph { get; }
-    
-    protected void BuildStructuresFromParent(T source);
+
 }

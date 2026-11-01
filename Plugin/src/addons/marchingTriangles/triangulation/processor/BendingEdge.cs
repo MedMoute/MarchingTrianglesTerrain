@@ -12,20 +12,6 @@ public class BendingEdge : GeometryModeActions.ModeProcessor
 {
     public static readonly BendingEdge Processor = new();
 
-    private BendingEdge()
-    {
-    }
-
-    public void Vertex(VertexGeometryEditor editor,
-        HexTerrainCell cell,
-        int cellSummit,
-        Triangulation tri,
-        int vertexIdx,
-        List<HexTerrainCell> neighborCells,
-        (float, float) parameters) //NOOP
-    {
-    }
-
     public void Edge(VertexGeometryEditor editor,
         HexTerrainCell cell,
         (int start, int end) edge,

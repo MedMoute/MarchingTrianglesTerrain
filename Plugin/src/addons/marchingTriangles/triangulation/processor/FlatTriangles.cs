@@ -13,10 +13,6 @@ public class FlatTriangles : GeometryModeActions.ModeProcessor
 {
     public static readonly FlatTriangles Processor = new();
 
-    private FlatTriangles()
-    {
-    }
-
     public void Vertex(VertexGeometryEditor editor,
         HexTerrainCell cell,
         int cellSummit,

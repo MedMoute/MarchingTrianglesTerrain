@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Godot;
@@ -16,7 +17,10 @@ public static partial class GeometryModeActions
             Triangulation tri,
             int vertexIdx,
             List<HexTerrainCell> neighborCells,
-            (float, float) parameters);
+            (float, float) parameters)
+        {
+            throw new NotSupportedException();
+        }
         
         void Edge(
             VertexGeometryEditor editor,

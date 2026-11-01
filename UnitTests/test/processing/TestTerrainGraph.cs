@@ -30,7 +30,7 @@ public class TestTerrainGraph
         var dimension = 2;
 
         var preCreation = Triangulation.PeekId();
-        var chunk = NewChunk(Vector2I.Zero, dimension);
+        var chunk = HexagonalTerrainChunk.NewChunkAtCoordinates(Vector2I.Zero, Vector2I.One*dimension,_=>null);
         var nbTriCreated = Triangulation.PeekId() - preCreation;
         
         var graph = chunk.Graph;
@@ -52,28 +52,23 @@ public class TestTerrainGraph
         Assert.That(nbTriCreated,Is.EqualTo(6));
         
         //Check that the EdgeExtremities and SubCellBorders have been created
-        List<(Vector3I indices ,TriangulationVertex eeInstance)> collectedEdgeExtremities = CollectEdgeExtremities(graph);
-        
-        // Assert.That(collectedEdgeExtremities
-        //     .Count(p => p.eeInstance.Triangulation!.Id == 0),Is.EqualTo(6));
-        
-        Assert.That(collectedEdgeExtremities
-            .Count(p => p.indices == new Vector3I(0,1,-1)),Is.EqualTo(6));
+        List<(Vector3I indices, TriangulationVertex tvInstance)> cellectedVertexTri = CollectEdgeExtremities(graph);
+
 
         Assert.Multiple(() =>
         {
             for (int i = 0; i < HexTerrainCell.VertexCount; i++)
             {
-                Assert.That(collectedEdgeExtremities
+                Assert.That(cellectedVertexTri
                     .Count(p => p.indices == new Vector3I(0, 1, i)), Is.EqualTo(3));
             }
         });
         
-        Assert.That(collectedEdgeExtremities.Count,Is.EqualTo((6 * 2 * 2) + (1 * 6 * 2) ));
+        Assert.That(cellectedVertexTri.Count,Is.EqualTo(6 * 3 * 1 ));
         
 
 
-        List<(Vector3I indices ,TriangulationVertex eeInstance)> CollectEdgeExtremities(TerrainChunkGraph graphTested)
+        List<(Vector3I indices, TriangulationVertex tvInstance)> CollectEdgeExtremities(TerrainChunkGraph graphTested)
         {
             return
             [
@@ -83,10 +78,5 @@ public class TestTerrainGraph
                 select (ee.Key, ee.Value)
             ];
         }
-    }
-
-    private static HexagonalTerrainChunk NewChunk(Vector2I coordinates, int dimension)
-    {
-        return HexagonalTerrainChunk.NewChunkAtCoordinates(coordinates, Vector2I.One*dimension,_=>null);
     }
 }

@@ -7,20 +7,6 @@ public class SmoothLinear : GeometryModeActions.ModeProcessor
 {
     public static readonly SmoothLinear Processor = new();
 
-    private SmoothLinear()
-    {
-    }
-
-    public void Vertex(VertexGeometryEditor editor,
-        HexTerrainCell cell,
-        int cellSummit,
-        Triangulation tri,
-        int vertexIdx,
-        List<HexTerrainCell> neighborCells,
-        (float, float) parameters)
-    {
-        //NOOP
-    }
 
     public void Edge(VertexGeometryEditor editor,
         HexTerrainCell cell,

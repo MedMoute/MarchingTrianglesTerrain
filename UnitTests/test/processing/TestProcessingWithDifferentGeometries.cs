@@ -71,8 +71,8 @@ public class TestProcessingWithDifferentGeometries
         Debug.Assert(output != null);
         foreach (var keyValuePair in output)
         {
-            if (geometryMode is not GeometryMode.FlatTrianglesNoFans &&
-                geometryModeFallBack is not GeometryMode.FlatTrianglesNoFans)
+            if (geometryMode is not (GeometryMode.FlatTrianglesNoFans or GeometryMode.FlatHexagonsNoFans) &&
+                geometryModeFallBack is not (GeometryMode.FlatTrianglesNoFans or GeometryMode.FlatHexagonsNoFans) )
                 TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
         }
     }
@@ -154,8 +154,8 @@ public class TestProcessingWithDifferentGeometries
         //Per cell manifold and value checks
         foreach (var keyValuePair in output)
         {
-            if (geometryMode is not GeometryMode.FlatTrianglesNoFans &&
-                geometryModeFallBack is not GeometryMode.FlatTrianglesNoFans)
+            if (geometryMode is not (GeometryMode.FlatTrianglesNoFans )&&
+                geometryModeFallBack is not  (GeometryMode.FlatTrianglesNoFans ))
             {
                 TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
             }
@@ -163,8 +163,8 @@ public class TestProcessingWithDifferentGeometries
 
         //Global checks
         var flattenedOutput = output.SelectMany(kvp => kvp.Value).ToList();
-        if (geometryMode is not GeometryMode.FlatTrianglesNoFans &&
-            geometryModeFallBack is not GeometryMode.FlatTrianglesNoFans)
+        if (geometryMode is not  (GeometryMode.FlatTrianglesNoFans or GeometryMode.FlatHexagonsNoFans) &&
+            geometryModeFallBack is not  (GeometryMode.FlatTrianglesNoFans or GeometryMode.FlatHexagonsNoFans))
         {
             TestUtils.AssertIsTriangleListManifold(flattenedOutput);
         }

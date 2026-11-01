@@ -125,8 +125,4 @@ public class ChunkTerrainEdge : EquatableUndirectedEdge<ChunkTerrainNode>,
 
     public TerrainChunkGraph ParentGraph { get; }
 
-    public void BuildStructuresFromParent((Vector2 source, Vector2 target) dataPoints)
-    {
-        throw new NotImplementedException();
-    }
 }

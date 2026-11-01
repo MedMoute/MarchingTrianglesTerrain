@@ -11,18 +11,6 @@ public class Plateau : GeometryModeActions.ModeProcessor
 {
     public static readonly Plateau Processor = new();
 
-    private Plateau()
-    {
-    }
-
-    public void Vertex(VertexGeometryEditor editor,
-        HexTerrainCell cell, 
-        int cellSummit,
-        Triangulation tri,
-        int vertexIdx,
-        List<HexTerrainCell> neighborCells, 
-        (float, float) parameters) //NOOP
-    { }
 
     public void Edge(VertexGeometryEditor editor,
         HexTerrainCell cell,

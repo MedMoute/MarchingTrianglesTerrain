@@ -12,26 +12,6 @@ public class FlatHexagons : GeometryModeActions.ModeProcessor
 {
     public static readonly FlatHexagons Processor = new();
 
-    private FlatHexagons()
-    {
-    }
-
-    public void Vertex(VertexGeometryEditor editor, 
-        HexTerrainCell cell,
-        int cellSummit,
-        Triangulation tri,
-        int vertexIdx,
-        List<HexTerrainCell> neighborCells,
-        (float, float) parameters)
-    {
-        Debug.Assert(cell.GetVertexData is not null);
-
-        var height = cell.AverageHeight;
-        var action = new MovePointAlongYAxisAction(vertexIdx, height);
-        //Console.WriteLine($"[Hexagons] Move T[#{tri.Id};{vertexIdx}]=>{height}");
-
-        editor.RegisterAction(action, tri);
-    }
 
     public void Edge(VertexGeometryEditor editor,
         HexTerrainCell cell, 
@@ -41,6 +21,12 @@ public class FlatHexagons : GeometryModeActions.ModeProcessor
         List<HexTerrainCell> neighborCells,
         (float, float) parameters)
     {
+        Debug.Assert(cell.GetVertexData is not null);
+
+        var height = cell.AverageHeight;
+        var action = new MovePointAlongYAxisAction(edgeIdx, height);
+
+        editor.RegisterAction(action, tri);
         var pInit = tri.SourceTriangle[edgeIdx];
 
         if (edgeIdx != 1) // Cell interior edge, nothing to add since all triangles are set at AvgHeight
