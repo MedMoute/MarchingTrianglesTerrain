@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Godot;
 using MarchingTrianglesTerrain.addons.marchingTriangles.@internal;
+using MarchingTrianglesTerrain.addons.marchingTriangles.triangulation;
 
 namespace UnitTests.test.processing;
 
@@ -63,17 +64,33 @@ public class TestProcessingWithDifferentGeometries
         Dictionary<HexTerrainCell, List<HexTerrainCell.TriangleInfo>>? output = null;
 
         Assert.That(_chunk.TerrainDualGrid.CompleteCells, Has.Count.EqualTo(1));
+
+        ChunkConformalEditor editor = null!; 
         Assert.DoesNotThrow(() =>
         {
-            output = _chunk.ProcessGeometry(out var e); 
+            output = _chunk.ProcessGeometry(out var e);
+            editor = e;
         });
         Assert.That(output, Has.Count.EqualTo(1));
         Debug.Assert(output != null);
         foreach (var keyValuePair in output)
         {
             if (geometryMode is not (GeometryMode.FlatTrianglesNoFans or GeometryMode.FlatHexagonsNoFans) &&
-                geometryModeFallBack is not (GeometryMode.FlatTrianglesNoFans or GeometryMode.FlatHexagonsNoFans) )
-                TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
+                geometryModeFallBack is not (GeometryMode.FlatTrianglesNoFans or GeometryMode.FlatHexagonsNoFans))
+            {
+                try
+                {
+                    TestUtils.AssertIsTriangleListManifold(keyValuePair.Value);
+
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    editor.DebugDumpEditorState();
+
+                    throw;
+                }
+            }
         }
     }
 

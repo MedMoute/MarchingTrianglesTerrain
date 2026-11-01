@@ -39,14 +39,14 @@ public class FlatHexagons : GeometryModeActions.ModeProcessor
             return;
         }
 
-        var otherCell = neighborCells.First();
-        var hOtherCell = otherCell.AverageHeight;
-        var newPointPos = new Vector3(pInit.X, hOtherCell, pInit.Z);
-
-        //Console.WriteLine($"[Hexagons] Add Tri [#{tri.Id};{edgeIdx}]=>@{newPointPos}");
-
-        editor.RegisterAction(
-            new AddTrianglesOnBorderEdge(edgeIdx, newPointPos),
-            tri);
+        // var otherCell = neighborCells.First();
+        // var hOtherCell = otherCell.AverageHeight;
+        // var newPointPos = new Vector3(pInit.X, hOtherCell, pInit.Z);
+        //
+        // //Console.WriteLine($"[Hexagons] Add Tri [#{tri.Id};{edgeIdx}]=>@{newPointPos}");
+        //
+        // editor.RegisterAction(
+        //     new AddTrianglesOnBorderEdge(edgeIdx, newPointPos),
+        //     tri);
     }
 }

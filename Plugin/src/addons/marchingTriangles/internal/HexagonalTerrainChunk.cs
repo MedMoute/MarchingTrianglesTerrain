@@ -518,19 +518,29 @@ public class HexagonalTerrainChunk
         out ChunkConformalEditor editor, bool forcePrintOutput = false)
     {
         editor = new ChunkConformalEditor(Graph);
-        //Step 1 : Collect all the required operations
-        editor.CollectAllOperationsRequests();
-        editor.CollectBorderOperationRequests();
 
-        //Step 2 : Register the edge Edition operations;
-        editor.RegisterOperations();
-        //Step 3 : Apply all the operations on triangulations
-        editor.ApplyGeometryOperations();
-        // Step 1.5 : Stitch edges that need to be fixed
-        var res = editor.PostProcess();
+        try
+        {
+            //Step 1 : Collect all the required operations
+            editor.CollectAllOperationsRequests();
+            editor.CollectBorderOperationRequests();
 
-        //Step 4 : Extract the triangles
-        return res;
+            //Step 2 : Register the edge Edition operations;
+            editor.RegisterOperations();
+            //Step 3 : Apply all the operations on triangulations
+            editor.ApplyGeometryOperations();
+            // Step 1.5 : Stitch edges that need to be fixed
+            var res = editor.PostProcess();
+
+            //Step 4 : Extract the triangles
+            return res;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            editor.DebugDumpEditorState();
+            throw;
+        }
     }
 
     private void AddAdjacencyStructuresForNewCell(HexTerrainCell cell)

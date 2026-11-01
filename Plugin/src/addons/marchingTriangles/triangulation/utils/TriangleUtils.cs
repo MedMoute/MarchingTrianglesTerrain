@@ -177,9 +177,8 @@ public static class TriangleUtils
             }
 
             //We recompute the edges after the required splits have occured
-            curEdge = ChunkConformalEditor.ExplicitEdge(triangulation.Edges[edgeIndex], triangulation);
-            neighborEdge =
-                ChunkConformalEditor.ExplicitEdge(triangulation.Edges[neighborEdgeIndex], otherTriangulation);
+            curEdge = ChunkConformalEditor.ExplicitEdge(edgeIndex, triangulation);
+            neighborEdge = ChunkConformalEditor.ExplicitEdge(neighborEdgeIndex, otherTriangulation);
 
             var fillAction = new DegeneratePolygonFillerAction(curEdge, edgeIndex, neighborEdge, curEdgeCrossingPoints);
             cellVertexEditor.RegisterAction(fillAction, triangulation);
@@ -340,19 +339,29 @@ public static class TriangleUtils
         // On the manifold border set
         if (throwOnFailedChecks)
         {
+            try
+            {
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
             AssertIsClosedManifoldBorder(manifoldBordersAsSets);
         }
 
-    // On the rebuilt border edge set
+        // On the rebuilt border edge set
         var borderEdgesFromRebuilt = borderEdgesAsSets.Keys.ToList();
         if (throwOnFailedChecks)
         {
-        AssertIsClosedManifoldBorder(borderEdgesFromRebuilt);
+            AssertIsClosedManifoldBorder(borderEdgesFromRebuilt);
         }
+
         return (dico, borderEdgesFromRebuilt, manifoldBordersAsSets);
     }
 
-    public static bool AssertIsClosedManifoldBorder(List<float[]> setOfBorders, bool throwOnAssertFail=true)
+    public static bool AssertIsClosedManifoldBorder(List<float[]> setOfBorders, bool throwOnAssertFail = true)
     {
         var borderVerticesEnumerable = setOfBorders.SelectMany(e =>
         {
@@ -440,6 +449,7 @@ public static class TriangleUtils
                     "The provided data does not define closed manifold border because" +
                     $" the count of border edges is not equal ({setOfBorders.Count})to the count of border vertices ({borderVertices.Count}).");
             }
+
             return false;
         }
 
@@ -456,13 +466,13 @@ public static class TriangleUtils
                         "The provided data does not define closed manifold border because" +
                         " not all vertices have two occurrences ");
                 }
+
                 return false;
             }
         }
 
         return true;
     }
-
 }
 
 public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
@@ -510,6 +520,4 @@ public class FloatArrayComparer : IEqualityComparer<float[]>, IComparer<float[]>
 
         return x.Equals(y) ? 0 : x.GetHashCode() - y.GetHashCode();
     }
-    
-    
 }

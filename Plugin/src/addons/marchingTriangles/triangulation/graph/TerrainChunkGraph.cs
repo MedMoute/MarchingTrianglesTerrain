@@ -157,7 +157,7 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
 
             foreach (var v in tv.Triangulation.SourceTriangle)
             {
-                if (v.X.Equals(posF.X) && v.Z.Equals(posF.Y))
+                if (v.X.AlmostEqual(posF.X) && v.Z.AlmostEqual(posF.Y))
                 {
                     //Update Source Triangle
                     tv.Triangulation.SourceTriangle =
@@ -169,8 +169,8 @@ public class TerrainChunkGraph : UndirectedGraph<ChunkTerrainNode, ChunkTerrainE
             }
 
             //Update Vertex and Reverse Vertex mappings
-            var idxOfFirstVertexInEdge = tv.Triangulation
-                .SubEdges.ElementAt(tv.Triangulation.Edges[edgeIdx].First!.Value).Key.Item1;
+            var subedgeIdx = tv.Triangulation.Edges[edgeIdx].First!.Value;
+            var idxOfFirstVertexInEdge = tv.Triangulation.SubEdges.ElementAt(subedgeIdx).Key.Item1;
 
             var oldPos = tv.Triangulation.Vertices[idxOfFirstVertexInEdge];
             //Swap oldPos with newPos

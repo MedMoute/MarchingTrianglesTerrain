@@ -355,8 +355,9 @@ public class ChunkConformalEditor
         // }
     }
 
-    public static List<(Vector3, int Value)> ExplicitEdge(LinkedList<int> linkedList, Triangulation tri)
+    public static List<(Vector3, int Value)> ExplicitEdge(int edgeIndex, Triangulation tri)
     {
+        LinkedList<int> linkedList = tri.Edges[edgeIndex];
         var edge = linkedList.Select(edge =>
         {
             var elem = tri.SubEdges.ElementAt(edge);
@@ -522,15 +523,14 @@ public class ChunkConformalEditor
             return result;
         }
 
-        MergePoints();
-        DebugDumpEditorState();
+        MergeSubEdges();
         return GetTriangleInfos();
     }
 
-    private void MergePoints()
+    private void MergeSubEdges()
     {
-        var groupings = VertexRequests.GroupBy(g => g.Key.Node);
-        var skipMergeDueToRequest = new Dictionary<ChunkTerrainNode, bool>();
+        var groupings = EdgeRequests.GroupBy(g => g.Key.GetParentEdge());
+        var skipMergeDueToRequest = new Dictionary<ChunkTerrainEdge, bool>();
         foreach (var grouping in groupings)
         {
             var doSkip = grouping.Any(o =>
@@ -538,61 +538,30 @@ public class ChunkConformalEditor
             skipMergeDueToRequest[grouping.Key] = doSkip;
         }
 
-        foreach (var vertex in _graph.Vertices)
+        foreach (var edge in _graph.Edges.Where(e=> !skipMergeDueToRequest[e] && e.GetSubCellBorders().Count==2))
         {
-            if (skipMergeDueToRequest[vertex]) continue;
-            var pos = vertex.Position;
-            var positions = new Dictionary<float, List<(TriangulationVertex, int)>>();
-            foreach (var edgeExtremity in vertex.TriangulationVertices.Values)
-            {
-                Debug.Assert(edgeExtremity.Triangulation != null);
-                var edge = edgeExtremity.Triangulation.Edges[edgeExtremity.TriVertexIndex];
-                var pointIdxInTri = edgeExtremity.Triangulation.SubEdges.ElementAt(edge.First!.Value).Key.Item1;
-                var point = edgeExtremity.Triangulation.Vertices[pointIdxInTri];
-                if (point.X.AlmostEqual(pos.X) && point.Z.AlmostEqual(pos.Y))
-                {
-                    var exists = positions.TryGetValue(point.Y, out var list);
-                    if (!exists || list is null)
-                    {
-                        list = [];
-                        positions[point.Y] = list;
-                    }
+            var subEdges = edge.GetSubCellBorders();
 
-                    list.Add((edgeExtremity, pointIdxInTri));
-                }
-                else
-                {
-                    throw new InvalidOperationException();
-                }
-            }
-            //
-            // Console.WriteLine($"Vertex {vertex.Position} : ");
-            // Console.WriteLine(String.Join(";",
-            //     positions.Select(kvp => (kvp.Key,
-            //         String.Join(";", kvp.Value.Select(ee => (ee.Item1.Triangulation!.Id, ee.Item2)))))));
+            var e0 = subEdges[0];
+            var e1 = subEdges[1];
 
-            float value;
-            switch (positions.Count)
-            {
-                case 0: throw new InvalidOperationException();
-                case 1: continue;
-                case 2:
-                    value = positions.Keys.GroupBy(v => v).OrderByDescending(g => g.Count()).First().Key;
-                    break;
-                default:
-                    value = positions.Keys.Average();
-                    break;
-            }
+            var editor = new VertexGeometryEditor();
 
-            var editions = positions.Values.SelectMany(v =>
-                v.Select(u => (triangulation: u.Item1.Triangulation, vIdx: u.Item2))).ToList();
-            foreach (var res in editions)
-            {
-                Console.WriteLine(String.Join(";", editions.Select(o=>(o.triangulation.Id,o.vIdx))));
-                var action = new MovePointAlongYAxisAction(res.vIdx, value);
-                Debug.Assert(res.triangulation != null);
-                action.Apply(res.triangulation);
-            }
+            TriangleUtils.PolygonTriangulationBuilderData ptBuilder0 =
+                new TriangleUtils.PolygonTriangulationBuilderData(
+                    editor,
+                    e0.Triangulation,
+                    ExplicitEdge(e0.TriEdgeIndex, e0.Triangulation),
+                    e0.TriEdgeIndex);
+            
+            TriangleUtils.PolygonTriangulationBuilderData ptBuilder1 =
+                new TriangleUtils.PolygonTriangulationBuilderData(
+                    editor,
+                    e1.Triangulation,
+                    ExplicitEdge(e1.TriEdgeIndex, e1.Triangulation),
+                    e1.TriEdgeIndex);
+            
+            TriangleUtils.BuildPolygonTriangulation(ptBuilder0,ptBuilder1 );
         }
     }
 }

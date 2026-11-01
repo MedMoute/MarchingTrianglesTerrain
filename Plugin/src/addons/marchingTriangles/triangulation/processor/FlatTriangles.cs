@@ -13,16 +13,6 @@ public class FlatTriangles : GeometryModeActions.ModeProcessor
 {
     public static readonly FlatTriangles Processor = new();
 
-    public void Vertex(VertexGeometryEditor editor,
-        HexTerrainCell cell,
-        int cellSummit,
-        Triangulation tri,
-        int vertexIdx,
-        List<HexTerrainCell> neighborCells,
-        (float, float) parameters)
-    {
-    }
-
     public void Edge(VertexGeometryEditor editor,
         HexTerrainCell cell,
         (int start, int end) edge,
@@ -38,8 +28,7 @@ public class FlatTriangles : GeometryModeActions.ModeProcessor
         var heightIndex = EngineUtils.Mod(posIndex - edgeIdx / 2, HexTerrainCell.VertexCount);
         //offset : when processing the vertex 2, we're on the second edge
         //so we apply a -1 offset to get the correct index
-        var pInit = tri.SourceTriangle[edgeIdx];
-        
+
         Debug.Assert(cell.GetEdgeAvgHeight != null);
         var height = cell.GetEdgeAvgHeight(heightIndex);
         
